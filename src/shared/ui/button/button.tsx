@@ -23,10 +23,10 @@ export function Button({
       disabled={disabled || isLoading}
       className={`
         inline-flex min-h-12 items-center justify-center
-        rounded-2px bg-[#021730] px-6 py-3 text-base font-semibold text-white
+        rounded-control bg-brand px-6 py-3 text-base font-semibold text-white
         transition-colors enabled:cursor-pointer
-        enabled:hover:bg-[#132c49] enabled:active:bg-[#010e1e]
-        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#021730]
+        enabled:hover:bg-brand-hover enabled:active:bg-brand-active
+        focus-visible:outline-brand focus-visible:outline-2 focus-visible:outline-offset-2
         disabled:cursor-not-allowed disabled:opacity-50
         ${className}
       `}
