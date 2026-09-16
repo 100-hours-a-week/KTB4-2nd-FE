@@ -41,11 +41,6 @@ export function Input({
       {label && (
         <label htmlFor={inputId} className="text-brand text-sm font-semibold">
           {label}
-          {required && (
-            <span aria-hidden="true" className="text-danger ml-1">
-              *
-            </span>
-          )}
         </label>
       )}
       <div
@@ -104,10 +99,7 @@ export function Input({
               <path d="M12 9v4m0 3h.01" />
             </svg>
           )}
-          <span>
-            {error && <span aria-hidden="true">*</span>}
-            {message}
-          </span>
+          <span>{message}</span>
         </p>
       )}
     </div>

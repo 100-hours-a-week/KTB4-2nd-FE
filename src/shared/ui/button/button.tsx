@@ -24,8 +24,8 @@ export function Button({
       className={`
         inline-flex min-h-12 items-center justify-center
         rounded-control bg-brand px-6 py-3 text-base font-semibold text-white
-        transition-colors enabled:cursor-pointer
-        enabled:hover:bg-brand-hover enabled:active:bg-brand-active
+        transition-[background-color,transform,opacity] duration-200 ease-out enabled:cursor-pointer
+        enabled:hover:bg-brand-hover enabled:active:scale-[0.98] enabled:active:bg-brand-active
         focus-visible:outline-brand focus-visible:outline-2 focus-visible:outline-offset-2
         disabled:cursor-not-allowed disabled:opacity-50
         ${className}

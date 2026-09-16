@@ -41,11 +41,6 @@ export function Select({
       {label && (
         <label htmlFor={selectId} className="text-brand text-sm font-semibold">
           {label}
-          {required && (
-            <span aria-hidden="true" className="text-danger ml-1">
-              *
-            </span>
-          )}
         </label>
       )}
 
@@ -103,7 +98,6 @@ export function Select({
           role={error ? 'alert' : undefined}
           className={`flex items-start gap-2 text-sm ${error ? 'text-danger' : 'text-field-border'}`}
         >
-          {error && <span aria-hidden="true">*</span>}
           <span>{message}</span>
         </p>
       )}
