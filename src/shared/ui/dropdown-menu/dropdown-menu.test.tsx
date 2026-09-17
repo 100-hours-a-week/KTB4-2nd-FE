@@ -50,6 +50,22 @@ describe('DropdownMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
+  it('Tab으로 메뉴를 벗어나면 닫힌다', async () => {
+    const user = userEvent.setup();
+    render(
+      <div>
+        <DropdownMenu items={createItems()} />
+        <button type="button">다음 버튼</button>
+      </div>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '메뉴 열기' }));
+    await user.tab();
+
+    expect(screen.getByRole('button', { name: '다음 버튼' })).toHaveFocus();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
   it('키보드로 열고 이동하며 Esc로 닫는다', async () => {
     const user = userEvent.setup();
     render(<DropdownMenu items={createItems()} />);

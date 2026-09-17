@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -40,7 +41,10 @@ export function DropdownMenu({
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const enabledIndexes = items.flatMap((item, index) => (item.disabled ? [] : [index]));
+  const enabledIndexes = useMemo(
+    () => items.flatMap((item, index) => (item.disabled ? [] : [index])),
+    [items],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -57,7 +61,7 @@ export function DropdownMenu({
 
   const closeAndRestoreFocus = () => {
     setIsOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
+    triggerRef.current?.focus();
   };
 
   const focusItem = (currentIndex: number, direction: 1 | -1) => {
@@ -95,7 +99,13 @@ export function DropdownMenu({
   };
 
   return (
-    <div ref={containerRef} className={`relative inline-flex ${className}`}>
+    <div
+      ref={containerRef}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+      }}
+      className={`relative inline-flex ${className}`}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -118,13 +128,17 @@ export function DropdownMenu({
           className={`rounded-control bg-surface absolute top-full z-50 mt-2 min-w-44 overflow-hidden border border-slate-200 py-1 shadow-[0_10px_30px_rgba(2,23,48,0.14)] ${align === 'right' ? 'right-0' : 'left-0'}`}
         >
           {items.map((item, index) => (
-            <div key={item.id} className={item.dividerBefore ? 'border-t border-slate-100 pt-1' : ''}>
+            <div
+              key={item.id}
+              className={item.dividerBefore ? 'border-t border-slate-100 pt-1' : ''}
+            >
               <button
                 ref={(element) => {
                   itemRefs.current[index] = element;
                 }}
                 type="button"
                 role="menuitem"
+                tabIndex={-1}
                 disabled={item.disabled}
                 onKeyDown={(event) => handleItemKeyDown(event, index)}
                 onClick={() => {
@@ -149,13 +163,7 @@ export function DropdownMenu({
 
 function MoreIcon() {
   return (
-    <svg
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-    >
+    <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
       <circle cx="5" cy="12" r="1.8" />
       <circle cx="12" cy="12" r="1.8" />
       <circle cx="19" cy="12" r="1.8" />
