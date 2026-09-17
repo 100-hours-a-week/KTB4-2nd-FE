@@ -41,7 +41,8 @@ describe('Select with React Hook Form', () => {
     render(<TestForm onSubmit={onSubmit} />);
 
     const select = screen.getByRole('combobox', { name: /여행 유형/ });
-    await user.selectOptions(select, 'overseas');
+    await user.click(select);
+    await user.click(screen.getByRole('option', { name: '해외 여행' }));
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() =>
@@ -59,5 +60,20 @@ describe('Select with React Hook Form', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('여행 유형을 선택해주세요.');
     expect(select).toBeInvalid();
     expect(select).toHaveAccessibleDescription('여행 유형을 선택해주세요.');
+  });
+
+  it('키보드로 목록을 열고 옵션을 선택한다', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(<TestForm onSubmit={onSubmit} />);
+
+    const select = screen.getByRole('combobox', { name: /여행 유형/ });
+    select.focus();
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({ tripType: 'overseas' }, expect.anything()),
+    );
   });
 });
