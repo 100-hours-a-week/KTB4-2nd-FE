@@ -1,3 +1,3 @@
-export { toast } from './toast-store';
-export type { ToastOptions, ToastVariant } from './toast-store';
-export { ToastViewport } from './toast-viewport';
+export { toast } from './toastStore';
+export type { ToastOptions, ToastVariant } from './toastStore';
+export { ToastViewport } from './toastViewport';

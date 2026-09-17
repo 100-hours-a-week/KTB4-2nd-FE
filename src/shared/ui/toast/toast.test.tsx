@@ -2,8 +2,8 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { toast } from './toast-store';
-import { ToastViewport } from './toast-viewport';
+import { toast } from './toastStore';
+import { ToastViewport } from './toastViewport';
 
 afterEach(() => {
   act(() => toast.dismiss());
