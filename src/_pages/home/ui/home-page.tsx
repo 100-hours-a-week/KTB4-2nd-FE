@@ -76,7 +76,7 @@ export function HomePage() {
             placeholder="여행 제목을 입력해주세요."
             helperText="최대 20자까지 입력할 수 있어요."
             maxLength={20}
-            characterCount={title.length}
+            characterCount={Math.min(title.length, 20)}
           />
         </ShowcaseSection>
 
