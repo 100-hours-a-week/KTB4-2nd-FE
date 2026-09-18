@@ -50,7 +50,7 @@ export function DropdownMenu({
 
   const closeAndRestoreFocus = () => {
     setIsOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
+    triggerRef.current?.focus();
   };
 
   const focusItem = (currentIndex: number, direction: 1 | -1) => {
