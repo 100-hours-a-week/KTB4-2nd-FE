@@ -11,7 +11,7 @@
 - TanStack Query 5
 - Zustand
 - React Hook Form
-- Vitest, React Testing Library, Playwright
+- Vitest, React Testing Library
 
 ## 폴더 구조
 
@@ -40,11 +40,4 @@ npm run format:check # Prettier 적용 여부 검사
 npm run typecheck    # Next.js 타입 생성 및 TypeScript 검사
 npm test             # 단위·컴포넌트 테스트 1회 실행
 npm run test:watch   # Vitest 감시 모드
-npm run test:e2e     # Playwright E2E 테스트
-```
-
-처음 E2E 테스트를 실행하기 전에는 Chromium을 설치합니다.
-
-```bash
-npx playwright install chromium
 ```
