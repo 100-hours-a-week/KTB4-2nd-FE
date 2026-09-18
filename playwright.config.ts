@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: 'http://localhost:3100',
     trace: 'on-first-retry',
   },
   projects: [
@@ -16,9 +16,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'node e2e/mockAuthApi.mjs',
+      url: 'http://localhost:18080/__health',
+      reuseExistingServer: false,
+    },
+    {
+      command: 'npm run build && npm run start -- -p 3100',
+      url: 'http://localhost:3100',
+      env: { NEXT_PUBLIC_API_BASE_URL: 'http://localhost:18080' },
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 });
