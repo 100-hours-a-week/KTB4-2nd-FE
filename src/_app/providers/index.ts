@@ -1,1 +1,1 @@
-export { AppProviders } from './app-providers';
+export { AppProviders } from './appProviders';

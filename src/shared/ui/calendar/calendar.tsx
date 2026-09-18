@@ -10,7 +10,7 @@ import {
   parseDateString,
   toDateString,
   WEEKDAYS,
-} from './calendar-utils';
+} from './calendarUtils';
 
 export type CalendarProps = {
   value?: string;
