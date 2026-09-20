@@ -47,7 +47,7 @@ export function TripDateStep({ onBack, onNext }: TripDateStepProps) {
       footer={
         <div className="grid grid-cols-[1fr_2fr] gap-2">
           <Button
-            className="border-brand bg-surface text-brand hover:bg-brand/5 border-2"
+            className="border-brand bg-surface text-black! hover:bg-brand/5 hover:text-white! border-2"
             disabled={!startDate && !endDate}
             onClick={() => setRange({ startDate: '', endDate: '' })}
           >
