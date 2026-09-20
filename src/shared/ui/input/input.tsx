@@ -6,6 +6,7 @@ export type InputProps = ComponentPropsWithRef<'input'> & {
   label?: string;
   helperText?: string;
   error?: string;
+  variant?: 'underline' | 'boxed';
   /** register 사용 시 useWatch로 구독한 문자열의 length를 전달합니다. */
   characterCount?: number;
 };
@@ -16,6 +17,7 @@ export function Input({
   label,
   helperText,
   error,
+  variant = 'underline',
   characterCount,
   value,
   maxLength,
@@ -35,6 +37,7 @@ export function Input({
   const showCount = maxLength != null && count != null;
   const describedBy =
     `${ariaDescribedBy ?? ''} ${message ? messageId : ''} ${showCount ? countId : ''}`.trim();
+  const isBoxed = variant === 'boxed';
 
   return (
     <div className="bg-surface flex w-full flex-col gap-2">
@@ -45,8 +48,12 @@ export function Input({
       )}
       <div
         className={`
-          border-field-border flex items-center gap-3 border-b-2
-          transition-colors focus-within:border-brand focus-within:shadow-[0_1px_0_0_var(--brand)]
+          border-field-border relative flex gap-3 transition-colors focus-within:border-brand
+          ${
+            isBoxed
+              ? 'min-h-24 items-start rounded-control border-2 px-4 py-3 focus-within:shadow-[0_0_0_1px_var(--brand)]'
+              : 'items-center border-b-2 focus-within:shadow-[0_1px_0_0_var(--brand)]'
+          }
           ${disabled ? 'cursor-not-allowed opacity-50' : ''}
         `}
       >
@@ -61,16 +68,19 @@ export function Input({
           aria-invalid={error ? true : ariaInvalid}
           aria-describedby={describedBy || undefined}
           className={`
-            min-h-12 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-3
+            min-w-0 flex-1 rounded-none border-0 bg-transparent px-0
             text-brand placeholder:text-muted text-base outline-none
             disabled:text-muted disabled:cursor-not-allowed
+            ${isBoxed ? 'min-h-16 py-0 pr-10 pb-7' : 'min-h-12 py-3'}
             ${className}
           `}
         />
         {showCount && (
           <span
             id={countId}
-            className="text-field-border shrink-0 pr-2 text-base font-semibold tabular-nums"
+            className={`text-field-border shrink-0 text-sm font-semibold tabular-nums ${
+              isBoxed ? 'absolute right-3 bottom-3' : 'pr-2'
+            }`}
           >
             {count}/{maxLength}
           </span>
