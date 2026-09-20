@@ -27,7 +27,13 @@ const destinationOptions = [
 const navigationItems: BottomNavigationItem[] = [
   { id: 'home', label: '홈', icon: 'home' },
   { id: 'list', label: '목록', icon: 'list' },
-  { id: 'create', label: '새 기록 추가', icon: 'plus', action: true },
+  {
+    id: 'create',
+    label: '새 기록 추가',
+    icon: 'plus',
+    href: '/trips/create?step=name',
+    action: true,
+  },
   { id: 'search', label: '검색', icon: 'search' },
   { id: 'profile', label: '마이페이지', icon: 'profile' },
 ];
@@ -145,11 +151,7 @@ export function HomePage() {
         items={navigationItems}
         activeId={activeNavigation}
         onSelect={(id) => {
-          if (id === 'create') {
-            toast.info('새 기록 추가 버튼을 선택했어요.');
-            return;
-          }
-          setActiveNavigation(id);
+          if (id !== 'create') setActiveNavigation(id);
         }}
       />
     </main>
