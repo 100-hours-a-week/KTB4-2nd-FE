@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { refreshSession } from '@/shared/api/browser';
 import { Button } from '@/shared/ui/button';
 
-export function AuthRenewPage() {
+export function AuthRenewPage({ returnTo = '/' }: { returnTo?: string }) {
   const attempted = useRef(false);
   const [failed, setFailed] = useState(false);
 
@@ -15,7 +15,9 @@ export function AuthRenewPage() {
 
     try {
       await refreshSession();
-      window.location.replace('/?renewed=1');
+      const destination = new URL(returnTo, window.location.origin);
+      destination.searchParams.set('renewed', '1');
+      window.location.replace(`${destination.pathname}${destination.search}${destination.hash}`);
       return;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -26,7 +28,7 @@ export function AuthRenewPage() {
 
     // 서버·네트워크 오류일 때는 세션을 유지하고 사용자가 다시 시도할 수 있게 합니다.
     setFailed(true);
-  }, []);
+  }, [returnTo]);
 
   useEffect(() => {
     if (attempted.current) return;
