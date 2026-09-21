@@ -1,9 +1,12 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { completeSignupQueries } from '@/queryFactory';
+import type { ApiErrorResponse } from '@/shared/api';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { toast } from '@/shared/ui/toast';
@@ -25,14 +28,35 @@ export function NicknameForm() {
     mode: 'onChange',
   });
 
+  const router = useRouter();
   const nickname = useWatch({ control, name: 'nickname' });
   const signupMutation = useMutation({
     ...completeSignupQueries.complete(),
     onSuccess: () => {
       toast.success('닉네임이 저장되었어요.');
+      router.replace('/');
     },
-    onError: () => {
-      toast.error('잠시 후 다시 시도해주세요.');
+    onError: (error) => {
+      const code = axios.isAxiosError<ApiErrorResponse>(error)
+        ? error.response?.data?.message
+        : undefined;
+
+      switch (code) {
+        case 'INVALID_NICKNAME':
+          toast.error('사용할 수 없는 닉네임이에요.');
+          return;
+        // profileToken이 없거나 만료되면 카카오 로그인부터 다시 진행해야 합니다.
+        case 'ONBOARDING_TOKEN_INVALID_OR_EXPIRED':
+          toast.error('가입 시간이 만료되었어요. 다시 로그인해주세요.');
+          router.replace('/login');
+          return;
+        // 이미 가입을 마친 로그인 상태이므로 홈으로 보냅니다.
+        case 'ONBOARDING_TOKEN_REQUIRED':
+          router.replace('/');
+          return;
+        default:
+          toast.error('잠시 후 다시 시도해주세요.');
+      }
     },
   });
 

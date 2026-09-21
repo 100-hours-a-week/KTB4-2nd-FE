@@ -1,20 +1,26 @@
+import type { ApiResponse } from '@/shared/api';
+import { apiClient, fetchCsrfToken } from '@/shared/api/browser';
+
 export type CompleteSignupRequest = {
   nickname: string;
 };
 
 export type CompleteSignupResponse = {
+  userId: number;
   nickname: string;
+  expiresIn: number;
 };
 
-const MOCK_REQUEST_DELAY = 500;
-
-/**
- * 회원가입 API가 확정되면 이 함수의 내부 구현만 실제 HTTP 요청으로 교체합니다.
- */
+/** 로그인 교환 때 받은 profileToken 쿠키로 닉네임을 등록하고 로그인 세션을 발급받습니다. */
 export async function completeSignup(
   request: CompleteSignupRequest,
 ): Promise<CompleteSignupResponse> {
-  await new Promise((resolve) => window.setTimeout(resolve, MOCK_REQUEST_DELAY));
+  const csrfToken = await fetchCsrfToken();
+  const { data } = await apiClient.post<ApiResponse<CompleteSignupResponse>>(
+    '/users/me/profile',
+    request,
+    { headers: { 'X-CSRF-TOKEN': csrfToken }, skipAuthRefresh: true },
+  );
 
-  return { nickname: request.nickname };
+  return data.data;
 }
