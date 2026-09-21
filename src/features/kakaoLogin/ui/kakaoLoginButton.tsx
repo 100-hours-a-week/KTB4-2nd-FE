@@ -1,19 +1,14 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 
 import { kakaoLoginQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
 export function KakaoLoginButton() {
-  const router = useRouter();
   const loginMutation = useMutation({
     ...kakaoLoginQueries.start(),
-    onSuccess: () => {
-      router.push('/signup');
-    },
     onError: () => {
       toast.error('잠시 후 다시 시도해주세요.');
     },
