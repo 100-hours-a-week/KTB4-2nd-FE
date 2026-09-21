@@ -1,16 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { startKakaoLogin } from '../api/startKakaoLogin';
 import { KakaoLoginButton } from './kakaoLoginButton';
-
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push }),
-}));
 
 vi.mock('../api/startKakaoLogin', () => ({
   startKakaoLogin: vi.fn(),
@@ -33,21 +27,14 @@ function renderKakaoLoginButton() {
 }
 
 describe('KakaoLoginButton', () => {
-  it('임시 로그인이 성공하면 회원가입 화면으로 이동한다', async () => {
+  it('클릭하면 카카오 로그인을 시작하고 이동 전까지 로딩 상태를 유지한다', async () => {
     const user = userEvent.setup();
-    let resolveLogin!: () => void;
-    vi.mocked(startKakaoLogin).mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveLogin = resolve;
-        }),
-    );
+    vi.mocked(startKakaoLogin).mockReturnValue(new Promise<void>(() => {}));
     renderKakaoLoginButton();
 
     await user.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
 
+    expect(startKakaoLogin).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: '카카오 연결 중…' })).toBeDisabled();
-    act(() => resolveLogin());
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/signup'));
   });
 });
