@@ -48,3 +48,7 @@ export function getAccessibleTripCreateStep(
 
   return requestedStep;
 }
+
+export function isSearchablePlaceQuery(query: string) {
+  return /^[가-힣]+$/.test(query);
+}
