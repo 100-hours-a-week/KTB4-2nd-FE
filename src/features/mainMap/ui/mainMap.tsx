@@ -67,14 +67,14 @@ function makeMarkerContent(group: TripMarkerGroup, onClick: () => void) {
   button.className = 'trip-map-marker';
   button.setAttribute(
     'aria-label',
-    group.trips.length === 1
-      ? `${group.trips[0].title} 여행 보기`
-      : `겹친 여행 ${group.trips.length}개 보기`,
+    group.tripCount === 1 && group.trips[0]
+      ? `${group.trips[0].tripName} 여행 보기`
+      : `겹친 여행 ${group.tripCount}개 보기`,
   );
 
   const pin = document.createElement('span');
   pin.className = 'trip-map-pin';
-  const thumbnail = group.trips[0].thumbnailUrl;
+  const thumbnail = group.trips[0]?.thumbnailUrl;
   if (thumbnail) {
     const image = document.createElement('img');
     image.src = thumbnail;
@@ -88,13 +88,13 @@ function makeMarkerContent(group: TripMarkerGroup, onClick: () => void) {
 
   const label = document.createElement('span');
   label.className = 'trip-map-region';
-  label.textContent = group.trips[0].regionName;
+  label.textContent = group.regionName;
   button.append(label);
 
-  if (group.trips.length > 1) {
+  if (group.tripCount > 1) {
     const count = document.createElement('span');
     count.className = 'trip-map-count';
-    count.textContent = group.trips.length >= 99 ? '99+' : String(group.trips.length);
+    count.textContent = group.tripCount >= 99 ? '99+' : String(group.tripCount);
     button.append(count);
   }
 
@@ -148,7 +148,7 @@ export function MainMap({
     overlaysRef.current = groups.map((group) => {
       const position = new maps.LatLng(group.latitude, group.longitude);
       const content = makeMarkerContent(group, () => {
-        if (group.trips.length === 1) {
+        if (group.tripCount === 1 && group.trips[0]) {
           onTripSelectRef.current(group.trips[0].tripId);
           return;
         }
@@ -171,7 +171,7 @@ export function MainMap({
         clickable: true,
         xAnchor: 0.5,
         yAnchor: 1,
-        zIndex: group.trips.length > 1 ? 3 : 2,
+        zIndex: group.tripCount > 1 ? 3 : 2,
       });
     });
   }, []);
@@ -278,13 +278,12 @@ export function MainMap({
   const tripSignature = trips
     .map((trip) =>
       [
-        trip.tripId,
+        trip.regionCode,
         trip.latitude,
         trip.longitude,
-        trip.title,
         trip.regionName,
-        trip.thumbnailUrl,
-        trip.createdAt,
+        trip.tripCount,
+        ...trip.trips.flatMap((item) => [item.tripId, item.tripName, item.thumbnailUrl]),
       ].join(':'),
     )
     .join('|');
@@ -293,7 +292,7 @@ export function MainMap({
     const map = mapRef.current;
     const maps = window.kakao?.maps;
     if (!map || !maps) return;
-    fitMap(map, maps, tripsRef.current.filter(isValidPosition));
+    if (!interactedRef.current) fitMap(map, maps, tripsRef.current.filter(isValidPosition));
     drawMarkers();
     setOpenGroup(null);
   }, [tripSignature, drawMarkers]);
@@ -376,7 +375,7 @@ export function MainMap({
                 className="block min-h-10 w-full truncate rounded-lg px-3 py-2 text-left text-sm text-brand hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand"
                 onClick={() => onTripSelect(trip.tripId)}
               >
-                {trip.title}
+                {trip.tripName}
               </button>
             ))}
           </div>

@@ -1,29 +1,38 @@
-export type TripMapMarker = {
+export type TripMapTrip = {
   tripId: number;
-  title: string;
+  tripName: string;
+  thumbnailUrl: string | null;
+  attachmentCount: number;
+};
+
+export type TripMapMarker = {
+  regionCode: string;
+  regionName: string;
   latitude: number;
   longitude: number;
-  regionName: string;
-  thumbnailUrl?: string | null;
-  createdAt?: string;
+  tripCount: number;
+  trips: TripMapTrip[];
 };
 
 export type TripMarkerGroup = {
-  trips: TripMapMarker[];
+  markers: TripMapMarker[];
+  trips: TripMapTrip[];
+  tripCount: number;
+  regionName: string;
   latitude: number;
   longitude: number;
 };
 
 export function groupNearbyTripMarkers(
-  trips: TripMapMarker[],
-  project: (trip: TripMapMarker) => { x: number; y: number },
+  markers: TripMapMarker[],
+  project: (marker: TripMapMarker) => { x: number; y: number },
   radius = 72,
 ): TripMarkerGroup[] {
   const groups: TripMarkerGroup[] = [];
-  const positions = trips.map(project);
+  const positions = markers.map(project);
   const visited = new Set<number>();
 
-  for (let index = 0; index < trips.length; index += 1) {
+  for (let index = 0; index < markers.length; index += 1) {
     if (visited.has(index)) continue;
 
     const queue = [index];
@@ -34,7 +43,7 @@ export function groupNearbyTripMarkers(
       const current = queue.shift()!;
       members.push(current);
 
-      for (let candidate = 0; candidate < trips.length; candidate += 1) {
+      for (let candidate = 0; candidate < markers.length; candidate += 1) {
         if (visited.has(candidate)) continue;
         if (
           Math.hypot(
@@ -49,17 +58,15 @@ export function groupNearbyTripMarkers(
       }
     }
 
-    const orderedTrips = members
-      .map((member) => trips[member])
-      .sort((a, b) => {
-        const byDate = (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
-        return byDate || a.tripId - b.tripId;
-      });
+    const groupedMarkers = members.map((member) => markers[member]);
 
     groups.push({
-      trips: orderedTrips,
-      latitude: orderedTrips[0].latitude,
-      longitude: orderedTrips[0].longitude,
+      markers: groupedMarkers,
+      trips: groupedMarkers.flatMap((marker) => marker.trips),
+      tripCount: groupedMarkers.reduce((count, marker) => count + marker.tripCount, 0),
+      regionName: groupedMarkers[0].regionName,
+      latitude: groupedMarkers[0].latitude,
+      longitude: groupedMarkers[0].longitude,
     });
   }
 

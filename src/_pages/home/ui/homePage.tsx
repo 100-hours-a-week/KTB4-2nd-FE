@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
-import type { TripMapMarker } from '@/features/mainMap/model/tripMapMarker';
 import { forgetMapViewport, MainMap } from '@/features/mainMap/ui/mainMap';
+import { mainMapQueries } from '@/queryFactory';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
+import { toast } from '@/shared/ui/toast';
 
 const navigationItems: BottomNavigationItem[] = [
   { id: 'home', label: '홈', icon: 'home' },
@@ -21,9 +23,14 @@ const navigationItems: BottomNavigationItem[] = [
   { id: 'profile', label: '마이페이지', icon: 'profile', disabled: true },
 ];
 
-export function HomePage({ trips = [] }: { trips?: TripMapMarker[] }) {
+export function HomePage() {
   const router = useRouter();
   const [resetSignal, setResetSignal] = useState(0);
+  const { data: trips = [], isError } = useQuery(mainMapQueries.markers());
+
+  useEffect(() => {
+    if (isError) toast.error('여행을 가져오지 못했어요.');
+  }, [isError]);
 
   return (
     <main className="relative mx-auto h-dvh w-full max-w-[430px] overflow-hidden bg-app-background">
