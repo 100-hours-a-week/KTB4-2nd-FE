@@ -39,7 +39,7 @@ jobs:
           provenance: false
           tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           build-args: |
-            NEXT_PUBLIC_API_BASE_URL=https://yeodam-2gether.com
+            NEXT_PUBLIC_API_BASE_URL=https://yeodam-2gether.com/api
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -55,4 +55,3 @@ jobs:
             echo "FRONTEND_DIGEST=${{ steps.build.outputs.digest }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          
