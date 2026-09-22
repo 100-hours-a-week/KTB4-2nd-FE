@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import { kakaoLoginQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
@@ -13,6 +14,15 @@ export function KakaoLoginButton() {
       toast.error('잠시 후 다시 시도해주세요.');
     },
   });
+  const { reset } = loginMutation;
+
+  useEffect(() => {
+    const resetOnRestore = (event: PageTransitionEvent) => {
+      if (event.persisted) reset();
+    };
+    window.addEventListener('pageshow', resetOnRestore);
+    return () => window.removeEventListener('pageshow', resetOnRestore);
+  }, [reset]);
 
   return (
     <Button
