@@ -90,12 +90,24 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
 }
 
 function ImagePreview({ file }: { file: File }) {
-  const [url] = useState(() => URL.createObjectURL(file));
-  const [failed, setFailed] = useState(false);
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  useEffect(() => {
+    const previewUrl = URL.createObjectURL(file);
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setPreview({ file, url: previewUrl });
+    });
+    return () => {
+      active = false;
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [file]);
 
-  if (failed) {
+  const url = preview?.file === file ? preview.url : null;
+
+  if (url && failedUrl === url) {
     return (
       <div className="text-muted flex size-full flex-col items-center justify-center px-2 text-center text-[10px]">
         <span>미리보기 불가</span>
@@ -103,6 +115,8 @@ function ImagePreview({ file }: { file: File }) {
       </div>
     );
   }
+
+  if (!url) return null;
 
   return (
     <Image
@@ -112,7 +126,7 @@ function ImagePreview({ file }: { file: File }) {
       sizes="(max-width: 430px) 33vw, 130px"
       unoptimized
       className="object-cover"
-      onError={() => setFailed(true)}
+      onError={() => setFailedUrl(url)}
     />
   );
 }

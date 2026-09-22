@@ -1,23 +1,28 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import { kakaoLoginQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
 export function KakaoLoginButton() {
-  const router = useRouter();
   const loginMutation = useMutation({
     ...kakaoLoginQueries.start(),
-    onSuccess: () => {
-      router.push('/signup');
-    },
     onError: () => {
       toast.error('잠시 후 다시 시도해주세요.');
     },
   });
+  const { reset } = loginMutation;
+
+  useEffect(() => {
+    const resetOnRestore = (event: PageTransitionEvent) => {
+      if (event.persisted) reset();
+    };
+    window.addEventListener('pageshow', resetOnRestore);
+    return () => window.removeEventListener('pageshow', resetOnRestore);
+  }, [reset]);
 
   return (
     <Button

@@ -1,8 +1,7 @@
-const MOCK_LOGIN_DELAY = 500;
+import { API_BASE_URL } from '@/shared/api';
 
-/**
- * 카카오 OAuth API가 연결되면 이 함수에서 인증 URL로 이동하도록 교체합니다.
- */
-export async function startKakaoLogin(): Promise<void> {
-  await new Promise((resolve) => window.setTimeout(resolve, MOCK_LOGIN_DELAY));
+export function startKakaoLogin(): Promise<void> {
+  window.location.assign(new URL('auth/kakao/authorize', `${API_BASE_URL}/`));
+
+  return new Promise<void>(() => {});
 }
