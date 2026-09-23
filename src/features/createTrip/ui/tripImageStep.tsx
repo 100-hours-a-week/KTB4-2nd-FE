@@ -34,6 +34,9 @@ export function TripImageStep({ onBack }: TripImageStepProps) {
     }
 
     field.onChange(result.files);
+    if (result.duplicateCount > 0) {
+      toast.info(`중복 사진 ${result.duplicateCount}장은 제외했어요.`);
+    }
   };
 
   const removeFile = (targetIndex: number) => {
