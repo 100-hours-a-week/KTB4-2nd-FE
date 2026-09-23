@@ -40,6 +40,7 @@ describe('여행 생성 입력 검증', () => {
       getAccessibleTripCreateStep('images', {
         ...TRIP_CREATE_DEFAULT_VALUES,
         tripName: '제주 여행',
+        places: [],
       }),
     ).toBe('location');
   });

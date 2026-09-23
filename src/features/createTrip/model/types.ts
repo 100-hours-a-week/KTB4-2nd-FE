@@ -17,7 +17,8 @@ export type TripCreateFormValues = {
 
 export const TRIP_CREATE_DEFAULT_VALUES: TripCreateFormValues = {
   tripName: '',
-  places: [],
+  // TODO: 검색 API가 간헐적으로 동작하지 않아 임시로 추가했습니다. 안정화되면 제거하고 사용자 선택값만 사용합니다.
+  places: [{ regionCode: '41460', regionName: '경기도 용인시' }],
   startDate: '',
   endDate: '',
   attachments: [],
