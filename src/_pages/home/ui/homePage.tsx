@@ -20,7 +20,7 @@ const navigationItems: BottomNavigationItem[] = [
     action: true,
   },
   { id: 'search', label: '검색', icon: 'search', disabled: true },
-  { id: 'profile', label: '마이페이지', icon: 'profile', disabled: true },
+  { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 
 export function HomePage() {
