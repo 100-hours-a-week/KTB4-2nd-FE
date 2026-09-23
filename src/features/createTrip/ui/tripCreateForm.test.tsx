@@ -59,6 +59,15 @@ describe('TripCreateForm', () => {
     expect(await screen.findByDisplayValue('제주 여행')).toBeInTheDocument();
   });
 
+  it('장소 단계에 경기도 용인시를 기본 선택 태그로 표시한다', async () => {
+    renderTripCreateForm();
+
+    await moveToLocationStep();
+
+    expect(screen.getByRole('button', { name: '경기도 용인시 삭제' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '확인' })).toBeEnabled();
+  });
+
   it('여행지 검색 결과를 선택하면 선택 목록에 추가한다', async () => {
     vi.mocked(searchPlaces).mockResolvedValue([
       { regionCode: '50110', regionName: '제주특별자치도 제주시' },
