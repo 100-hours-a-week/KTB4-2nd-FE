@@ -14,12 +14,10 @@ import { toast } from '@/shared/ui/toast';
 export type MyPageUser = {
   nickname: string;
   oauthConnected: boolean;
-  /** 카카오 프로필 이미지. 없으면 기본 아이콘을 표시합니다. */
   profileImageUrl?: string | null;
 };
 
 export type MyPageProps = {
-  /** null이면 프로필을 불러오지 못한 상태로 보고 스켈레톤과 안내 토스트를 표시합니다. */
   user: MyPageUser | null;
   onLogout?: () => void;
   onWithdraw?: () => void;
@@ -29,7 +27,7 @@ const APP_VERSION = 'v1.0.0';
 
 const navigationItems: BottomNavigationItem[] = [
   { id: 'home', label: '홈', icon: 'home', href: '/' },
-  { id: 'list', label: '목록', icon: 'list', disabled: true },
+  { id: 'list', label: '목록', icon: 'list', href: '/trips' },
   {
     id: 'create',
     label: '새 기록 추가',

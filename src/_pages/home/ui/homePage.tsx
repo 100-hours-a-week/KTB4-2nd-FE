@@ -11,7 +11,7 @@ import { toast } from '@/shared/ui/toast';
 
 const navigationItems: BottomNavigationItem[] = [
   { id: 'home', label: '홈', icon: 'home' },
-  { id: 'list', label: '목록', icon: 'list', disabled: true },
+  { id: 'list', label: '목록', icon: 'list', href: '/trips' },
   {
     id: 'create',
     label: '새 기록 추가',
