@@ -4,14 +4,49 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import { ImageUploadField } from './imageUploadField';
 
+const { convertHeic } = vi.hoisted(() => ({ convertHeic: vi.fn() }));
+
+vi.mock('heic-to', () => ({ heicTo: convertHeic }));
+
 const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
 const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
 
 afterEach(() => {
-  if (originalCreateObjectURL) Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
+  vi.clearAllMocks();
+  if (originalCreateObjectURL)
+    Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
   else Reflect.deleteProperty(URL, 'createObjectURL');
-  if (originalRevokeObjectURL) Object.defineProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
+  if (originalRevokeObjectURL)
+    Object.defineProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
   else Reflect.deleteProperty(URL, 'revokeObjectURL');
+});
+
+it('HEIC 사진을 JPEG blob으로 변환해 미리보기에 사용한다', async () => {
+  const convertedBlob = new Blob(['jpeg-preview'], { type: 'image/jpeg' });
+  convertHeic.mockResolvedValue(convertedBlob);
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: vi.fn((blob: Blob) =>
+      blob === convertedBlob ? 'blob:http://localhost:3000/converted' : 'blob:original',
+    ),
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
+
+  const file = new File(['heic-photo'], 'photo.HEIC', { type: '' });
+  render(<ImageUploadField files={[file]} onSelect={vi.fn()} onRemove={vi.fn()} />);
+
+  expect(await screen.findByRole('img', { name: 'photo.HEIC' })).toHaveAttribute(
+    'src',
+    'blob:http://localhost:3000/converted',
+  );
+  expect(convertHeic).toHaveBeenCalledWith({
+    blob: file,
+    type: 'image/jpeg',
+    quality: 0.85,
+  });
 });
 
 it('Strict Mode에서도 사진 미리보기의 blob URL이 유효하다', async () => {
