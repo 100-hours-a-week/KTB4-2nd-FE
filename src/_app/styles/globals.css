@@ -11,9 +11,18 @@
   --field-border: #596b83;
   --muted: #64748b;
   --danger: #ff5257;
+  --danger-strong: #b64541;
+  --danger-strong-hover: #a03b37;
+  --danger-strong-active: #8d3430;
   --success: #15803d;
   --warning: #d97706;
+  --surface-subtle: #f5f7f9;
+  --surface-subtle-hover: #eef1f5;
+  --border-subtle: #e5e9ef;
   --control-radius: 8px;
+  --row-radius: 12px;
+  --card-radius: 16px;
+  --sheet-radius: 20px;
 }
 
 @theme inline {
@@ -27,9 +36,18 @@
   --color-field-border: var(--field-border);
   --color-muted: var(--muted);
   --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-strong-hover: var(--danger-strong-hover);
+  --color-danger-strong-active: var(--danger-strong-active);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-subtle-hover: var(--surface-subtle-hover);
+  --color-border-subtle: var(--border-subtle);
   --radius-control: var(--control-radius);
+  --radius-row: var(--row-radius);
+  --radius-card: var(--card-radius);
+  --radius-sheet: var(--sheet-radius);
   --font-sans: var(--font-suit);
 }
 
