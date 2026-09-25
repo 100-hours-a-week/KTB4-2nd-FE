@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { previewTrips, TripListPage } from '@/_pages/tripList';
+import { TripListPage } from '@/_pages/tripList';
 import { getCurrentUser } from '@/entities/user';
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default async function Page({
   const { renewed } = await searchParams;
 
   if (process.env.NODE_ENV === 'development') {
-    return <TripListPage initialTrips={previewTrips} />;
+    return <TripListPage />;
   }
 
   const session = await getCurrentUser();
@@ -29,5 +29,5 @@ export default async function Page({
     redirect('/login');
   }
 
-  return <TripListPage initialTrips={previewTrips} />;
+  return <TripListPage />;
 }

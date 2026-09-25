@@ -3,18 +3,19 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import {
+  toTripListSort,
+  useTripFavorite,
+  useTripList,
+  type TripListFilter,
+  type TripListItem,
+  type TripSortOrder,
+} from '@/features/tripList';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 
-import type { TripListItem, TripListViewState } from '../model/types';
-
-type TripSortOrder = 'newest' | 'oldest';
-
 export type TripListPageProps = {
-  initialTrips: TripListItem[];
-  viewState?: TripListViewState;
-  onRetry?: () => void;
   onTripSelect?: (tripId: number) => void;
 };
 
@@ -32,33 +33,28 @@ const navigationItems: BottomNavigationItem[] = [
   { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 
-export function TripListPage({
-  initialTrips,
-  viewState = 'ready',
-  onRetry,
-  onTripSelect,
-}: TripListPageProps) {
-  const [trips, setTrips] = useState(initialTrips);
+export function TripListPage({ onTripSelect }: TripListPageProps) {
   const [sortOrder, setSortOrder] = useState<TripSortOrder>('newest');
   const [favoriteOnly, setFavoriteOnly] = useState(false);
 
-  const visibleTrips = useMemo(() => {
-    const filteredTrips = favoriteOnly ? trips.filter((trip) => trip.favorite) : trips;
-    const direction = sortOrder === 'newest' ? -1 : 1;
-    return [...filteredTrips].sort(
-      (left, right) => left.startDate.localeCompare(right.startDate) * direction,
-    );
-  }, [favoriteOnly, sortOrder, trips]);
+  const filter = useMemo<TripListFilter>(
+    () => ({ sort: toTripListSort(sortOrder), favorite: favoriteOnly }),
+    [favoriteOnly, sortOrder],
+  );
+  const { trips, viewState, refetch } = useTripList(filter);
+  const { mutate: changeFavorite } = useTripFavorite(filter);
 
+  // 정렬은 목록 API의 sort 파라미터가 처리하므로 응답 순서를 그대로 유지합니다.
+  const visibleTrips = favoriteOnly ? trips.filter((trip) => trip.favorite) : trips;
   const favoriteTrips = favoriteOnly ? visibleTrips : visibleTrips.filter((trip) => trip.favorite);
   const remainingTrips = favoriteOnly ? [] : visibleTrips.filter((trip) => !trip.favorite);
 
   function toggleFavorite(tripId: number) {
-    setTrips((currentTrips) =>
-      currentTrips.map((trip) =>
-        trip.id === tripId ? { ...trip, favorite: !trip.favorite } : trip,
-      ),
-    );
+    const target = trips.find((trip) => trip.id === tripId);
+
+    if (!target) return;
+
+    changeFavorite({ tripId, favorite: !target.favorite });
   }
 
   return (
@@ -78,7 +74,7 @@ export function TripListPage({
       </header>
 
       {viewState === 'loading' || viewState === 'error' ? (
-        <TripListSkeleton showError={viewState === 'error'} onRetry={onRetry} />
+        <TripListSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
       ) : (
         <>
           {trips.length > 0 && (
