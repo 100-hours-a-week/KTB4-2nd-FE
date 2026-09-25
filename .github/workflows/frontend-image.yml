@@ -40,6 +40,7 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           build-args: |
             NEXT_PUBLIC_API_BASE_URL=https://yeodam-2gether.com/api
+            NEXT_PUBLIC_KAKAO_MAP_JS_KEY=${{ vars.NEXT_PUBLIC_KAKAO_MAP_JS_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
