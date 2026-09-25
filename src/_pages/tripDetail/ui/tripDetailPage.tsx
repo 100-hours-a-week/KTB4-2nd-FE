@@ -143,14 +143,7 @@ export function TripDetailPage({
         </button>
       </div>
 
-      <section aria-labelledby="place-folder-title" className="mt-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 id="place-folder-title" className="text-[15px] font-extrabold">
-            장소 {trip.folders.length}
-          </h2>
-          <span className="text-muted text-[10px]">가나다순</span>
-        </div>
-
+      <section aria-label="장소별 사진" className="mt-5">
         {viewState === 'ready' ? (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
             {trip.folders.map((folder) => (

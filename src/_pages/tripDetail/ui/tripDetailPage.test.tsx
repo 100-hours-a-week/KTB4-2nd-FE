@@ -14,8 +14,8 @@ describe('TripDetailPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: '제주도 가을 여행' })).toBeInTheDocument();
     expect(screen.getByText('서귀포시 외 2개')).toBeInTheDocument();
     expect(screen.getByText('사진 128장')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: '장소 6' })).toBeInTheDocument();
-    expect(screen.getByText('가나다순')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '장소별 사진' })).toBeInTheDocument();
+    expect(screen.queryByText('가나다순')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /서귀포/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /확인 필요/ })).toBeInTheDocument();
   });
