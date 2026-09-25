@@ -9,11 +9,17 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ loginTicket?: string | string[] }>;
+  searchParams: Promise<{
+    loginTicket?: string | string[];
+    error?: string | string[];
+  }>;
 }) {
-  const { loginTicket } = await searchParams;
+  const { loginTicket, error } = await searchParams;
 
   return (
-    <AuthCallbackPage loginTicket={Array.isArray(loginTicket) ? loginTicket[0] : loginTicket} />
+    <AuthCallbackPage
+      loginTicket={Array.isArray(loginTicket) ? loginTicket[0] : loginTicket}
+      errorCode={Array.isArray(error) ? error[0] : error}
+    />
   );
 }
