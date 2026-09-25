@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { useTripPlaceFolders, type TripDetail, type TripPlaceFolder } from '@/features/tripDetail';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
@@ -10,12 +11,8 @@ import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
 
-import type { TripDetail, TripDetailViewState, TripPlaceFolder } from '../model/types';
-
 export type TripDetailPageProps = {
   trip: TripDetail;
-  viewState?: TripDetailViewState;
-  onRetry?: () => void;
   onDelete?: (tripId: number) => void;
 };
 
@@ -38,12 +35,8 @@ const PERMISSION_OPTIONS = [
   { value: 'edit', label: '편집 허용' },
 ] as const;
 
-export function TripDetailPage({
-  trip,
-  viewState = 'ready',
-  onRetry,
-  onDelete,
-}: TripDetailPageProps) {
+export function TripDetailPage({ trip, onDelete }: TripDetailPageProps) {
+  const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -146,14 +139,14 @@ export function TripDetailPage({
       <section aria-label="장소별 사진" className="mt-5">
         {viewState === 'ready' ? (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
-            {trip.folders.map((folder) => (
+            {folders.map((folder) => (
               <li key={folder.id}>
                 <PlaceFolderCard folder={folder} onSelect={showUnsupportedToast} />
               </li>
             ))}
           </ul>
         ) : (
-          <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={onRetry} />
+          <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
         )}
       </section>
 
@@ -242,15 +235,7 @@ export function TripDetailPage({
           </ul>
 
           <Button
-            onClick={() => {
-              const email = inviteEmail.trim();
-              if (!email || sharedPeople.some((person) => person.email === email)) return;
-              setSharedPeople((people) => [
-                ...people,
-                { id: Date.now(), email, permission: 'read' },
-              ]);
-              setInviteEmail('');
-            }}
+            onClick={showUnsupportedToast}
             disabled={!inviteEmail.trim()}
             className="mt-5 w-full text-sm"
           >
