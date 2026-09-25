@@ -56,8 +56,11 @@ describe('TripDetailPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: '제주도 가을 여행' })).toBeInTheDocument();
     expect(screen.getByText('서귀포시 외 2개')).toBeInTheDocument();
     expect(screen.getByText('사진 128장')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: /서귀포/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /성산일출봉/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /서귀포 사진 35장 보기/ })).toHaveAttribute(
+      'href',
+      '/trips/7/places/1/photos?place=%EC%84%9C%EA%B7%80%ED%8F%AC&trip=%EC%A0%9C%EC%A3%BC%EB%8F%84%20%EA%B0%80%EC%9D%84%20%EC%97%AC%ED%96%89',
+    );
+    expect(screen.getByRole('link', { name: /성산일출봉 사진 15장 보기/ })).toBeInTheDocument();
     expect(getTripPlaceFolders).toHaveBeenCalledWith(7, null);
   });
 
@@ -72,7 +75,7 @@ describe('TripDetailPage', () => {
 
     renderTripDetailPage();
 
-    expect(await screen.findByRole('button', { name: /우도/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /우도/ })).toBeInTheDocument();
     expect(getTripPlaceFolders).toHaveBeenLastCalledWith(7, 'cursor-2');
   });
 
@@ -85,7 +88,7 @@ describe('TripDetailPage', () => {
     vi.mocked(getTripPlaceFolders).mockResolvedValue(folders);
     await userEvent.click(screen.getByRole('button', { name: '다시 시도' }));
 
-    expect(await screen.findByRole('button', { name: /서귀포/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /서귀포/ })).toBeInTheDocument();
   });
 
   it('공유 이메일 추가는 아직 지원하지 않는다고 알린다', async () => {

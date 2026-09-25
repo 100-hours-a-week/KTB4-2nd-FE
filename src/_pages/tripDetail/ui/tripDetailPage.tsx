@@ -141,7 +141,7 @@ export function TripDetailPage({ trip, onDelete }: TripDetailPageProps) {
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
             {folders.map((folder) => (
               <li key={folder.id}>
-                <PlaceFolderCard folder={folder} onSelect={showUnsupportedToast} />
+                <PlaceFolderCard trip={trip} folder={folder} />
               </li>
             ))}
           </ul>
@@ -278,17 +278,19 @@ function TripMeta({ trip }: { trip: TripDetail }) {
   );
 }
 
-function PlaceFolderCard({ folder, onSelect }: { folder: TripPlaceFolder; onSelect: () => void }) {
+function PlaceFolderCard({ trip, folder }: { trip: TripDetail; folder: TripPlaceFolder }) {
+  const href = `/trips/${trip.id}/places/${folder.id}/photos?place=${encodeURIComponent(folder.name)}&trip=${encodeURIComponent(trip.name)}`;
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <Link
+      href={href}
+      aria-label={`${folder.name} 사진 ${folder.photoCount}장 보기`}
       className="focus-visible:outline-brand block w-full cursor-pointer rounded-[14px] text-left transition-transform active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <FolderThumbnail folder={folder} />
       <strong className="mt-2 block truncate text-[13px] font-extrabold">{folder.name}</strong>
       <span className="text-muted mt-0.5 block text-[10px]">{folder.photoCount}장</span>
-    </button>
+    </Link>
   );
 }
 
