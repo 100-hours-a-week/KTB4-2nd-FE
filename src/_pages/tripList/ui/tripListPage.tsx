@@ -195,12 +195,20 @@ function TripCard({
 }) {
   return (
     <article className="border-border-subtle bg-surface relative flex min-h-[106px] overflow-hidden rounded-[18px] border p-3 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-transform active:scale-[0.99]">
-      <button
-        type="button"
-        aria-label={`${trip.name} 여행 상세 보기`}
-        onClick={() => onTripSelect?.(trip.id)}
-        className="absolute inset-0 cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
-      />
+      {onTripSelect ? (
+        <button
+          type="button"
+          aria-label={`${trip.name} 여행 상세 보기`}
+          onClick={() => onTripSelect(trip.id)}
+          className="absolute inset-0 cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        />
+      ) : (
+        <Link
+          href={`/trips/${trip.id}`}
+          aria-label={`${trip.name} 여행 상세 보기`}
+          className="absolute inset-0 cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        />
+      )}
       <TripThumbnail trip={trip} colorIndex={colorIndex} />
       <div className="pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 pr-7">
         <h3 className="truncate text-sm font-extrabold tracking-[-0.01em]">{trip.name}</h3>

@@ -10,6 +10,7 @@ export type DropdownMenuItem = {
   disabled?: boolean;
   destructive?: boolean;
   dividerBefore?: boolean;
+  badge?: string;
 };
 
 export type DropdownMenuProps = {
@@ -133,7 +134,12 @@ export function DropdownMenu({
                 `}
               >
                 {item.icon && <span className="inline-flex size-5 shrink-0">{item.icon}</span>}
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.badge && (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                    {item.badge}
+                  </span>
+                )}
               </button>
             </div>
           ))}

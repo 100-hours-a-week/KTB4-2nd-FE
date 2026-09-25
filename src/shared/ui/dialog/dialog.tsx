@@ -15,6 +15,8 @@ export type DialogProps = {
   children: ReactNode;
   /** 되돌릴 수 없는 작업을 확인할 때 alertdialog로 알립니다. */
   destructive?: boolean;
+  /** 입력 폼처럼 내용이 많은 다이얼로그는 넓은 크기를 사용합니다. */
+  size?: 'default' | 'wide';
 };
 
 export function Dialog({
@@ -24,6 +26,7 @@ export function Dialog({
   description,
   children,
   destructive = false,
+  size = 'default',
 }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -93,7 +96,7 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className="bg-surface rounded-sheet relative w-full max-w-[300px] px-5 pt-6 pb-5 text-center shadow-[0_20px_48px_rgb(2_23_48_/_0.28)]"
+        className={`bg-surface rounded-sheet relative w-full px-5 pt-6 pb-5 text-center shadow-[0_20px_48px_rgb(2_23_48_/_0.28)] ${size === 'wide' ? 'max-w-[380px]' : 'max-w-[300px]'}`}
       >
         <h2 id={titleId} className="text-brand text-base font-bold tracking-[-0.01em]">
           {title}
