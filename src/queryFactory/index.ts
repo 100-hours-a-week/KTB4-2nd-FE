@@ -2,3 +2,4 @@ export { completeSignupQueries } from './completeSignupQueries';
 export { createTripQueries } from './createTripQueries';
 export { kakaoLoginQueries } from './kakaoLoginQueries';
 export { mainMapQueries } from './mainMapQueries';
+export { tripListQueries } from './tripListQueries';

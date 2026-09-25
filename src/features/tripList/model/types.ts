@@ -14,3 +14,16 @@ export type TripListItem = {
 };
 
 export type TripListViewState = 'ready' | 'loading' | 'error';
+
+export type TripSortOrder = 'newest' | 'oldest';
+
+export type TripListSort = 'LATEST' | 'OLDEST';
+
+export type TripListFilter = {
+  sort: TripListSort;
+  favorite: boolean;
+};
+
+export function toTripListSort(sortOrder: TripSortOrder): TripListSort {
+  return sortOrder === 'newest' ? 'LATEST' : 'OLDEST';
+}
