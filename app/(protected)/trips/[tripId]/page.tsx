@@ -25,7 +25,6 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
     redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}`)}`);
   }
 
-  // 사진 정리가 끝나지 않으면 상세를 볼 수 없어 목록으로 되돌립니다.
   if (result.status === 'notReady') redirect('/trips');
 
   notFound();

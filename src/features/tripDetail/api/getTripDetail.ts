@@ -24,10 +24,6 @@ type TripDetailApiResponse = {
   isFavorite: boolean;
 };
 
-/**
- * 헤더의 여행 이름과 정보를 첫 페인트부터 보여줘야 해서 서버에서 조회합니다.
- * next/headers를 쓰므로 클라이언트 컴포넌트에서 import하면 안 됩니다.
- */
 export async function getTripDetail(tripId: number): Promise<TripDetailResult> {
   if (!(await cookies()).has('accessToken')) {
     return { status: 'unauthorized' };
@@ -48,7 +44,6 @@ export async function getTripDetail(tripId: number): Promise<TripDetailResult> {
       if (error.response?.status === 409) return { status: 'notReady' };
     }
 
-    // AxiosError에는 요청의 Cookie 헤더가 들어 있어 서버 로그에 그대로 남기지 않습니다.
     throw new Error('여행 상세를 불러오지 못했습니다.');
   }
 }
