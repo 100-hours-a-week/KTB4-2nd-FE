@@ -91,7 +91,7 @@ export function TripListPage({ onTripSelect }: TripListPageProps) {
             <div className="mt-4 space-y-5">
               {favoriteTrips.length > 0 && (
                 <TripGroup
-                  label={favoriteOnly ? '즐겨찾기한 여행' : undefined}
+                  label="즐겨찾기한 여행"
                   trips={favoriteTrips}
                   onFavoriteChange={toggleFavorite}
                   onTripSelect={onTripSelect}

@@ -109,8 +109,10 @@ describe('TripListPage', () => {
     renderTripListPage();
     await screen.findByRole('heading', { name: '파리 & 런던' });
 
-    const favoriteGroup = screen.getByRole('region', { name: '여행' });
+    const favoriteGroup = screen.getByRole('region', { name: '즐겨찾기한 여행' });
     const allTrips = screen.getByRole('region', { name: '전체 여행' });
+    expect(screen.getByRole('heading', { level: 2, name: '즐겨찾기한 여행' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: '전체 여행' })).toBeInTheDocument();
     expect(within(favoriteGroup).getAllByRole('heading', { level: 3 })).toHaveLength(2);
     expect(within(allTrips).getByRole('heading', { level: 3 })).toHaveTextContent('제주 한 바퀴');
   });
