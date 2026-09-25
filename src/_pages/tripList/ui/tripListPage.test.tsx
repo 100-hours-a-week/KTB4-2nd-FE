@@ -77,6 +77,10 @@ describe('TripListPage', () => {
     );
     expect(screen.getByText('파리, 런던')).toBeInTheDocument();
     expect(screen.getByText(/사진 341장/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '파리 & 런던 여행 상세 보기' })).toHaveAttribute(
+      'href',
+      '/trips/1',
+    );
     expect(getTrips).toHaveBeenCalledWith({ sort: 'LATEST', favorite: false, cursor: null });
   });
 
