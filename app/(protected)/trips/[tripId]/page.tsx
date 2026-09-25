@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
-import { createPreviewTripDetail, TripDetailPage } from '@/_pages/tripDetail';
-import { getCurrentUser } from '@/entities/user';
+import { TripDetailPage } from '@/_pages/tripDetail';
+import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
 
 export const metadata: Metadata = {
   title: '여행 상세 | 여담',
@@ -14,16 +14,19 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
 
   if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
 
-  if (process.env.NODE_ENV !== 'development') {
-    const session = await getCurrentUser();
+  // 상세 조회가 401을 돌려주므로 세션 확인을 따로 하지 않습니다.
+  const result = await getTripDetail(tripId);
 
-    if (session.status === 'unauthorized') {
-      redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}`)}`);
-    }
-
-    if (session.status === 'notFound') redirect('/login');
+  if (result.status === 'ok') {
+    return <TripDetailPage trip={result.trip} />;
   }
 
-  // TODO: 여행 상세 조회 API가 준비되면 tripId로 데이터를 조회합니다.
-  return <TripDetailPage trip={createPreviewTripDetail(tripId)} />;
+  if (result.status === 'unauthorized') {
+    redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}`)}`);
+  }
+
+  // 사진 정리가 끝나지 않으면 상세를 볼 수 없어 목록으로 되돌립니다.
+  if (result.status === 'notReady') redirect('/trips');
+
+  notFound();
 }
