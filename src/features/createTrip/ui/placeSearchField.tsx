@@ -3,6 +3,7 @@ import type { PlaceCandidate } from '../model/types';
 type PlaceSearchFieldProps = {
   query: string;
   candidates: PlaceCandidate[];
+  status: 'idle' | 'loading' | 'error' | 'success';
   selectedPlaces: PlaceCandidate[];
   onQueryChange: (value: string) => void;
   onSelect: (place: PlaceCandidate) => void;
@@ -11,6 +12,7 @@ type PlaceSearchFieldProps = {
 export function PlaceSearchField({
   query,
   candidates,
+  status,
   selectedPlaces,
   onQueryChange,
   onSelect,
@@ -36,7 +38,15 @@ export function PlaceSearchField({
 
       {query.trim() && (
         <div className="mt-4 overflow-hidden rounded-xl bg-slate-100" aria-live="polite">
-          {availableCandidates.length > 0 ? (
+          {status === 'idle' ? (
+            <p className="text-muted px-4 py-4 text-sm">띄어쓰기 없이 한글로 입력해주세요.</p>
+          ) : status === 'loading' ? (
+            <p className="text-muted px-4 py-4 text-sm">검색하고 있어요…</p>
+          ) : status === 'error' ? (
+            <p className="text-muted px-4 py-4 text-sm">
+              검색하지 못했어요. 잠시 후 다시 시도해주세요.
+            </p>
+          ) : availableCandidates.length > 0 ? (
             <ul aria-label="여행지 검색 결과">
               {availableCandidates.map((candidate) => (
                 <li key={candidate.regionCode}>

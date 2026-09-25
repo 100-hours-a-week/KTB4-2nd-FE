@@ -1,16 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useController, useFormContext } from 'react-hook-form';
 
+import { createTripQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
-import { getDevelopmentPlaceCandidates } from '../model/placeCandidateFixture';
 import type { PlaceCandidate, TripCreateFormValues } from '../model/types';
-import { TRIP_PLACE_MAX_COUNT, validateTripPlaces } from '../model/validation';
+import {
+  isSearchablePlaceQuery,
+  TRIP_PLACE_MAX_COUNT,
+  validateTripPlaces,
+} from '../model/validation';
 import { PlaceSearchField } from './placeSearchField';
 import { TripCreateStepLayout } from './tripCreateStepLayout';
+
+const PLACE_SEARCH_DEBOUNCE_MS = 300;
 
 type TripLocationStepProps = {
   onBack: () => void;
@@ -26,7 +33,19 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
     rules: { validate: validateTripPlaces },
   });
   const places = field.value;
-  const candidates = getDevelopmentPlaceCandidates(query);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearchQuery(query.trim()), PLACE_SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const placeSearch = useQuery({
+    ...createTripQueries.placeSearch(searchQuery),
+    enabled: isSearchablePlaceQuery(searchQuery),
+    placeholderData: keepPreviousData,
+  });
+  const isSearchable = /^[가-힣ㄱ-ㅎㅏ-ㅣ]+$/.test(query.trim());
 
   const selectPlace = (place: PlaceCandidate) => {
     if (places.some((selected) => selected.regionCode === place.regionCode)) return;
@@ -66,7 +85,16 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
     >
       <PlaceSearchField
         query={query}
-        candidates={candidates}
+        candidates={isSearchable ? (placeSearch.data ?? []) : []}
+        status={
+          !isSearchable
+            ? 'idle'
+            : placeSearch.isError
+              ? 'error'
+              : placeSearch.data === undefined
+                ? 'loading'
+                : 'success'
+        }
         selectedPlaces={places}
         onQueryChange={setQuery}
         onSelect={selectPlace}

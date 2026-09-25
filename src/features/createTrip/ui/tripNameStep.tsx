@@ -50,6 +50,11 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
         placeholder="여행 폴더 이름을 입력해주세요."
         maxLength={TRIP_NAME_MAX_LENGTH}
         characterCount={tripName.length}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+          event.preventDefault();
+          void moveNext();
+        }}
         error={errors.tripName?.message}
       />
     </TripCreateStepLayout>

@@ -11,6 +11,11 @@ export type CurrentUser = {
   nickname: string;
   oauthProvider: string;
   oauthConnected: boolean;
+  /**
+   * 카카오 프로필 이미지 URL.
+   * TODO: 백엔드 /users/me 응답의 실제 필드명 확인 필요. 값이 없으면 기본 아이콘으로 표시합니다.
+   */
+  profileImageUrl?: string | null;
 };
 
 export type CurrentUserResult =

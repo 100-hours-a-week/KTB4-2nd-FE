@@ -90,12 +90,32 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
 }
 
 function ImagePreview({ file }: { file: File }) {
-  const [url] = useState(() => URL.createObjectURL(file));
-  const [failed, setFailed] = useState(false);
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
+  const [failedFile, setFailedFile] = useState<File | null>(null);
 
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  useEffect(() => {
+    let active = true;
+    let previewUrl: string | null = null;
 
-  if (failed) {
+    void createPreviewBlob(file)
+      .then((previewBlob) => {
+        if (!active) return;
+        previewUrl = URL.createObjectURL(previewBlob);
+        setPreview({ file, url: previewUrl });
+      })
+      .catch(() => {
+        if (active) setFailedFile(file);
+      });
+
+    return () => {
+      active = false;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [file]);
+
+  const url = preview?.file === file ? preview.url : null;
+
+  if (failedFile === file) {
     return (
       <div className="text-muted flex size-full flex-col items-center justify-center px-2 text-center text-[10px]">
         <span>미리보기 불가</span>
@@ -103,6 +123,8 @@ function ImagePreview({ file }: { file: File }) {
       </div>
     );
   }
+
+  if (!url) return null;
 
   return (
     <Image
@@ -112,7 +134,29 @@ function ImagePreview({ file }: { file: File }) {
       sizes="(max-width: 430px) 33vw, 130px"
       unoptimized
       className="object-cover"
-      onError={() => setFailed(true)}
+      onError={() => setFailedFile(file)}
     />
   );
+}
+
+function isHeicFile(file: File) {
+  const mimeType = file.type.toLowerCase();
+  const fileName = file.name.toLowerCase();
+  return (
+    mimeType === 'image/heic' ||
+    mimeType === 'image/heif' ||
+    fileName.endsWith('.heic') ||
+    fileName.endsWith('.heif')
+  );
+}
+
+async function createPreviewBlob(file: File): Promise<Blob> {
+  if (!isHeicFile(file)) return file;
+
+  const { heicTo } = await import('heic-to');
+  return heicTo({
+    blob: file,
+    type: 'image/jpeg',
+    quality: 0.85,
+  });
 }

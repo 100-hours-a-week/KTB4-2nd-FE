@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -36,5 +36,20 @@ describe('KakaoLoginButton', () => {
 
     expect(startKakaoLogin).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: '카카오 연결 중…' })).toBeDisabled();
+  });
+
+  it('뒤로 가기로 페이지가 복원되면 버튼을 다시 누를 수 있게 한다', async () => {
+    const user = userEvent.setup();
+    vi.mocked(startKakaoLogin).mockReturnValue(new Promise<void>(() => {}));
+    renderKakaoLoginButton();
+
+    await user.click(screen.getByRole('button', { name: '카카오로 시작하기' }));
+    expect(screen.getByRole('button', { name: '카카오 연결 중…' })).toBeDisabled();
+
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+
+    expect(await screen.findByRole('button', { name: '카카오로 시작하기' })).toBeEnabled();
   });
 });

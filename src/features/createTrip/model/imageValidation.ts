@@ -13,20 +13,27 @@ function isSupportedImage(file: File) {
   );
 }
 
-export type ImageSelectionResult = { ok: true; files: File[] } | { ok: false; message: string };
+export type ImageSelectionResult =
+  { ok: true; files: File[]; duplicateCount: number } | { ok: false; message: string };
 
-/** 새로 선택한 묶음 전체를 검사하고 하나라도 잘못되면 기존 목록을 유지합니다. */
+function getFileIdentity(file: File) {
+  return `${file.name}\u0000${file.size}\u0000${file.lastModified}`;
+}
+
+function removeDuplicateImages(files: File[]) {
+  const identities = new Set<string>();
+  return files.filter((file) => {
+    const identity = getFileIdentity(file);
+    if (identities.has(identity)) return false;
+    identities.add(identity);
+    return true;
+  });
+}
+
 export function validateImageSelection(
   existingFiles: File[],
   selectedFiles: File[],
 ): ImageSelectionResult {
-  if (existingFiles.length + selectedFiles.length > TRIP_IMAGE_MAX_COUNT) {
-    return {
-      ok: false,
-      message: `사진은 최대 ${TRIP_IMAGE_MAX_COUNT}장까지 선택할 수 있어요.`,
-    };
-  }
-
   const unsupportedFile = selectedFiles.find((file) => !isSupportedImage(file));
   if (unsupportedFile) {
     return { ok: false, message: 'JPG, PNG, HEIC 형식의 사진만 선택할 수 있어요.' };
@@ -37,10 +44,21 @@ export function validateImageSelection(
     return { ok: false, message: '사진 한 장의 용량은 15MB를 넘을 수 없어요.' };
   }
 
-  const totalSize = [...existingFiles, ...selectedFiles].reduce((sum, file) => sum + file.size, 0);
+  const allFiles = [...existingFiles, ...selectedFiles];
+  const files = removeDuplicateImages(allFiles);
+  const duplicateCount = allFiles.length - files.length;
+
+  if (files.length > TRIP_IMAGE_MAX_COUNT) {
+    return {
+      ok: false,
+      message: `사진은 최대 ${TRIP_IMAGE_MAX_COUNT}장까지 선택할 수 있어요.`,
+    };
+  }
+
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   if (totalSize > TRIP_IMAGE_MAX_TOTAL_SIZE) {
     return { ok: false, message: '선택한 사진의 전체 용량은 3GB를 넘을 수 없어요.' };
   }
 
-  return { ok: true, files: [...existingFiles, ...selectedFiles] };
+  return { ok: true, files, duplicateCount };
 }
