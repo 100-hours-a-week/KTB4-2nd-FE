@@ -43,8 +43,6 @@ export function TripListPage({ onTripSelect }: TripListPageProps) {
   );
   const { trips, viewState, refetch } = useTripList(filter);
   const { mutate: changeFavorite } = useTripFavorite(filter);
-
-  // 정렬은 목록 API의 sort 파라미터가 처리하므로 응답 순서를 그대로 유지합니다.
   const visibleTrips = favoriteOnly ? trips.filter((trip) => trip.favorite) : trips;
   const favoriteTrips = favoriteOnly ? visibleTrips : visibleTrips.filter((trip) => trip.favorite);
   const remainingTrips = favoriteOnly ? [] : visibleTrips.filter((trip) => !trip.favorite);

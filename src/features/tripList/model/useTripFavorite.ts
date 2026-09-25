@@ -59,7 +59,6 @@ export function useTripFavorite(filter: TripListFilter) {
       toast.error('즐겨찾기를 변경하지 못했어요.');
     },
     onSuccess: () => {
-      // 즐겨찾기 여부가 서버 정렬에 반영되므로, 다시 들어올 때 최신 순서를 받도록 캐시만 만료시킵니다.
       void queryClient.invalidateQueries({
         queryKey: tripListQueries.allKeys(),
         refetchType: 'none',
