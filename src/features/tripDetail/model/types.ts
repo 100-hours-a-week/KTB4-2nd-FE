@@ -1,9 +1,11 @@
+export type TripPlaceFolderAccent = 'coast' | 'sunset' | 'island' | 'night' | 'field' | 'sky';
+
 export type TripPlaceFolder = {
   id: number;
   name: string;
   photoCount: number;
   thumbnailUrl?: string | null;
-  accent: 'coast' | 'sunset' | 'island' | 'night' | 'field' | 'sky';
+  accent: TripPlaceFolderAccent;
 };
 
 export type TripDetail = {
@@ -15,7 +17,10 @@ export type TripDetail = {
   nights: number;
   photoCount: number;
   reviewCount: number;
-  folders: TripPlaceFolder[];
 };
 
 export type TripDetailViewState = 'ready' | 'loading' | 'error';
+
+export type TripDetailResult =
+  | { status: 'ok'; trip: TripDetail }
+  | { status: 'unauthorized' | 'notFound' | 'notReady' };
