@@ -12,6 +12,9 @@ import {
   type TripMarkerGroup,
 } from '../model/tripMapMarker';
 
+const MARKER_POPUP_GAP = 8;
+const MARKER_POPUP_MAX_HEIGHT = 232;
+
 const KOREA_BOUNDS = { south: 33.05, west: 124.55, north: 38.65, east: 131.9 };
 const KOREA_CENTER = { latitude: 35.85, longitude: 128.2 };
 const MAP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_JS_KEY;
@@ -61,7 +64,21 @@ function fitMap(map: KakaoMap, maps: KakaoMaps, trips: TripMapMarker[]) {
   map.setBounds(bounds, 16, 16, 112, 16);
 }
 
-function makeMarkerContent(group: TripMarkerGroup, onClick: () => void) {
+/**
+ * 핀은 -45도 회전이라 버튼 레이아웃 박스보다 위아래로 더 튀어나옵니다.
+ * 팝업이 마커를 덮지 않도록 버튼과 핀을 합친 실제 표시 영역을 구합니다.
+ */
+function markerVisualBounds(marker: HTMLElement) {
+  const markerRect = marker.getBoundingClientRect();
+  const pinRect = marker.querySelector('.trip-map-pin')?.getBoundingClientRect();
+
+  return {
+    top: Math.min(markerRect.top, pinRect?.top ?? markerRect.top),
+    bottom: Math.max(markerRect.bottom, pinRect?.bottom ?? markerRect.bottom),
+  };
+}
+
+function makeMarkerContent(group: TripMarkerGroup, onClick: (marker: HTMLElement) => void) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'trip-map-marker';
@@ -98,8 +115,25 @@ function makeMarkerContent(group: TripMarkerGroup, onClick: () => void) {
     button.append(count);
   }
 
-  button.addEventListener('click', onClick);
+  button.addEventListener('click', () => onClick(button));
   return button;
+}
+
+function TripPopupThumbnail({
+  thumbnailUrl,
+  tripName,
+}: {
+  thumbnailUrl: string | null;
+  tripName: string;
+}) {
+  return (
+    <span
+      role="img"
+      aria-label={`${tripName} 대표 이미지`}
+      className="block size-10 shrink-0 rounded-full bg-slate-200 bg-cover bg-center"
+      style={thumbnailUrl ? { backgroundImage: `url(${JSON.stringify(thumbnailUrl)})` } : undefined}
+    />
+  );
 }
 
 export function MainMap({
@@ -147,20 +181,28 @@ export function MainMap({
 
     overlaysRef.current = groups.map((group) => {
       const position = new maps.LatLng(group.latitude, group.longitude);
-      const content = makeMarkerContent(group, () => {
+      const content = makeMarkerContent(group, (marker) => {
         if (group.tripCount === 1 && group.trips[0]) {
           onTripSelectRef.current(group.trips[0].tripId);
           return;
         }
 
+        const container = containerRef.current;
+        if (!container) return;
+
         const point = map.getProjection().containerPointFromCoords(position);
+        const containerTop = container.getBoundingClientRect().top;
+        const bounds = markerVisualBounds(marker);
+        const markerTop = bounds.top - containerTop;
+        const markerBottom = bounds.bottom - containerTop;
+        const placeBelow = markerTop < MARKER_POPUP_MAX_HEIGHT + MARKER_POPUP_GAP;
+
         setVisibleCount(5);
-        const width = containerRef.current?.clientWidth ?? 208;
         setOpenGroup({
           group,
-          x: Math.min(Math.max(point.x, 104), width - 104),
-          y: point.y < 260 ? point.y + 16 : point.y - 86,
-          placement: point.y < 260 ? 'below' : 'above',
+          x: Math.min(Math.max(point.x, 104), container.clientWidth - 104),
+          y: placeBelow ? markerBottom + MARKER_POPUP_GAP : markerTop - MARKER_POPUP_GAP,
+          placement: placeBelow ? 'below' : 'above',
         });
       });
 
@@ -372,10 +414,13 @@ export function MainMap({
               <button
                 key={trip.tripId}
                 type="button"
-                className="block min-h-10 w-full truncate rounded-lg px-3 py-2 text-left text-sm text-brand hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand"
+                className="flex min-h-14 w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-brand hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand"
                 onClick={() => onTripSelect(trip.tripId)}
               >
-                {trip.tripName}
+                <TripPopupThumbnail thumbnailUrl={trip.thumbnailUrl} tripName={trip.tripName} />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                  {trip.tripName}
+                </span>
               </button>
             ))}
           </div>

@@ -65,12 +65,14 @@ body {
 }
 
 .trip-map-marker {
+  --trip-map-pin-size: 56px;
+  /* 핀은 45도 돌린 정사각형이라 레이아웃 박스보다 위아래로 (√2 - 1) / 2 만큼 더 튀어나옵니다. */
+  --trip-map-pin-overflow: calc(var(--trip-map-pin-size) * 0.2072);
   position: relative;
   display: flex;
   min-width: 72px;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
   cursor: pointer;
   border: 0;
   background: transparent;
@@ -80,8 +82,8 @@ body {
 .trip-map-pin {
   position: relative;
   display: grid;
-  width: 56px;
-  height: 56px;
+  width: var(--trip-map-pin-size);
+  height: var(--trip-map-pin-size);
   place-items: center;
   overflow: hidden;
   border: 3px solid white;
@@ -89,6 +91,8 @@ body {
   background: linear-gradient(145deg, #e4e9e8, #7c8c8c);
   box-shadow: 0 3px 10px #02173055;
   transform: rotate(-45deg);
+  /* 아래를 향한 꼭짓점이 지역 라벨과 맞닿지 않도록 회전 여유분만큼 띄웁니다. */
+  margin-bottom: calc(var(--trip-map-pin-overflow) + 6px);
 }
 
 .trip-map-pin img {
@@ -115,7 +119,9 @@ body {
 .trip-map-count {
   position: absolute;
   top: -4px;
-  right: 1px;
+  /* 라벨 길이에 따라 마커 너비가 달라져도 배지가 핀에 붙어 있도록 핀 중심을 기준으로 잡습니다. */
+  left: calc(50% + 24px);
+  transform: translateX(-50%);
   display: grid;
   min-width: 22px;
   height: 22px;
