@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useLogout, useWithdraw } from '@/features/manageAccount';
 import { Avatar } from '@/shared/ui/avatar';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 import { Button } from '@/shared/ui/button';
@@ -19,8 +20,6 @@ export type MyPageUser = {
 
 export type MyPageProps = {
   user: MyPageUser | null;
-  onLogout?: () => void;
-  onWithdraw?: () => void;
 };
 
 const APP_VERSION = 'v1.0.0';
@@ -39,9 +38,11 @@ const navigationItems: BottomNavigationItem[] = [
   { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 
-export function MyPage({ user, onLogout, onWithdraw }: MyPageProps) {
+export function MyPage({ user }: MyPageProps) {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const failureNotifiedRef = useRef(false);
+  const { mutate: requestLogout, isPending: isLoggingOut } = useLogout();
+  const { mutate: requestWithdraw, isPending: isWithdrawing } = useWithdraw();
 
   useEffect(() => {
     if (user) {
@@ -68,7 +69,8 @@ export function MyPage({ user, onLogout, onWithdraw }: MyPageProps) {
 
         <Button
           variant="secondary"
-          onClick={onLogout}
+          onClick={() => requestLogout()}
+          isLoading={isLoggingOut}
           className="rounded-row mt-1 w-full text-[15px]"
         >
           로그아웃
@@ -103,16 +105,16 @@ export function MyPage({ user, onLogout, onWithdraw }: MyPageProps) {
           <Button
             variant="secondary"
             onClick={() => setWithdrawOpen(false)}
+            disabled={isWithdrawing}
             className="min-h-11 w-full px-0 text-sm"
           >
             취소
           </Button>
           <Button
             variant="destructive"
-            onClick={() => {
-              setWithdrawOpen(false);
-              onWithdraw?.();
-            }}
+            // 성공하면 로그인 화면으로 넘어가므로, 실패했을 때만 닫아 토스트가 가려지지 않게 합니다.
+            onClick={() => requestWithdraw(undefined, { onError: () => setWithdrawOpen(false) })}
+            isLoading={isWithdrawing}
             className="min-h-11 w-full px-0 text-sm"
           >
             탈퇴하기
