@@ -2,9 +2,12 @@ export type PhotoAccent = 'coast' | 'night' | 'blossom' | 'sunset' | 'island' | 
 
 export type PhotoListItem = {
   id: number;
-  capturedAt: string;
   thumbnailUrl?: string | null;
-  originalUrl?: string | null;
+  capturedAt?: string | null;
   accent: PhotoAccent;
   loadFailed?: boolean;
 };
+
+export type PhotoListViewState = 'ready' | 'loading' | 'error';
+
+export const BULK_DOWNLOAD_LIMIT = 200;

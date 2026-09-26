@@ -10,25 +10,34 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
+import {
+  usePhotoDelete,
+  usePhotoDownload,
+  usePhotoOriginal,
+  usePlacePhotos,
+  type PhotoAccent,
+  type PhotoListItem,
+} from '@/features/photoList';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
+import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
-
-import type { PhotoAccent, PhotoListItem } from '../model/types';
 
 const LONG_PRESS_DELAY_MS = 500;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
 export type PhotoListPageProps = {
   tripId: number;
+  tripPlaceId: number;
   tripName: string;
   placeName: string;
-  initialPhotos: PhotoListItem[];
 };
 
-export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: PhotoListPageProps) {
-  const [photos, setPhotos] = useState(initialPhotos);
+export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: PhotoListPageProps) {
+  const { photos, viewState, refetch } = usePlacePhotos(tripId, tripPlaceId);
+  const { mutate: requestDownload, isPending: isDownloading } = usePhotoDownload();
+  const { mutate: requestDelete, isPending: isDeleting } = usePhotoDelete(tripId, tripPlaceId);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
@@ -58,13 +67,14 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
     setSelectedIds((current) => new Set(current).add(photoId));
   }
 
-  function deletePhotos() {
-    const deleted = new Set(pendingDeleteIds);
-    setPhotos((current) => current.filter((photo) => !deleted.has(photo.id)));
+  function confirmDelete() {
+    requestDelete(pendingDeleteIds, {
+      onSuccess: () => {
+        setActivePhotoId(null);
+        leaveSelectionMode();
+      },
+    });
     setPendingDeleteIds([]);
-    setActivePhotoId(null);
-    leaveSelectionMode();
-    toast.success('사진이 삭제됐어요.');
   }
 
   return (
@@ -83,10 +93,14 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
       />
 
       <p className="text-muted mt-1 text-[11px]">
-        {tripName} · {selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장`}
+        {tripName}
+        {viewState === 'ready' &&
+          ` · ${selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장`}`}
       </p>
 
-      {photos.length === 0 ? (
+      {viewState !== 'ready' ? (
+        <PhotoGridSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
+      ) : photos.length === 0 ? (
         <EmptyPhotoList onAdd={() => toast.warning('아직 지원하지 않는 기능이에요.')} />
       ) : (
         <ul
@@ -115,8 +129,9 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
 
       {selectionMode && photos.length > 0 && (
         <SelectionActions
-          disabled={selectedCount === 0}
-          onDownload={() => toast.success('사진을 다운했어요.')}
+          disabled={selectedCount === 0 || isDownloading || isDeleting}
+          isDownloading={isDownloading}
+          onDownload={() => requestDownload([...selectedIds])}
           onDelete={() => setPendingDeleteIds([...selectedIds])}
         />
       )}
@@ -133,7 +148,7 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
             setActivePhotoId(photos[(activeIndex - 1 + photos.length) % photos.length].id)
           }
           onNext={() => setActivePhotoId(photos[(activeIndex + 1) % photos.length].id)}
-          onDownload={() => toast.success('사진을 다운했어요.')}
+          onDownload={() => requestDownload([activePhoto.id])}
           onDelete={() => setPendingDeleteIds([activePhoto.id])}
         />
       )}
@@ -159,7 +174,7 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
           </Button>
           <Button
             variant="destructive"
-            onClick={deletePhotos}
+            onClick={confirmDelete}
             className="min-h-11 w-full px-0 text-sm"
           >
             삭제하기
@@ -304,10 +319,12 @@ function PhotoListHeader({
 
 function SelectionActions({
   disabled,
+  isDownloading,
   onDownload,
   onDelete,
 }: {
   disabled: boolean;
+  isDownloading: boolean;
   onDownload: () => void;
   onDelete: () => void;
 }) {
@@ -322,6 +339,7 @@ function SelectionActions({
       <Button
         variant="secondary"
         disabled={disabled}
+        isLoading={isDownloading}
         onClick={onDownload}
         className="min-h-11 gap-2 px-2 text-sm"
       >
@@ -337,6 +355,33 @@ function SelectionActions({
       </Button>
     </div>,
     document.body,
+  );
+}
+
+function PhotoGridSkeleton({ showError, onRetry }: { showError: boolean; onRetry: () => void }) {
+  return (
+    <div role="status" aria-label="사진 불러오는 중">
+      <div className="mt-3 grid grid-cols-3 gap-1">
+        {Array.from({ length: 18 }).map((_, index) => (
+          <Skeleton key={index} className="aspect-square w-full rounded-[5px]" />
+        ))}
+      </div>
+      {showError && (
+        <div
+          role="alert"
+          className="bg-brand fixed right-4 bottom-[calc(20px+env(safe-area-inset-bottom))] left-4 z-30 mx-auto flex max-w-[398px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
+        >
+          <span className="flex-1">사진을 가져오지 못했어요.</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="cursor-pointer font-bold text-[#a9c8ff] hover:underline"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -378,6 +423,9 @@ function PhotoViewer({
   onDownload: () => void;
   onDelete: () => void;
 }) {
+  // 원본은 열었을 때만 발급받고, 도착하기 전에는 목록 썸네일을 그대로 보여줍니다.
+  const originalUrl = usePhotoOriginal(photo.id);
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -437,7 +485,10 @@ function PhotoViewer({
           <PreviousIcon />
         </button>
         <div className="aspect-square w-full overflow-hidden">
-          <PhotoArtwork photo={photo} large />
+          <PhotoArtwork
+            photo={originalUrl ? { ...photo, thumbnailUrl: originalUrl } : photo}
+            large
+          />
         </div>
         <button
           type="button"
@@ -452,7 +503,8 @@ function PhotoViewer({
       <footer className="px-5 pt-4 pb-[calc(28px+env(safe-area-inset-bottom))]">
         <strong className="block text-sm">{placeName}</strong>
         <span className="mt-1 block text-[11px] text-white/55">
-          {tripName} · {formatCapturedDate(photo.capturedAt)}
+          {tripName}
+          {photo.capturedAt && ` · ${formatCapturedDate(photo.capturedAt)}`}
         </span>
       </footer>
     </section>
