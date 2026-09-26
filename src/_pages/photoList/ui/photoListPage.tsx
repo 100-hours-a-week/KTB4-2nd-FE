@@ -8,6 +8,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
@@ -310,8 +311,14 @@ function SelectionActions({
   onDownload: () => void;
   onDelete: () => void;
 }) {
-  return (
-    <div className="bg-surface border-border-subtle fixed right-0 bottom-0 left-0 z-30 mx-auto grid w-full max-w-[430px] grid-cols-2 gap-2 border-t px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(2,23,48,0.08)]">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      role="toolbar"
+      aria-label="선택한 사진 작업"
+      className="bg-surface border-border-subtle fixed right-0 bottom-0 left-0 z-30 mx-auto grid w-full max-w-[430px] grid-cols-2 gap-2 border-t px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(2,23,48,0.08)]"
+    >
       <Button
         variant="secondary"
         disabled={disabled}
@@ -328,7 +335,8 @@ function SelectionActions({
       >
         <TrashIcon /> 삭제
       </Button>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

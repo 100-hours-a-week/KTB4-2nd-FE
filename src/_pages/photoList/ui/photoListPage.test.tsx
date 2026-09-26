@@ -32,6 +32,9 @@ describe('PhotoListPage', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', { name: '선택' }));
+    const actionBar = screen.getByRole('toolbar', { name: '선택한 사진 작업' });
+    expect(actionBar.parentElement).toBe(document.body);
+
     await user.click(screen.getByRole('button', { name: '1번째 사진 선택' }));
     expect(screen.getByRole('heading', { name: '1장 선택됨' })).toBeInTheDocument();
 
