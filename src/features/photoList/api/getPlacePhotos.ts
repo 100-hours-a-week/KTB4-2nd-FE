@@ -20,7 +20,6 @@ export type PlacePhotoPageResult = {
   nextCursor: string | null;
 };
 
-/** 응답에 색상 정보가 없어 목록 위치에 따라 기본 배경을 번갈아 적용합니다. */
 const PHOTO_ACCENTS: readonly PhotoAccent[] = [
   'coast',
   'night',

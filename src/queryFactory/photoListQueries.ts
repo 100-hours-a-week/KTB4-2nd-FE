@@ -19,7 +19,6 @@ export const photoListQueries = {
     queryOptions({
       queryKey: photoListQueries.originalKeys(photoId),
       queryFn: () => getPhotoOriginal(photoId),
-      // 발급된 원본 URL은 만료되므로 오래 재사용하지 않습니다.
       staleTime: 5 * 60_000,
     }),
 };

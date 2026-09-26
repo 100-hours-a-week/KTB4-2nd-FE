@@ -23,7 +23,6 @@ export function usePhotoDelete(tripId: number, tripPlaceId: number) {
       await deletePhotos(photoIds, csrfToken);
     },
     onSuccess: async () => {
-      // 삭제로 장수와 폴더 썸네일이 바뀌므로 목록과 여행 상세를 다시 받습니다.
       await queryClient.invalidateQueries({
         queryKey: photoListQueries.placePhotoKeys(tripId, tripPlaceId),
       });

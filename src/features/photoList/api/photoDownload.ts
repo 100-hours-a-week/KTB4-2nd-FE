@@ -19,7 +19,6 @@ export async function issuePhotoDownloadUrl(photoId: number): Promise<PhotoDownl
   return data.data;
 }
 
-/** 여러 장을 한 번에 받을 때는 백엔드가 zip 파일 URL을 발급합니다. */
 export async function issueBulkPhotoDownloadUrl(
   photoIds: number[],
   csrfToken: string,
