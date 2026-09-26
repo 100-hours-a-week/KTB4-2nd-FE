@@ -66,7 +66,6 @@ body {
 
 .trip-map-marker {
   --trip-map-pin-size: 56px;
-  /* 핀은 45도 돌린 정사각형이라 레이아웃 박스보다 위아래로 (√2 - 1) / 2 만큼 더 튀어나옵니다. */
   --trip-map-pin-overflow: calc(var(--trip-map-pin-size) * 0.2072);
   position: relative;
   display: flex;
@@ -119,7 +118,6 @@ body {
 .trip-map-count {
   position: absolute;
   top: -4px;
-  /* 라벨 길이에 따라 마커 너비가 달라져도 배지가 핀에 붙어 있도록 핀 중심을 기준으로 잡습니다. */
   left: calc(50% + 24px);
   transform: translateX(-50%);
   display: grid;

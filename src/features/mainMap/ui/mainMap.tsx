@@ -64,10 +64,6 @@ function fitMap(map: KakaoMap, maps: KakaoMaps, trips: TripMapMarker[]) {
   map.setBounds(bounds, 16, 16, 112, 16);
 }
 
-/**
- * 핀은 -45도 회전이라 버튼 레이아웃 박스보다 위아래로 더 튀어나옵니다.
- * 팝업이 마커를 덮지 않도록 버튼과 핀을 합친 실제 표시 영역을 구합니다.
- */
 function markerVisualBounds(marker: HTMLElement) {
   const markerRect = marker.getBoundingClientRect();
   const pinRect = marker.querySelector('.trip-map-pin')?.getBoundingClientRect();
