@@ -1,7 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
@@ -9,6 +15,9 @@ import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
 import { toast } from '@/shared/ui/toast';
 
 import type { PhotoAccent, PhotoListItem } from '../model/types';
+
+const LONG_PRESS_DELAY_MS = 500;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
 export type PhotoListPageProps = {
   tripId: number;
@@ -41,6 +50,11 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
       else next.add(photoId);
       return next;
     });
+  }
+
+  function selectPhotoFromLongPress(photoId: number) {
+    setSelectionMode(true);
+    setSelectedIds((current) => new Set(current).add(photoId));
   }
 
   function deletePhotos() {
@@ -82,22 +96,16 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
             const selected = selectedIds.has(photo.id);
             return (
               <li key={photo.id}>
-                <button
-                  type="button"
-                  aria-label={
-                    selectionMode
-                      ? `${index + 1}번째 사진 ${selected ? '선택 해제' : '선택'}`
-                      : `${index + 1}번째 사진 보기`
-                  }
-                  aria-pressed={selectionMode ? selected : undefined}
-                  onClick={() =>
+                <PhotoGridItem
+                  photo={photo}
+                  index={index}
+                  selectionMode={selectionMode}
+                  selected={selected}
+                  onActivate={() =>
                     selectionMode ? togglePhoto(photo.id) : setActivePhotoId(photo.id)
                   }
-                  className={`focus-visible:outline-brand relative block aspect-square w-full cursor-pointer overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1 ${selected ? 'ring-brand ring-2 ring-inset' : ''}`}
-                >
-                  <PhotoArtwork photo={photo} />
-                  {selectionMode && <SelectionMark selected={selected} />}
-                </button>
+                  onLongPress={() => selectPhotoFromLongPress(photo.id)}
+                />
               </li>
             );
           })}
@@ -158,6 +166,84 @@ export function PhotoListPage({ tripId, tripName, placeName, initialPhotos }: Ph
         </DialogActions>
       </Dialog>
     </main>
+  );
+}
+
+function PhotoGridItem({
+  photo,
+  index,
+  selectionMode,
+  selected,
+  onActivate,
+  onLongPress,
+}: {
+  photo: PhotoListItem;
+  index: number;
+  selectionMode: boolean;
+  selected: boolean;
+  onActivate: () => void;
+  onLongPress: () => void;
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPointRef = useRef({ x: 0, y: 0 });
+  const longPressTriggeredRef = useRef(false);
+
+  function cancelLongPress() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }
+
+  useEffect(() => cancelLongPress, []);
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (selectionMode || event.button !== 0) return;
+
+    cancelLongPress();
+    longPressTriggeredRef.current = false;
+    startPointRef.current = { x: event.clientX, y: event.clientY };
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      longPressTriggeredRef.current = true;
+      onLongPress();
+    }, LONG_PRESS_DELAY_MS);
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const movedX = Math.abs(event.clientX - startPointRef.current.x);
+    const movedY = Math.abs(event.clientY - startPointRef.current.y);
+    if (movedX > LONG_PRESS_MOVE_TOLERANCE_PX || movedY > LONG_PRESS_MOVE_TOLERANCE_PX) {
+      cancelLongPress();
+    }
+  }
+
+  function handleClick() {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    onActivate();
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={
+        selectionMode
+          ? `${index + 1}번째 사진 ${selected ? '선택 해제' : '선택'}`
+          : `${index + 1}번째 사진 보기`
+      }
+      aria-pressed={selectionMode ? selected : undefined}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={cancelLongPress}
+      onPointerCancel={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+      className={`focus-visible:outline-brand relative block aspect-square w-full touch-manipulation cursor-pointer overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1 ${selected ? 'ring-brand ring-2 ring-inset' : ''}`}
+    >
+      <PhotoArtwork photo={photo} />
+      {selectionMode && <SelectionMark selected={selected} />}
+    </button>
   );
 }
 

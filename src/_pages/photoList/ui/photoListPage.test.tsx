@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createPreviewPhotos } from '../model/previewPhotos';
 import { PhotoListPage } from './photoListPage';
@@ -17,6 +17,8 @@ function renderPage(photoCount = 6) {
 }
 
 describe('PhotoListPage', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('장소명과 사진 목록을 표시한다', () => {
     renderPage();
 
@@ -35,6 +37,24 @@ describe('PhotoListPage', () => {
 
     await user.click(screen.getByRole('button', { name: '전체 선택' }));
     expect(screen.getByRole('heading', { name: '6장 선택됨' })).toBeInTheDocument();
+  });
+
+  it('사진을 길게 누르면 선택 모드로 전환하고 누른 사진을 선택한다', () => {
+    vi.useFakeTimers();
+    renderPage();
+    const photo = screen.getByRole('button', { name: '1번째 사진 보기' });
+
+    fireEvent.pointerDown(photo, { pointerId: 1, pointerType: 'touch', button: 0 });
+    act(() => vi.advanceTimersByTime(600));
+    fireEvent.pointerUp(photo, { pointerId: 1, pointerType: 'touch', button: 0 });
+    fireEvent.click(photo);
+
+    expect(screen.getByRole('heading', { name: '1장 선택됨' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1번째 사진 선택 해제' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.queryByRole('dialog', { name: '사진 원본 보기' })).not.toBeInTheDocument();
   });
 
   it('선택한 사진을 확인 후 화면에서 삭제한다', async () => {
