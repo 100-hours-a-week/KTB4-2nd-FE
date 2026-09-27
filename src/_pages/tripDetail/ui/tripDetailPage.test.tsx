@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { AxiosError, AxiosHeaders } from 'axios';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripPlaceFolderPageResult } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripDetail } from '@/features/tripDetail/model/types';
@@ -10,6 +12,12 @@ import { toast } from '@/shared/ui/toast';
 
 import { TripDetailPage } from './tripDetailPage';
 
+const replace = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
+vi.mock('@/features/tripDetail/api/deleteTrip', () => ({ deleteTrip: vi.fn() }));
+vi.mock('@/shared/api/browser', () => ({
+  fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
+}));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn(),
 }));
@@ -34,12 +42,25 @@ const folders: TripPlaceFolderPageResult = {
   nextCursor: null,
 };
 
-function renderTripDetailPage(props: Partial<{ onDelete: (tripId: number) => void }> = {}) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function axiosErrorWithStatus(status: number) {
+  const config = { headers: new AxiosHeaders() };
+  return new AxiosError('failed', undefined, config, null, {
+    status,
+    statusText: '',
+    data: null,
+    headers: {},
+    config,
+  });
+}
+
+function renderTripDetailPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <TripDetailPage trip={trip} {...props} />
+      <TripDetailPage trip={trip} />
     </QueryClientProvider>,
   );
 }
@@ -48,6 +69,7 @@ describe('TripDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getTripPlaceFolders).mockResolvedValue(folders);
+    vi.mocked(deleteTrip).mockResolvedValue(undefined);
   });
 
   it('여행 정보와 장소 폴더 API 결과를 표시한다', async () => {
@@ -122,8 +144,7 @@ describe('TripDetailPage', () => {
     expect(screen.getByText(/사진 128장이 삭제되며/)).toBeInTheDocument();
   });
 
-  it('삭제 API가 없어 삭제 함수가 없으면 지원하지 않는다고 알린다', async () => {
-    const warning = vi.spyOn(toast, 'warning');
+  it('삭제를 확정하면 CSRF 토큰과 함께 삭제 API를 부르고 목록으로 보낸다', async () => {
     const user = userEvent.setup();
     renderTripDetailPage();
 
@@ -131,19 +152,32 @@ describe('TripDetailPage', () => {
     await user.click(screen.getByRole('menuitem', { name: '여행 삭제' }));
     await user.click(screen.getByRole('button', { name: '삭제하기' }));
 
-    expect(warning).toHaveBeenCalledWith('아직 지원하지 않는 기능이에요.');
+    await waitFor(() => expect(deleteTrip).toHaveBeenCalledWith(7, 'csrf-token'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips'));
   });
 
-  it('삭제 확인 시 전달받은 삭제 함수를 호출한다', async () => {
+  it('정리 중인 여행이면 삭제하지 않고 다이얼로그를 닫는다', async () => {
+    vi.mocked(deleteTrip).mockRejectedValue(axiosErrorWithStatus(409));
     const user = userEvent.setup();
-    const onDelete = vi.fn();
-    renderTripDetailPage({ onDelete });
+    renderTripDetailPage();
 
     await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
     await user.click(screen.getByRole('menuitem', { name: '여행 삭제' }));
     await user.click(screen.getByRole('button', { name: '삭제하기' }));
 
-    expect(onDelete).toHaveBeenCalledWith(7);
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('이미 삭제된 여행이면 목록으로 보낸다', async () => {
+    vi.mocked(deleteTrip).mockRejectedValue(axiosErrorWithStatus(404));
+    const user = userEvent.setup();
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
+    await user.click(screen.getByRole('menuitem', { name: '여행 삭제' }));
+    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips'));
   });
 });

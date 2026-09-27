@@ -22,5 +22,4 @@ export type TripDetail = {
 export type TripDetailViewState = 'ready' | 'loading' | 'error';
 
 export type TripDetailResult =
-  | { status: 'ok'; trip: TripDetail }
-  | { status: 'unauthorized' | 'notFound' | 'notReady' };
+  { status: 'ok'; trip: TripDetail } | { status: 'unauthorized' | 'notFound' | 'notReady' };
