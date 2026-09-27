@@ -1,24 +1,18 @@
 import type { ApiResponse } from '@/shared/api';
 import { apiClient } from '@/shared/api/browser';
 
-import type { TripProcessingStatus } from './getTripProcessingStatus';
-
-export type UploadInitialAttachmentsResponse = {
-  tripId: number;
-  status: TripProcessingStatus;
-  totalAttachments: number;
-};
+import type { TripProcessingStatusResponse } from './getTripProcessingStatus';
 
 export async function uploadInitialAttachments(
   tripId: number,
   files: File[],
   csrfToken: string,
   onUploadProgress?: (ratio: number) => void,
-): Promise<UploadInitialAttachmentsResponse> {
+): Promise<TripProcessingStatusResponse> {
   const formData = new FormData();
   files.forEach((file) => formData.append('attachments[]', file));
 
-  const { data } = await apiClient.post<ApiResponse<UploadInitialAttachmentsResponse>>(
+  const { data } = await apiClient.post<ApiResponse<TripProcessingStatusResponse>>(
     `/trips/${tripId}/initial-attachments`,
     formData,
     {
