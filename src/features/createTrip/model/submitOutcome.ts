@@ -7,10 +7,6 @@ export type TripCreateSubmitOutcome =
 
 const FALLBACK_FAILURE_MESSAGE = '사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.';
 
-/**
- * 사진 정리가 실패해도 업로드 API는 200으로 응답하고 본문 status에 결과를 담아줍니다.
- * HTTP 상태만 보면 실패를 성공으로 처리하게 되므로 status로 한 번 더 갈라줍니다.
- */
 export function getTripCreateSubmitOutcome(
   result: TripProcessingStatusResponse,
 ): TripCreateSubmitOutcome {

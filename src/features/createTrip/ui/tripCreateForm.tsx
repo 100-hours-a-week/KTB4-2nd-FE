@@ -91,7 +91,6 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
           return;
         }
 
-        // 실패한 여행에는 사진을 다시 올릴 수 있어, 화면에 머물러 재시도할 수 있게 둡니다.
         toast.error(outcome.message);
       },
       onError: (error) => {

@@ -3,10 +3,6 @@ import { apiClient } from '@/shared/api/browser';
 
 import type { TripProcessingStatusResponse } from './getTripProcessingStatus';
 
-/**
- * 분석이 실패해도 200으로 응답하고 본문의 status가 FAILED로 옵니다.
- * 호출한 쪽에서 status를 보고 성공 여부를 판단해야 합니다.
- */
 export async function uploadInitialAttachments(
   tripId: number,
   files: File[],
