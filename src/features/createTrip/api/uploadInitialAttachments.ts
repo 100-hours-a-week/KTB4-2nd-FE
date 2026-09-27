@@ -1,24 +1,22 @@
 import type { ApiResponse } from '@/shared/api';
 import { apiClient } from '@/shared/api/browser';
 
-import type { TripProcessingStatus } from './getTripProcessingStatus';
+import type { TripProcessingStatusResponse } from './getTripProcessingStatus';
 
-export type UploadInitialAttachmentsResponse = {
-  tripId: number;
-  status: TripProcessingStatus;
-  totalAttachments: number;
-};
-
+/**
+ * 분석이 실패해도 200으로 응답하고 본문의 status가 FAILED로 옵니다.
+ * 호출한 쪽에서 status를 보고 성공 여부를 판단해야 합니다.
+ */
 export async function uploadInitialAttachments(
   tripId: number,
   files: File[],
   csrfToken: string,
   onUploadProgress?: (ratio: number) => void,
-): Promise<UploadInitialAttachmentsResponse> {
+): Promise<TripProcessingStatusResponse> {
   const formData = new FormData();
   files.forEach((file) => formData.append('attachments[]', file));
 
-  const { data } = await apiClient.post<ApiResponse<UploadInitialAttachmentsResponse>>(
+  const { data } = await apiClient.post<ApiResponse<TripProcessingStatusResponse>>(
     `/trips/${tripId}/initial-attachments`,
     formData,
     {

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchCsrfToken } from '@/shared/api/browser';
 
 import { createTrip } from '../api/createTrip';
+import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
 import { uploadInitialAttachments } from '../api/uploadInitialAttachments';
 import type { TripCreateFormValues } from './types';
 import { useTripCreateSubmit } from './useTripCreateSubmit';
@@ -25,6 +26,12 @@ const values: TripCreateFormValues = {
   attachments: [photo],
 };
 
+function uploaded(
+  status: TripProcessingStatusResponse['status'] = 'COMPLETED',
+): TripProcessingStatusResponse {
+  return { tripId: 7, status, progress: null, currentStep: null, result: null, error: null };
+}
+
 function wrapper({ children }: PropsWithChildren) {
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
@@ -37,11 +44,7 @@ describe('useTripCreateSubmit', () => {
   });
 
   it('여행을 만든 뒤 같은 tripId로 사진을 올린다', async () => {
-    vi.mocked(uploadInitialAttachments).mockResolvedValue({
-      tripId: 7,
-      status: 'COMPLETED',
-      totalAttachments: 1,
-    });
+    vi.mocked(uploadInitialAttachments).mockResolvedValue(uploaded());
     const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
 
     await act(() => result.current.mutateAsync(values));
@@ -69,7 +72,7 @@ describe('useTripCreateSubmit', () => {
       .mockResolvedValueOnce('upload-csrf-token');
     vi.mocked(uploadInitialAttachments).mockImplementation(async (_tripId, _files, csrfToken) => {
       if (csrfToken === 'create-csrf-token') throw new Error('CSRF_TOKEN_INVALID');
-      return { tripId: 7, status: 'COMPLETED', totalAttachments: 1 };
+      return uploaded();
     });
     const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
 
@@ -88,7 +91,7 @@ describe('useTripCreateSubmit', () => {
   it('사진 업로드만 실패하면 다시 시도할 때 여행을 새로 만들지 않는다', async () => {
     vi.mocked(uploadInitialAttachments)
       .mockRejectedValueOnce(new Error('AI 분석 실패'))
-      .mockResolvedValueOnce({ tripId: 7, status: 'COMPLETED', totalAttachments: 1 });
+      .mockResolvedValueOnce(uploaded());
     const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
 
     await act(() => result.current.mutateAsync(values).catch(() => undefined));

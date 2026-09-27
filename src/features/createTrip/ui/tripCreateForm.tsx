@@ -10,6 +10,7 @@ import { Funnel } from '@/shared/lib/funnel';
 import { toast } from '@/shared/ui/toast';
 
 import { getTripCreateSubmitError } from '../model/submitError';
+import { getTripCreateSubmitOutcome } from '../model/submitOutcome';
 import {
   TRIP_CREATE_DEFAULT_VALUES,
   type TripCreateFormValues,
@@ -75,9 +76,23 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   const completeForm = (values: TripCreateFormValues) => {
     submit.mutate(values, {
-      onSuccess: () => {
-        toast.success('여행을 만들었어요.');
-        router.replace('/');
+      onSuccess: (result) => {
+        const outcome = getTripCreateSubmitOutcome(result);
+
+        if (outcome.kind === 'completed') {
+          toast.success(outcome.message);
+          router.replace(outcome.redirectTo);
+          return;
+        }
+
+        if (outcome.kind === 'canceled') {
+          toast.warning(outcome.message);
+          router.replace(outcome.redirectTo);
+          return;
+        }
+
+        // 실패한 여행에는 사진을 다시 올릴 수 있어, 화면에 머물러 재시도할 수 있게 둡니다.
+        toast.error(outcome.message);
       },
       onError: (error) => {
         const { message, step: stepToFix, resetTrip } = getTripCreateSubmitError(error);
