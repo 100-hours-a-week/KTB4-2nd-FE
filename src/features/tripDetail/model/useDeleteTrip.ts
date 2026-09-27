@@ -29,18 +29,15 @@ export function useDeleteTrip(tripId: number) {
       await deleteTrip(tripId, csrfToken);
     },
     onSuccess: () => {
-      // 목록·지도·상세·사진 캐시에 남은 여행을 모두 걷어냅니다.
       queryClient.removeQueries({ queryKey: tripDetailQueries.allKeys() });
       queryClient.removeQueries({ queryKey: photoListQueries.allKeys() });
       void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
       void queryClient.invalidateQueries({ queryKey: ['mainMap'] });
 
       toast.success('여행을 삭제했어요.');
-      // 삭제된 여행 화면으로 되돌아오지 않도록 현재 기록을 대체합니다.
       router.replace('/trips');
     },
     onError: (error) => {
-      // 이미 없는 여행이면 상세에 머무를 이유가 없습니다.
       if (isAxiosError(error) && error.response?.status === 404) {
         void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
         toast.error(getFailureMessage(error));
