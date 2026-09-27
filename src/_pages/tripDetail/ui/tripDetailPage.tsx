@@ -3,7 +3,12 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { useTripPlaceFolders, type TripDetail, type TripPlaceFolder } from '@/features/tripDetail';
+import {
+  useDeleteTrip,
+  useTripPlaceFolders,
+  type TripDetail,
+  type TripPlaceFolder,
+} from '@/features/tripDetail';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
@@ -13,7 +18,6 @@ import { toast } from '@/shared/ui/toast';
 
 export type TripDetailPageProps = {
   trip: TripDetail;
-  onDelete?: (tripId: number) => void;
 };
 
 type SharePermission = 'read' | 'edit';
@@ -35,8 +39,9 @@ const PERMISSION_OPTIONS = [
   { value: 'edit', label: '편집 허용' },
 ] as const;
 
-export function TripDetailPage({ trip, onDelete }: TripDetailPageProps) {
+export function TripDetailPage({ trip }: TripDetailPageProps) {
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
+  const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -167,20 +172,15 @@ export function TripDetailPage({ trip, onDelete }: TripDetailPageProps) {
           <Button
             variant="secondary"
             onClick={() => setDeleteOpen(false)}
+            disabled={isDeleting}
             className="min-h-11 w-full px-0 text-sm"
           >
             취소
           </Button>
           <Button
             variant="destructive"
-            onClick={() => {
-              setDeleteOpen(false);
-              if (onDelete) {
-                onDelete(trip.id);
-                return;
-              }
-              showUnsupportedToast();
-            }}
+            onClick={() => requestDelete(undefined, { onError: () => setDeleteOpen(false) })}
+            isLoading={isDeleting}
             className="min-h-11 w-full px-0 text-sm"
           >
             삭제하기
