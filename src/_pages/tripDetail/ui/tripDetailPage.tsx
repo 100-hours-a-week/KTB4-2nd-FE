@@ -12,6 +12,7 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
+import { PageHeader } from '@/shared/ui/pageHeader';
 import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
@@ -74,19 +75,12 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
 
   return (
     <main className="page-enter text-brand bg-surface relative mx-auto min-h-dvh w-full max-w-[430px] px-5 pt-[max(20px,env(safe-area-inset-top))] pb-10">
-      <header className="grid min-h-12 grid-cols-[40px_1fr_40px] items-center">
-        <Link
-          href="/trips"
-          aria-label="여행 목록으로 돌아가기"
-          className="hover:bg-brand/5 focus-visible:outline-brand grid size-10 place-items-center rounded-full transition-colors focus-visible:outline-2"
-        >
-          <BackIcon />
-        </Link>
-        <h1 className="truncate px-2 text-center text-[17px] font-extrabold tracking-[-0.02em]">
-          {trip.name}
-        </h1>
-        <DropdownMenu items={menuItems} label="여행 더보기 메뉴" />
-      </header>
+      <PageHeader
+        title={trip.name}
+        backHref="/trips"
+        backLabel="여행 목록으로 돌아가기"
+        action={<DropdownMenu items={menuItems} label="여행 더보기 메뉴" />}
+      />
 
       <TripMeta trip={trip} />
 
@@ -364,21 +358,6 @@ function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
 }
 
-function BackIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
 function PinIcon() {
   return (
     <svg
