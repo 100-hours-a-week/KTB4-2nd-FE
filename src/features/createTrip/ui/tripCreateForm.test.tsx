@@ -42,7 +42,29 @@ async function moveToLocationStep() {
 describe('TripCreateForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     window.history.replaceState(null, '', '/trips/create?step=name');
+  });
+
+  it('새로고침해도 앞서 입력한 여행 정보를 복구한다', async () => {
+    const user = userEvent.setup();
+    const firstRender = renderTripCreateForm();
+
+    await user.type(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.'), '제주 여행');
+    await user.click(screen.getByRole('button', { name: '확인' }));
+    expect(await screen.findByRole('heading', { name: /어디로/ })).toBeInTheDocument();
+    firstRender.unmount();
+
+    renderTripCreateForm();
+
+    expect(await screen.findByRole('heading', { name: /어디로/ })).toBeInTheDocument();
+
+    act(() => {
+      window.history.replaceState(null, '', '/trips/create?step=name');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    expect(await screen.findByDisplayValue('제주 여행')).toBeInTheDocument();
   });
 
   it('단계를 이동해도 앞 단계에서 입력한 값을 유지한다', async () => {

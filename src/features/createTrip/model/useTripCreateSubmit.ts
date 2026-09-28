@@ -68,17 +68,14 @@ export function useTripCreateSubmit() {
       await cancelTripProcessing(currentTripId, csrfToken);
     },
     onSuccess: () => {
-      // 취소된 여행은 CANCELED가 되어 재업로드가 막히므로 다음 시도는 새 여행으로 만듭니다.
       createdTripId.current = null;
       setTripId(null);
       toast.success('여행 생성을 취소했어요.');
     },
     onError: () => {
-      // 취소가 실패하면 여행이 아직 PROCESSING일 수 있어 ID를 남겨 재업로드가 되게 둡니다.
       toast.error('여행 생성을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
     },
     onSettled: () => {
-      // 성공이든 실패든 업로드는 이미 끊겨서 진행 화면에 머무를 수 없습니다.
       setUploadRatio(0);
       mutation.reset();
     },
@@ -86,7 +83,6 @@ export function useTripCreateSubmit() {
 
   const { mutate: requestCancel } = cancelMutation;
   const cancelProcessing = useCallback(() => {
-    // 취소를 누른 즉시 업로드를 끊어, 서버가 응답을 계속 붙들고 있지 않게 합니다.
     uploadAbortController.current?.abort();
     uploadAbortController.current = null;
     requestCancel();
