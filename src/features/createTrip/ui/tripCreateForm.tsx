@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useEffect } from 'react';
+import { type FormEvent, useEffect, useRef } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { createTripQueries } from '@/queryFactory';
@@ -11,6 +11,11 @@ import { toast } from '@/shared/ui/toast';
 
 import { getTripCreateSubmitError } from '../model/submitError';
 import { getTripCreateSubmitOutcome } from '../model/submitOutcome';
+import {
+  clearTripCreateDraft,
+  readTripCreateDraft,
+  saveTripCreateDraft,
+} from '../model/tripCreateDraft';
 import {
   TRIP_CREATE_DEFAULT_VALUES,
   type TripCreateFormValues,
@@ -31,6 +36,7 @@ type TripCreateFormProps = {
 
 export function TripCreateForm({ initialStep }: TripCreateFormProps) {
   const router = useRouter();
+  const draftRestored = useRef(false);
   const methods = useForm<TripCreateFormValues>({
     defaultValues: TRIP_CREATE_DEFAULT_VALUES,
     mode: 'onChange',
@@ -46,9 +52,26 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
   });
 
   useEffect(() => {
+    methods.reset(readTripCreateDraft());
+    draftRestored.current = true;
+  }, [methods]);
+
+  useEffect(() => {
+    if (!draftRestored.current) return;
+
     const accessibleStep = getAccessibleTripCreateStep(step, methods.getValues());
     if (accessibleStep !== step) replaceStep(accessibleStep);
   }, [methods, replaceStep, step]);
+
+  useEffect(() => {
+    if (!draftRestored.current) return;
+
+    return methods.subscribe({
+      name: ['tripName', 'places', 'startDate', 'endDate'],
+      formState: { values: true },
+      callback: () => saveTripCreateDraft(methods.getValues()),
+    });
+  }, [methods]);
 
   useEffect(() => {
     return methods.subscribe({
@@ -80,12 +103,14 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
         const outcome = getTripCreateSubmitOutcome(result);
 
         if (outcome.kind === 'completed') {
+          clearTripCreateDraft();
           toast.success(outcome.message);
           router.replace(outcome.redirectTo);
           return;
         }
 
         if (outcome.kind === 'canceled') {
+          clearTripCreateDraft();
           toast.warning(outcome.message);
           router.replace(outcome.redirectTo);
           return;
@@ -116,6 +141,8 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
       <TripProcessingView
         uploadRatio={submit.uploadRatio}
         processingStatus={isAnalyzing ? processingStatus.data : undefined}
+        onCancel={submit.cancelProcessing}
+        onContinueElsewhere={() => router.replace('/')}
       />
     );
   }

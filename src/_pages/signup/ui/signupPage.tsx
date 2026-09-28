@@ -1,32 +1,10 @@
-import Link from 'next/link';
-
 import { NicknameForm } from '@/features/completeSignup';
+import { PageHeader } from '@/shared/ui/pageHeader';
 
 export function SignupPage() {
   return (
     <main className="page-enter flex min-h-dvh flex-col px-6 pt-[max(12px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
-      <header className="flex h-12 items-center">
-        <Link
-          href="/login"
-          aria-label="이전 페이지로 이동"
-          className="hover:bg-brand/5 focus-visible:outline-brand -ml-2 inline-flex size-10 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          <svg
-            aria-hidden="true"
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-brand"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </Link>
-      </header>
+      <PageHeader backHref="/login" backLabel="이전 페이지로 이동" />
 
       <section className="flex flex-1 flex-col pt-14">
         <div>
