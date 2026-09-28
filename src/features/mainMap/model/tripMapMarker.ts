@@ -23,6 +23,10 @@ export type TripMarkerGroup = {
   longitude: number;
 };
 
+export function getTripMarkerThumbnail(group: TripMarkerGroup): string | null {
+  return group.trips.find((trip) => trip.thumbnailUrl)?.thumbnailUrl ?? null;
+}
+
 export function groupNearbyTripMarkers(
   markers: TripMapMarker[],
   project: (marker: TripMapMarker) => { x: number; y: number },

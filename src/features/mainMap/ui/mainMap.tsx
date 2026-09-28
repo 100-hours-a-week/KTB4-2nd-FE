@@ -7,6 +7,7 @@ import { toast } from '@/shared/ui/toast';
 
 import type { KakaoCustomOverlay, KakaoMap, KakaoMaps } from '../lib/kakaoMaps';
 import {
+  getTripMarkerThumbnail,
   groupNearbyTripMarkers,
   type TripMapMarker,
   type TripMarkerGroup,
@@ -87,7 +88,7 @@ function makeMarkerContent(group: TripMarkerGroup, onClick: (marker: HTMLElement
 
   const pin = document.createElement('span');
   pin.className = 'trip-map-pin';
-  const thumbnail = group.trips[0]?.thumbnailUrl;
+  const thumbnail = getTripMarkerThumbnail(group);
   if (thumbnail) {
     const image = document.createElement('img');
     image.src = thumbnail;
