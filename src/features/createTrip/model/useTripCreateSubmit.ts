@@ -8,8 +8,16 @@ import { toast } from '@/shared/ui/toast';
 
 import { cancelTripProcessing } from '../api/cancelTripProcessing';
 import { createTrip } from '../api/createTrip';
-import { uploadInitialAttachments } from '../api/uploadInitialAttachments';
+import {
+  splitIntoUploadBatches,
+  uploadInitialAttachmentBatch,
+} from '../api/uploadInitialAttachments';
+import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
 import type { TripCreateFormValues } from './types';
+
+function clampRatio(ratio: number) {
+  return Math.min(Math.max(ratio, 0), 1);
+}
 
 export function useTripCreateSubmit() {
   const createdTripId = useRef<number | null>(null);
@@ -43,14 +51,34 @@ export function useTripCreateSubmit() {
       const abortController = new AbortController();
       uploadAbortController.current = abortController;
 
+      // 사진은 10장씩 나눠 보내고, 마지막 묶음에서만 처리 상태가 돌아옵니다.
+      const batches = splitIntoUploadBatches(values.attachments);
+
       try {
-        return await uploadInitialAttachments(
-          currentTripId,
-          values.attachments,
-          uploadCsrfToken,
-          setUploadRatio,
-          abortController.signal,
-        );
+        let lastStatus: TripProcessingStatusResponse | null = null;
+
+        for (const [index, batch] of batches.entries()) {
+          const isLastBatch = index === batches.length - 1;
+
+          const status = await uploadInitialAttachmentBatch({
+            tripId: currentTripId,
+            files: batch,
+            batchNo: index + 1,
+            totalAttachmentCount: values.attachments.length,
+            complete: isLastBatch,
+            csrfToken: uploadCsrfToken,
+            // 묶음마다 0~1이 반복되므로 전체 묶음 수로 나눠 한 줄기로 이어 붙입니다.
+            onUploadProgress: (ratio) =>
+              setUploadRatio((index + clampRatio(ratio)) / batches.length),
+            signal: abortController.signal,
+          });
+
+          if (status) lastStatus = status;
+        }
+
+        if (lastStatus === null) throw new Error('사진 업로드 결과를 받지 못했습니다.');
+
+        return lastStatus;
       } finally {
         if (uploadAbortController.current === abortController) {
           uploadAbortController.current = null;
