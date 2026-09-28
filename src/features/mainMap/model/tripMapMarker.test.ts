@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupNearbyTripMarkers, type TripMapMarker } from './tripMapMarker';
+import {
+  getTripMarkerThumbnail,
+  groupNearbyTripMarkers,
+  type TripMapMarker,
+  type TripMarkerGroup,
+} from './tripMapMarker';
 
 const marker = (tripId: number, longitude: number, tripCount = 1): TripMapMarker => ({
   regionCode: String(tripId),
@@ -22,5 +27,31 @@ describe('groupNearbyTripMarkers', () => {
     expect(groups[0].tripCount).toBe(3);
     expect(groups[0].trips.map((item) => item.tripId)).toEqual([2, 1]);
     expect(groups[1].trips.map((item) => item.tripId)).toEqual([3]);
+  });
+});
+
+describe('getTripMarkerThumbnail', () => {
+  const group = (thumbnailUrls: Array<string | null>): TripMarkerGroup => ({
+    markers: [],
+    trips: thumbnailUrls.map((thumbnailUrl, index) => ({
+      tripId: index + 1,
+      tripName: `여행 ${index + 1}`,
+      thumbnailUrl,
+      attachmentCount: thumbnailUrl ? 1 : 0,
+    })),
+    tripCount: thumbnailUrls.length,
+    regionName: '제주',
+    latitude: 33.49,
+    longitude: 126.53,
+  });
+
+  it('첫 여행의 대표 이미지가 없어도 뒤 여행의 대표 이미지를 사용한다', () => {
+    expect(getTripMarkerThumbnail(group([null, 'https://cdn.test/trip-2.jpg']))).toBe(
+      'https://cdn.test/trip-2.jpg',
+    );
+  });
+
+  it('모든 여행에 대표 이미지가 없으면 빈 마커를 위해 null을 반환한다', () => {
+    expect(getTripMarkerThumbnail(group([null, null]))).toBeNull();
   });
 });
