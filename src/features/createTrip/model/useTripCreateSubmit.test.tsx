@@ -117,12 +117,103 @@ describe('useTripCreateSubmit', () => {
     expect(status.status).toBe('FAILED');
   });
 
+  it('중간 묶음이 실패하면 다음 시도는 실패한 묶음부터 이어 보낸다', async () => {
+    const photos = Array.from(
+      { length: 23 },
+      (_, index) => new File(['photo'], `photo-${index}.jpg`, { type: 'image/jpeg' }),
+    );
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('네트워크 끊김'))
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(uploaded());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() =>
+      result.current.mutateAsync({ ...values, attachments: photos }).catch(() => undefined),
+    );
+    await act(() => result.current.mutateAsync({ ...values, attachments: photos }));
+
+    const batchNumbers = vi
+      .mocked(uploadInitialAttachmentBatch)
+      .mock.calls.map(([params]) => params.batchNo);
+
+    expect(batchNumbers).toEqual([1, 2, 2, 3]);
+  });
+
+  it('이어 보낼 때 이미 올린 묶음만큼 진행률을 채운 상태로 시작한다', async () => {
+    const photos = Array.from(
+      { length: 20 },
+      (_, index) => new File(['photo'], `photo-${index}.jpg`, { type: 'image/jpeg' }),
+    );
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('네트워크 끊김'))
+      .mockImplementation(() => new Promise(() => undefined) as Promise<never>);
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() =>
+      result.current.mutateAsync({ ...values, attachments: photos }).catch(() => undefined),
+    );
+    act(() => result.current.mutate({ ...values, attachments: photos }));
+
+    await waitFor(() => expect(result.current.uploadRatio).toBe(0.5));
+  });
+
+  it('사진 선택이 바뀌면 이어 보내지 않고 처음부터 다시 보낸다', async () => {
+    const photos = Array.from(
+      { length: 20 },
+      (_, index) => new File(['photo'], `photo-${index}.jpg`, { type: 'image/jpeg' }),
+    );
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('네트워크 끊김'))
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(uploaded());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() =>
+      result.current.mutateAsync({ ...values, attachments: photos }).catch(() => undefined),
+    );
+    await act(() => result.current.mutateAsync({ ...values, attachments: [...photos].reverse() }));
+
+    const batchNumbers = vi
+      .mocked(uploadInitialAttachmentBatch)
+      .mock.calls.map(([params]) => params.batchNo);
+
+    expect(batchNumbers).toEqual([1, 2, 1, 2]);
+  });
+
+  it('여행 정보를 초기화하면 이어 보내기 지점도 함께 비운다', async () => {
+    const photos = Array.from(
+      { length: 20 },
+      (_, index) => new File(['photo'], `photo-${index}.jpg`, { type: 'image/jpeg' }),
+    );
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('네트워크 끊김'))
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(uploaded());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() =>
+      result.current.mutateAsync({ ...values, attachments: photos }).catch(() => undefined),
+    );
+    act(() => result.current.resetCreatedTrip());
+    await act(() => result.current.mutateAsync({ ...values, attachments: photos }));
+
+    const batchNumbers = vi
+      .mocked(uploadInitialAttachmentBatch)
+      .mock.calls.map(([params]) => params.batchNo);
+
+    expect(batchNumbers).toEqual([1, 2, 1, 2]);
+  });
+
   it('묶음 진행률을 전체 눈금으로 환산한다', async () => {
     const photos = Array.from(
       { length: 20 },
       (_, index) => new File(['photo'], `photo-${index}.jpg`, { type: 'image/jpeg' }),
     );
-    // 첫 묶음이 절반까지만 올라간 뒤 멈추게 해서 중간 진행률을 관찰한다.
     vi.mocked(uploadInitialAttachmentBatch).mockImplementation(
       async ({ onUploadProgress }) =>
         new Promise(() => {
@@ -133,7 +224,6 @@ describe('useTripCreateSubmit', () => {
 
     act(() => result.current.mutate({ ...values, attachments: photos }));
 
-    // 2묶음 중 1묶음이 50% → 전체 25%
     await waitFor(() => expect(result.current.uploadRatio).toBe(0.25));
   });
 
@@ -230,7 +320,6 @@ describe('useTripCreateSubmit', () => {
 
     act(() => result.current.cancelProcessing());
 
-    // 취소된 여행은 CANCELED라 재업로드가 막히므로 tripId를 비운다.
     await waitFor(() => expect(result.current.tripId).toBeNull());
   });
 

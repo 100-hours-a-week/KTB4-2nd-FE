@@ -19,8 +19,15 @@ function clampRatio(ratio: number) {
   return Math.min(Math.max(ratio, 0), 1);
 }
 
+function isSameAttachments(left: File[], right: File[]) {
+  return left.length === right.length && left.every((file, index) => file === right[index]);
+}
+
+type UploadProgressPoint = { attachments: File[]; completedBatches: number };
+
 export function useTripCreateSubmit() {
   const createdTripId = useRef<number | null>(null);
+  const uploadProgressPoint = useRef<UploadProgressPoint | null>(null);
   const uploadAbortController = useRef<AbortController | null>(null);
   const [tripId, setTripId] = useState<number | null>(null);
   const [uploadRatio, setUploadRatio] = useState(0);
@@ -44,6 +51,7 @@ export function useTripCreateSubmit() {
         );
         currentTripId = trip.tripId;
         createdTripId.current = currentTripId;
+        uploadProgressPoint.current = null;
         setTripId(currentTripId);
       }
 
@@ -51,27 +59,38 @@ export function useTripCreateSubmit() {
       const abortController = new AbortController();
       uploadAbortController.current = abortController;
 
-      // 사진은 10장씩 나눠 보내고, 마지막 묶음에서만 처리 상태가 돌아옵니다.
       const batches = splitIntoUploadBatches(values.attachments);
+
+      const resumePoint = uploadProgressPoint.current;
+      const startIndex =
+        resumePoint && isSameAttachments(resumePoint.attachments, values.attachments)
+          ? Math.min(resumePoint.completedBatches, batches.length)
+          : 0;
+
+      setUploadRatio(batches.length === 0 ? 0 : startIndex / batches.length);
 
       try {
         let lastStatus: TripProcessingStatusResponse | null = null;
 
-        for (const [index, batch] of batches.entries()) {
+        for (let index = startIndex; index < batches.length; index += 1) {
           const isLastBatch = index === batches.length - 1;
 
           const status = await uploadInitialAttachmentBatch({
             tripId: currentTripId,
-            files: batch,
+            files: batches[index],
             batchNo: index + 1,
             totalAttachmentCount: values.attachments.length,
             complete: isLastBatch,
             csrfToken: uploadCsrfToken,
-            // 묶음마다 0~1이 반복되므로 전체 묶음 수로 나눠 한 줄기로 이어 붙입니다.
             onUploadProgress: (ratio) =>
               setUploadRatio((index + clampRatio(ratio)) / batches.length),
             signal: abortController.signal,
           });
+
+          uploadProgressPoint.current = {
+            attachments: values.attachments,
+            completedBatches: index + 1,
+          };
 
           if (status) lastStatus = status;
         }
@@ -97,6 +116,7 @@ export function useTripCreateSubmit() {
     },
     onSuccess: () => {
       createdTripId.current = null;
+      uploadProgressPoint.current = null;
       setTripId(null);
       toast.success('여행 생성을 취소했어요.');
     },
@@ -118,6 +138,7 @@ export function useTripCreateSubmit() {
 
   const resetCreatedTrip = useCallback(() => {
     createdTripId.current = null;
+    uploadProgressPoint.current = null;
     setTripId(null);
   }, []);
 
