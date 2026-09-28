@@ -116,6 +116,8 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
       <TripProcessingView
         uploadRatio={submit.uploadRatio}
         processingStatus={isAnalyzing ? processingStatus.data : undefined}
+        onCancel={submit.cancelProcessing}
+        onContinueElsewhere={() => router.replace('/')}
       />
     );
   }

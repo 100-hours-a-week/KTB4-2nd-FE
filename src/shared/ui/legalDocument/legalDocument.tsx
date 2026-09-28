@@ -10,9 +10,7 @@ type LegalDocumentProps = PropsWithChildren<{
 export function LegalDocument({ title, effectiveDate, children }: LegalDocumentProps) {
   return (
     <main className="page-enter min-h-dvh px-6 pb-[max(40px,env(safe-area-inset-bottom))]">
-      <header className="bg-surface/95 sticky top-0 z-10 -mx-2 flex h-16 items-center backdrop-blur-sm">
-        <LegalBackButton />
-      </header>
+      <LegalBackButton />
 
       <article className="pt-5">
         <h1 className="text-brand text-[28px] leading-tight font-bold tracking-[-0.02em]">

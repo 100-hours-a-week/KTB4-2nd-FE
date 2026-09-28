@@ -8,6 +8,7 @@ export async function uploadInitialAttachments(
   files: File[],
   csrfToken: string,
   onUploadProgress?: (ratio: number) => void,
+  signal?: AbortSignal,
 ): Promise<TripProcessingStatusResponse> {
   const formData = new FormData();
   files.forEach((file) => formData.append('attachments[]', file));
@@ -18,6 +19,7 @@ export async function uploadInitialAttachments(
     {
       headers: { 'X-CSRF-TOKEN': csrfToken },
       timeout: 0,
+      signal,
       onUploadProgress: ({ progress }) => {
         if (progress !== undefined) onUploadProgress?.(progress);
       },
