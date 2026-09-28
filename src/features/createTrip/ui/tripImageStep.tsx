@@ -48,6 +48,7 @@ export function TripImageStep({ onBack }: TripImageStepProps) {
       title="사진을 올려주세요"
       description="무작위로 제출해주셔도 정리해드릴게요."
       onBack={onBack}
+      fixedFooter
       footer={
         <Button type="submit" className="w-full" disabled={field.value.length === 0}>
           여행 만들기
