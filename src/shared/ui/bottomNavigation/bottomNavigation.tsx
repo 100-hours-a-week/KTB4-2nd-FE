@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 
 export type BottomNavigationIcon = 'home' | 'list' | 'plus' | 'search' | 'profile';
 
@@ -20,16 +22,26 @@ export type BottomNavigationProps = {
   className?: string;
 };
 
+const subscribeToClient = () => () => undefined;
+
 export function BottomNavigation({
   items,
   activeId,
   onSelect,
   className = '',
 }: BottomNavigationProps) {
-  return (
+  const isClient = useSyncExternalStore(
+    subscribeToClient,
+    () => true,
+    () => false,
+  );
+
+  if (!isClient) return null;
+
+  return createPortal(
     <nav
       aria-label="하단 메뉴"
-      className={`bg-surface fixed right-0 bottom-0 left-0 z-40 mx-auto w-full max-w-[430px] border-t border-slate-200 shadow-[0_-4px_20px_rgba(2,23,48,0.05)] ${className}`}
+      className={`bg-surface fixed right-0 bottom-[var(--app-vertical-offset)] left-0 z-40 mx-auto w-full max-w-[430px] border-t border-slate-200 shadow-[0_-4px_20px_rgba(2,23,48,0.05)] ${className}`}
     >
       <div className="flex items-stretch px-2 pt-1 pb-[max(8px,env(safe-area-inset-bottom))]">
         {items.map((item) => {
@@ -73,7 +85,8 @@ export function BottomNavigation({
           );
         })}
       </div>
-    </nav>
+    </nav>,
+    document.body,
   );
 }
 
