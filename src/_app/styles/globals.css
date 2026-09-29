@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 
 :root {
+  /* OS가 다크 모드여도 입력창·체크박스·스크롤바 같은 브라우저 기본 UI를 밝게 그립니다. */
+  color-scheme: light;
+
   --app-max-height: 932px;
   --app-vertical-offset: max(0px, calc((100dvh - var(--app-max-height)) / 2));
   --app-background: #f4f6f8;
