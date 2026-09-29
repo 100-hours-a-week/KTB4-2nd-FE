@@ -57,7 +57,7 @@ export function MyPage({ user }: MyPageProps) {
   }, [user]);
 
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))]">
+    <main className="page-enter text-brand bg-surface relative mx-auto flex h-full min-h-0 max-h-full w-full max-w-[430px] flex-col overflow-y-auto px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))]">
       <h1 className="text-[26px] leading-tight font-extrabold tracking-[-0.03em]">마이페이지</h1>
 
       <section aria-label="계정 정보" className="mt-7 flex flex-col gap-2.5">
