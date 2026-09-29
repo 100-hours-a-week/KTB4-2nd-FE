@@ -33,7 +33,7 @@ export function HomePage() {
   }, [isError]);
 
   return (
-    <main className="relative mx-auto h-full max-h-full w-full max-w-[430px] overflow-hidden bg-app-background">
+    <main className="relative mx-auto h-full w-full max-w-[430px] overflow-hidden bg-app-background">
       <h1 className="sr-only">여담</h1>
       <MainMap
         trips={trips}

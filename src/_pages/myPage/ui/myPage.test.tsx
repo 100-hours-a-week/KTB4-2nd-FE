@@ -56,7 +56,7 @@ describe('MyPage', () => {
   it('사용자 정보와 계정 메뉴를 표시한다', () => {
     renderMyPage();
 
-    expect(screen.getByRole('main')).toHaveClass('h-full', 'max-h-full', 'overflow-y-auto');
+    expect(screen.getByRole('main')).toHaveClass('h-full', 'overflow-y-auto');
     expect(screen.getByRole('main')).not.toHaveClass('min-h-dvh');
     expect(screen.getByRole('heading', { name: '마이페이지' })).toBeInTheDocument();
     expect(screen.getByText('여행하는 혜준')).toBeInTheDocument();

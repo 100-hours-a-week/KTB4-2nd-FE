@@ -23,7 +23,7 @@ export function TripCreateStepLayout({
 }: TripCreateStepLayoutProps) {
   return (
     <main
-      className={`bg-surface mx-auto flex h-full min-h-0 max-h-full w-full max-w-[430px] flex-col overflow-hidden px-5 pt-[max(20px,env(safe-area-inset-top))] text-foreground ${fixedFooter ? 'pb-[calc(92px+env(safe-area-inset-bottom))]' : 'pb-[max(20px,env(safe-area-inset-bottom))]'}`}
+      className={`bg-surface mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden px-5 pt-[max(20px,env(safe-area-inset-top))] text-foreground ${fixedFooter ? 'pb-[calc(92px+env(safe-area-inset-bottom))]' : 'pb-[max(20px,env(safe-area-inset-bottom))]'}`}
     >
       <PageHeader backLabel="이전 단계로 이동" onBack={onBack} />
 

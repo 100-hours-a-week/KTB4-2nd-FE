@@ -150,7 +150,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   return (
     <FormProvider {...methods}>
-      <form className="h-full max-h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
+      <form className="h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
         <Funnel step={step}>
           <Funnel.Step name="name">
             <TripNameStep onBack={() => handleBack('name')} onNext={() => goToStep('location')} />
