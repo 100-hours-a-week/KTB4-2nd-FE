@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   useEffect,
   useMemo,
@@ -35,6 +35,7 @@ export type PhotoListPageProps = {
 };
 
 export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: PhotoListPageProps) {
+  const router = useRouter();
   const { photos, viewState, refetch } = usePlacePhotos(tripId, tripPlaceId);
   const { mutate: requestDownload, isPending: isDownloading } = usePhotoDownload();
   const { mutate: requestDelete, isPending: isDeleting } = usePhotoDelete(tripId, tripPlaceId);
@@ -77,14 +78,23 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
     setPendingDeleteIds([]);
   }
 
+  function handleBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.replace(`/trips/${tripId}`);
+  }
+
   return (
     <main className="page-enter text-brand bg-surface relative mx-auto min-h-dvh w-full max-w-[430px] px-4 pt-[max(20px,env(safe-area-inset-top))] pb-8">
       <PhotoListHeader
-        tripId={tripId}
         placeName={placeName}
         selectionMode={selectionMode}
         selectedCount={selectedCount}
         allSelected={allSelected}
+        onBack={handleBack}
         onEnterSelection={() => setSelectionMode(true)}
         onCancelSelection={leaveSelectionMode}
         onToggleAll={() =>
@@ -264,20 +274,20 @@ function PhotoGridItem({
 }
 
 function PhotoListHeader({
-  tripId,
   placeName,
   selectionMode,
   selectedCount,
   allSelected,
+  onBack,
   onEnterSelection,
   onCancelSelection,
   onToggleAll,
 }: {
-  tripId: number;
   placeName: string;
   selectionMode: boolean;
   selectedCount: number;
   allSelected: boolean;
+  onBack: () => void;
   onEnterSelection: () => void;
   onCancelSelection: () => void;
   onToggleAll: () => void;
@@ -293,13 +303,14 @@ function PhotoListHeader({
           취소
         </button>
       ) : (
-        <Link
-          href={`/trips/${tripId}`}
+        <button
+          type="button"
+          onClick={onBack}
           aria-label="여행 상세로 돌아가기"
           className="hover:bg-brand/5 focus-visible:outline-brand grid size-10 place-items-center rounded-full transition-colors focus-visible:outline-2"
         >
           <BackIcon />
-        </Link>
+        </button>
       )}
 
       <h1 className="truncate text-center text-[17px] font-extrabold">
