@@ -20,7 +20,7 @@ export function LegalBackButton() {
     <PageHeader
       backLabel="이전 페이지로 이동"
       onBack={handleBack}
-      className="bg-surface/95 sticky top-0 z-10 -mx-2 h-16 backdrop-blur-sm"
+      className="-mx-2 h-16"
     />
   );
 }
