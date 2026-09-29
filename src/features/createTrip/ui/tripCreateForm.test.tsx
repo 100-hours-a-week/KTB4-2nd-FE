@@ -7,8 +7,11 @@ import { createTrip } from '../api/createTrip';
 import { searchPlaces } from '../api/searchPlaces';
 import { TripCreateForm } from './tripCreateForm';
 
+const push = vi.fn();
+const replace = vi.fn();
+const back = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push, replace, back }),
 }));
 
 vi.mock('../api/searchPlaces', () => ({
@@ -44,6 +47,30 @@ describe('TripCreateForm', () => {
     vi.clearAllMocks();
     window.localStorage.clear();
     window.history.replaceState(null, '', '/trips/create?step=name');
+  });
+
+  it('첫 단계의 뒤로가기를 누르면 여행 생성 전에 보던 페이지로 돌아간다', async () => {
+    const user = userEvent.setup();
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    renderTripCreateForm();
+
+    await user.click(screen.getByRole('button', { name: '이전 단계로 이동' }));
+
+    expect(back).toHaveBeenCalledOnce();
+    expect(push).not.toHaveBeenCalled();
+    historyLength.mockRestore();
+  });
+
+  it('첫 단계에 직접 접속해 이전 기록이 없으면 메인으로 이동한다', async () => {
+    const user = userEvent.setup();
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+    renderTripCreateForm();
+
+    await user.click(screen.getByRole('button', { name: '이전 단계로 이동' }));
+
+    expect(back).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith('/');
+    historyLength.mockRestore();
   });
 
   it('새로고침해도 앞서 입력한 여행 정보를 복구한다', async () => {

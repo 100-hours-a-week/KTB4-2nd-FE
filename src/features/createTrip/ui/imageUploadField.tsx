@@ -19,10 +19,10 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
   };
 
   return (
-    <div>
+    <div className="flex h-full min-h-0 flex-col">
       <label
         htmlFor="trip-images"
-        className="border-field-border focus-within:outline-brand flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-5 text-center focus-within:outline-2 focus-within:outline-offset-2"
+        className="border-field-border focus-within:outline-brand flex min-h-28 shrink-0 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-5 text-center focus-within:outline-2 focus-within:outline-offset-2"
       >
         <span className="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500">
           <svg
@@ -58,7 +58,7 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
         </p>
       )}
 
-      <div className="text-muted mt-6 flex items-center justify-between text-xs">
+      <div className="text-muted mt-6 flex shrink-0 items-center justify-between text-xs">
         <span>선택된 사진</span>
         <span>
           {files.length}/{TRIP_IMAGE_MAX_COUNT}장
@@ -66,24 +66,30 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
       </div>
 
       {files.length > 0 && (
-        <ul className="mt-2 grid grid-cols-3 gap-1.5" aria-label="선택한 사진 목록">
-          {files.map((file, index) => (
-            <li
-              key={`${file.name}-${file.lastModified}-${index}`}
-              className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
-            >
-              <ImagePreview file={file} />
-              <button
-                type="button"
-                aria-label={`${file.name} 삭제`}
-                onClick={() => onRemove(index)}
-                className="absolute top-1 right-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-slate-700/65 text-lg leading-none text-white"
+        <div
+          role="region"
+          aria-label="선택한 사진 스크롤 영역"
+          className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1"
+        >
+          <ul className="grid grid-cols-3 gap-1.5" aria-label="선택한 사진 목록">
+            {files.map((file, index) => (
+              <li
+                key={`${file.name}-${file.lastModified}-${index}`}
+                className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
               >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
+                <ImagePreview file={file} />
+                <button
+                  type="button"
+                  aria-label={`${file.name} 삭제`}
+                  onClick={() => onRemove(index)}
+                  className="absolute top-1 right-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-slate-700/65 text-lg leading-none text-white"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

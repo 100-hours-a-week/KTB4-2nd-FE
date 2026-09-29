@@ -62,7 +62,7 @@ export function TripProcessingView(props: TripProcessingViewProps) {
   const canLeave = stage !== 'upload';
 
   return (
-    <main className="bg-surface text-foreground mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-5 pt-[max(20px,env(safe-area-inset-top))] pb-[max(20px,env(safe-area-inset-bottom))]">
+    <main className="bg-surface text-foreground mx-auto flex h-full min-h-0 max-h-full w-full max-w-[430px] flex-col overflow-hidden px-5 pt-[max(20px,env(safe-area-inset-top))] pb-[max(20px,env(safe-area-inset-bottom))]">
       <PageHeader
         title="여행 만들기"
         backLabel="이전 단계로 이동"
