@@ -334,7 +334,7 @@ function SelectionActions({
     <div
       role="toolbar"
       aria-label="선택한 사진 작업"
-      className="bg-surface border-border-subtle fixed right-0 bottom-0 left-0 z-30 mx-auto grid w-full max-w-[430px] grid-cols-2 gap-2 border-t px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(2,23,48,0.08)]"
+      className="bg-surface border-border-subtle fixed right-0 bottom-[var(--app-vertical-offset)] left-0 z-30 mx-auto grid w-full max-w-[430px] grid-cols-2 gap-2 border-t px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(2,23,48,0.08)]"
     >
       <Button
         variant="secondary"
@@ -369,7 +369,7 @@ function PhotoGridSkeleton({ showError, onRetry }: { showError: boolean; onRetry
       {showError && (
         <div
           role="alert"
-          className="bg-brand fixed right-4 bottom-[calc(20px+env(safe-area-inset-bottom))] left-4 z-30 mx-auto flex max-w-[398px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
+          className="bg-brand fixed right-4 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-4 z-30 mx-auto flex max-w-[398px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
           <span className="flex-1">사진을 가져오지 못했어요.</span>
           <button
@@ -454,7 +454,7 @@ function PhotoViewer({
       role="dialog"
       aria-modal="true"
       aria-label="사진 원본 보기"
-      className="fixed inset-0 z-40 mx-auto flex h-dvh w-full max-w-[430px] flex-col bg-[#070c11] text-white"
+      className="fixed top-[var(--app-vertical-offset)] right-0 bottom-[var(--app-vertical-offset)] left-0 z-40 mx-auto flex w-full max-w-[430px] flex-col bg-[#070c11] text-white"
     >
       <header className="grid min-h-16 grid-cols-[48px_1fr_48px] items-center px-3 pt-[env(safe-area-inset-top)]">
         <button

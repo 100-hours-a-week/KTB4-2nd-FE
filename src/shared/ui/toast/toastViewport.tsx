@@ -47,7 +47,7 @@ export function ToastViewport() {
   return (
     <div
       aria-label="알림"
-      className="pointer-events-none fixed top-6 left-1/2 z-[100] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-3"
+      className="pointer-events-none fixed top-[calc(var(--app-vertical-offset)+1.5rem)] left-1/2 z-[100] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-3"
     >
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">

@@ -328,7 +328,7 @@ function TripListSkeleton({ showError, onRetry }: { showError: boolean; onRetry?
       {showError && (
         <div
           role="alert"
-          className="bg-brand fixed right-5 bottom-[calc(88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
+          className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
           <ErrorIcon />
           <span className="flex-1">여행을 가져오지 못했어요.</span>

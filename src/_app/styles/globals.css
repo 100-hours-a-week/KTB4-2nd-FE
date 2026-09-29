@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 :root {
+  --app-max-height: 932px;
+  --app-vertical-offset: max(0px, calc((100dvh - var(--app-max-height)) / 2));
   --background: #ffffff;
   --app-background: #f4f6f8;
   --foreground: #171717;
@@ -145,7 +147,7 @@ body {
 }
 
 .page-enter {
-  animation: page-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: page-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
