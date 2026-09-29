@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import {
@@ -41,12 +42,22 @@ const PERMISSION_OPTIONS = [
 ] as const;
 
 export function TripDetailPage({ trip }: TripDetailPageProps) {
+  const router = useRouter();
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [sharedPeople, setSharedPeople] = useState(INITIAL_SHARED_PEOPLE);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/trips');
+  };
 
   const showUnsupportedToast = () => toast.warning('아직 지원하지 않는 기능이에요.');
   const menuItems: DropdownMenuItem[] = [
@@ -77,8 +88,8 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
     <main className="page-enter text-brand bg-surface relative mx-auto min-h-dvh w-full max-w-[430px] px-5 pt-[max(20px,env(safe-area-inset-top))] pb-10">
       <PageHeader
         title={trip.name}
-        backHref="/trips"
-        backLabel="여행 목록으로 돌아가기"
+        onBack={handleBack}
+        backLabel="이전 페이지로 돌아가기"
         action={<DropdownMenu items={menuItems} label="여행 더보기 메뉴" />}
       />
 
@@ -335,7 +346,7 @@ function PlaceFolderSkeleton({ showError, onRetry }: { showError: boolean; onRet
       {showError && (
         <div
           role="alert"
-          className="bg-brand fixed right-5 bottom-[calc(20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
+          className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
           <WarningIcon />
           <span className="flex-1">사진 로드에 실패했어요.</span>

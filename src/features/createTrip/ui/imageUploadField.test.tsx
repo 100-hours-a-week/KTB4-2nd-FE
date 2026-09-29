@@ -80,3 +80,25 @@ it('Strict Mode에서도 사진 미리보기의 blob URL이 유효하다', async
   unmount();
   expect(activeUrls.size).toBe(0);
 });
+
+it('선택한 사진 목록만 스크롤 영역으로 사용한다', () => {
+  const file = new File(['photo'], 'photo.jpg', { type: 'image/jpeg' });
+  render(<ImageUploadField files={[file]} onSelect={vi.fn()} onRemove={vi.fn()} />);
+
+  expect(screen.getByRole('region', { name: '선택한 사진 스크롤 영역' })).toHaveClass(
+    'overflow-y-auto',
+    'min-h-0',
+    'flex-1',
+  );
+  expect(screen.getByRole('list', { name: '선택한 사진 목록' })).toHaveClass(
+    'grid',
+    'grid-cols-3',
+  );
+  expect(screen.getByRole('list', { name: '선택한 사진 목록' })).not.toHaveClass(
+    'overflow-y-auto',
+    'flex-1',
+  );
+  expect(screen.getByText('눌러서 사진 선택하기').closest('label')).not.toHaveClass(
+    'overflow-y-auto',
+  );
+});

@@ -21,6 +21,7 @@ describe('PageHeader', () => {
     );
     expect(screen.getByRole('heading', { name: '제주 여행' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '더보기' })).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toHaveClass('sticky', 'top-0');
   });
 
   it('뒤로가기 버튼의 실행과 비활성 상태를 처리한다', async () => {

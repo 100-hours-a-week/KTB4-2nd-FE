@@ -84,7 +84,7 @@ export function Dialog({
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+    <div className="fixed top-[var(--app-vertical-offset)] right-0 bottom-[var(--app-vertical-offset)] left-0 z-50 flex items-center justify-center px-6">
       <div
         aria-hidden="true"
         onClick={onClose}

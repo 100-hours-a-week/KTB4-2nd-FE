@@ -13,7 +13,9 @@ import { toast } from '@/shared/ui/toast';
 import { TripDetailPage } from './tripDetailPage';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
+const push = vi.fn();
+const back = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push, back }) }));
 vi.mock('@/features/tripDetail/api/deleteTrip', () => ({ deleteTrip: vi.fn() }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
@@ -84,6 +86,30 @@ describe('TripDetailPage', () => {
     );
     expect(screen.getByRole('link', { name: /성산일출봉 사진 15장 보기/ })).toBeInTheDocument();
     expect(getTripPlaceFolders).toHaveBeenCalledWith(7, null);
+  });
+
+  it('헤더의 뒤로가기를 누르면 실제 이전 페이지로 돌아간다', async () => {
+    const user = userEvent.setup();
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '이전 페이지로 돌아가기' }));
+
+    expect(back).toHaveBeenCalledOnce();
+    expect(push).not.toHaveBeenCalled();
+    historyLength.mockRestore();
+  });
+
+  it('이전 방문 기록이 없으면 여행 목록으로 이동한다', async () => {
+    const user = userEvent.setup();
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '이전 페이지로 돌아가기' }));
+
+    expect(back).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith('/trips');
+    historyLength.mockRestore();
   });
 
   it('다음 커서가 있으면 장소 폴더를 이어서 모두 불러온다', async () => {

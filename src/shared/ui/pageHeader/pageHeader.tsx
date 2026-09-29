@@ -51,7 +51,7 @@ export function PageHeader({
 
   return (
     <header
-      className={`grid min-h-12 grid-cols-[44px_minmax(0,1fr)_44px] items-center ${className}`}
+      className={`bg-surface/95 sticky top-0 z-20 grid min-h-12 grid-cols-[44px_minmax(0,1fr)_44px] items-center backdrop-blur-sm ${className}`}
     >
       {backControl}
       {title === undefined ? (

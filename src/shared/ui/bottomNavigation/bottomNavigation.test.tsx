@@ -23,6 +23,18 @@ describe('BottomNavigation', () => {
     expect(onSelect).toHaveBeenCalledWith('list');
   });
 
+  it('스크롤 콘텐츠 밖의 body에 렌더링한다', () => {
+    render(
+      <div className="page-enter overflow-y-auto">
+        <BottomNavigation items={items} activeId="home" />
+      </div>,
+    );
+
+    expect(screen.getByRole('navigation', { name: '하단 메뉴' }).parentElement).toBe(
+      document.body,
+    );
+  });
+
   it('비활성 탭은 선택할 수 없다', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();

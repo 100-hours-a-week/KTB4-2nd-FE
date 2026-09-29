@@ -91,7 +91,8 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   const handleBack = (currentStep: TripCreateStep) => {
     if (currentStep === 'name') {
-      router.push('/');
+      if (window.history.length > 1) router.back();
+      else router.push('/');
       return;
     }
     goBack();
@@ -149,7 +150,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleFormSubmit} noValidate>
+      <form className="h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
         <Funnel step={step}>
           <Funnel.Step name="name">
             <TripNameStep onBack={() => handleBack('name')} onNext={() => goToStep('location')} />

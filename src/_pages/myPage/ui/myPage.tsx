@@ -50,14 +50,13 @@ export function MyPage({ user }: MyPageProps) {
       return;
     }
 
-    // user 객체가 새로 만들어져 effect가 다시 실행돼도 토스트가 쌓이지 않게 합니다.
     if (failureNotifiedRef.current) return;
     failureNotifiedRef.current = true;
     toast.error('잠시 후 다시 시도해주세요.');
   }, [user]);
 
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))]">
+    <main className="page-enter text-brand bg-surface relative mx-auto flex h-full w-full max-w-107.5 flex-col overflow-y-auto px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))]">
       <h1 className="text-[26px] leading-tight font-extrabold tracking-[-0.03em]">마이페이지</h1>
 
       <section aria-label="계정 정보" className="mt-7 flex flex-col gap-2.5">
@@ -112,7 +111,6 @@ export function MyPage({ user }: MyPageProps) {
           </Button>
           <Button
             variant="destructive"
-            // 성공하면 로그인 화면으로 넘어가므로, 실패했을 때만 닫아 토스트가 가려지지 않게 합니다.
             onClick={() => requestWithdraw(undefined, { onError: () => setWithdrawOpen(false) })}
             isLoading={isWithdrawing}
             className="min-h-11 w-full px-0 text-sm"
