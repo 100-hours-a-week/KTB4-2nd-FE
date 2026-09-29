@@ -223,8 +223,10 @@ export function MainMap({
 
     maps.load(() => {
       if (!active || !containerRef.current) return;
+      const container = containerRef.current;
+      container.replaceChildren();
 
-      const map = new maps.Map(containerRef.current, {
+      const map = new maps.Map(container, {
         center: new maps.LatLng(KOREA_CENTER.latitude, KOREA_CENTER.longitude),
         level: 12,
       });
@@ -234,37 +236,35 @@ export function MainMap({
 
       const validTrips = tripsRef.current.filter(isValidPosition);
       const savedViewport = rememberedViewport;
-      if (savedViewport) {
-        map.setCenter(new maps.LatLng(savedViewport.latitude, savedViewport.longitude));
-        map.setLevel(savedViewport.level);
-        interactedRef.current = true;
-      } else {
-        fitMap(map, maps, validTrips);
-      }
 
       const onIdle = () => {
+        if (!container.isConnected || container.clientWidth === 0 || container.clientHeight === 0)
+          return;
+
         const center = map.getCenter();
-        rememberedViewport = {
-          latitude: center.getLat(),
-          longitude: center.getLng(),
-          level: map.getLevel(),
-        };
+        if (interactedRef.current) {
+          rememberedViewport = {
+            latitude: center.getLat(),
+            longitude: center.getLng(),
+            level: map.getLevel(),
+          };
+        }
         setOpenGroup(null);
         drawMarkers();
       };
       const onMapClick = () => setOpenGroup(null);
       maps.event.addListener(map, 'idle', onIdle);
       maps.event.addListener(map, 'click', onMapClick);
-      drawMarkers();
-      setMapStatus('ready');
 
-      const container = containerRef.current;
       const markInteracted = () => {
         interactedRef.current = true;
       };
       container.addEventListener('pointerdown', markInteracted);
       container.addEventListener('wheel', markInteracted);
       const resizeObserver = new ResizeObserver(() => {
+        if (!container.isConnected || container.clientWidth === 0 || container.clientHeight === 0)
+          return;
+
         const center = map.getCenter();
         map.relayout();
         if (interactedRef.current) map.setCenter(center);
@@ -272,6 +272,21 @@ export function MainMap({
         drawMarkers();
       });
       resizeObserver.observe(container);
+
+      const readyFrame = requestAnimationFrame(() => {
+        if (!active || mapRef.current !== map) return;
+
+        map.relayout();
+        if (savedViewport) {
+          map.setCenter(new maps.LatLng(savedViewport.latitude, savedViewport.longitude));
+          map.setLevel(savedViewport.level);
+          interactedRef.current = true;
+        } else {
+          fitMap(map, maps, validTrips);
+        }
+        drawMarkers();
+        setMapStatus('ready');
+      });
 
       if (validTrips.length === 0 && !savedViewport && navigator.permissions) {
         void navigator.permissions
@@ -296,11 +311,13 @@ export function MainMap({
       }
 
       cleanupRef.current = () => {
+        cancelAnimationFrame(readyFrame);
         resizeObserver.disconnect();
         container.removeEventListener('pointerdown', markInteracted);
         container.removeEventListener('wheel', markInteracted);
         maps.event.removeListener(map, 'idle', onIdle);
         maps.event.removeListener(map, 'click', onMapClick);
+        container.replaceChildren();
       };
     });
 

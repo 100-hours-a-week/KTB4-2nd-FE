@@ -16,6 +16,15 @@ import type { PhotoListItem } from '@/features/photoList/model/types';
 
 import { PhotoListPage } from './photoListPage';
 
+const { back, replace } = vi.hoisted(() => ({
+  back: vi.fn(),
+  replace: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ back, replace }),
+}));
+
 vi.mock('@/features/photoList/api/getPlacePhotos', () => ({ getPlacePhotos: vi.fn() }));
 vi.mock('@/features/photoList/api/getPhotoOriginal', () => ({ getPhotoOriginal: vi.fn() }));
 vi.mock('@/features/photoList/api/photoDelete', () => ({
@@ -74,6 +83,28 @@ describe('PhotoListPage', () => {
     expect(await findFirstPhoto()).toBeInTheDocument();
     expect(screen.getByText(/사진 3장/)).toBeInTheDocument();
     expect(getPlacePhotos).toHaveBeenCalledWith(7, 3, null);
+  });
+
+  it('헤더의 뒤로가기는 여행 상세를 새로 쌓지 않고 이전 기록으로 돌아간다', async () => {
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    renderPhotoListPage();
+
+    await userEvent.click(screen.getByRole('button', { name: '여행 상세로 돌아가기' }));
+
+    expect(back).toHaveBeenCalledOnce();
+    expect(replace).not.toHaveBeenCalled();
+    historyLength.mockRestore();
+  });
+
+  it('이전 기록 없이 사진 목록에 직접 들어오면 여행 상세로 대체 이동한다', async () => {
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+    renderPhotoListPage();
+
+    await userEvent.click(screen.getByRole('button', { name: '여행 상세로 돌아가기' }));
+
+    expect(back).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledWith('/trips/7');
+    historyLength.mockRestore();
   });
 
   it('다음 커서가 있으면 사진을 이어서 모두 불러온다', async () => {

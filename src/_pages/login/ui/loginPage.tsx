@@ -4,7 +4,7 @@ import { KakaoLoginButton } from '@/features/kakaoLogin';
 
 export function LoginPage() {
   return (
-    <main className="page-enter flex min-h-dvh flex-col px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(32px,env(safe-area-inset-bottom))]">
+    <main className="page-enter flex h-full flex-col overflow-hidden px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(32px,env(safe-area-inset-bottom))]">
       <section className="mt-auto pb-10">
         <h1 className="text-brand text-[32px] leading-[1.3] font-bold tracking-[-0.02em]">
           흩어진 여행 사진을
