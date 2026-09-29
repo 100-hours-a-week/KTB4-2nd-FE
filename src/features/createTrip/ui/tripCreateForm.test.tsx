@@ -61,6 +61,24 @@ describe('TripCreateForm', () => {
     historyLength.mockRestore();
   });
 
+  it('여행 생성 화면을 나갔다가 다시 들어오면 이전 입력을 복구하지 않는다', async () => {
+    const user = userEvent.setup();
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    const firstRender = renderTripCreateForm();
+
+    await user.type(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.'), '제주 여행');
+    expect(window.localStorage.getItem('trip-create-draft-v1')).toContain('제주 여행');
+
+    await user.click(screen.getByRole('button', { name: '이전 단계로 이동' }));
+    firstRender.unmount();
+
+    window.history.replaceState(null, '', '/trips/create?step=name');
+    renderTripCreateForm();
+
+    expect(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.')).toHaveValue('');
+    historyLength.mockRestore();
+  });
+
   it('첫 단계에 직접 접속해 이전 기록이 없으면 메인으로 이동한다', async () => {
     const user = userEvent.setup();
     const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);

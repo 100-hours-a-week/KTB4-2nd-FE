@@ -91,6 +91,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   const handleBack = (currentStep: TripCreateStep) => {
     if (currentStep === 'name') {
+      clearTripCreateDraft();
       if (window.history.length > 1) router.back();
       else router.push('/');
       return;
