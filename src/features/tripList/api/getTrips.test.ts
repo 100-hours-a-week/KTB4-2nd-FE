@@ -17,6 +17,7 @@ describe('getTrips', () => {
           items: [
             {
               tripId: 7,
+              status: 'COMPLETED',
               tripName: '제주 여행',
               startDate: '2026-09-01',
               endDate: '2026-09-03',
@@ -55,6 +56,35 @@ describe('getTrips', () => {
     });
   });
 
+  it('정리 중인 여행은 processing 상태로 바꾼다', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        message: 'TRIP_LIST_FOUND',
+        data: {
+          items: [
+            {
+              tripId: 9,
+              status: 'PROCESSING',
+              tripName: '정리 중인 여행',
+              startDate: '2026-09-01',
+              endDate: '2026-09-02',
+              placeSummary: '서울',
+              attachmentCount: 0,
+              isFavorite: false,
+              thumbnailUrl: null,
+            },
+          ],
+          hasNext: false,
+          nextCursor: null,
+        },
+      },
+    });
+
+    const { trips } = await getTrips({ sort: 'LATEST', favorite: false });
+
+    expect(trips[0].processingStatus).toBe('processing');
+  });
+
   it('커서와 즐겨찾기 필터를 문자열 파라미터로 보낸다', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
       data: { message: 'TRIP_LIST_FOUND', data: { items: [], hasNext: false, nextCursor: null } },
@@ -75,6 +105,7 @@ describe('getTrips', () => {
           items: [
             {
               tripId: 1,
+              status: 'COMPLETED',
               tripName: '당일 여행',
               startDate: '2026-09-01',
               endDate: '2026-09-01',
