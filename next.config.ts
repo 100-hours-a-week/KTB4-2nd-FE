@@ -21,7 +21,7 @@ export default withSentryConfig(nextConfig, {
 
   org: 'yeodam-4z',
 
-  project: 'javascript-nextjs',
+  project: 'yeodam-frontend',
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
