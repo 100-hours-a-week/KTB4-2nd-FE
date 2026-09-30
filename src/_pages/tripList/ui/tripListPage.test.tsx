@@ -84,6 +84,19 @@ describe('TripListPage', () => {
     expect(getTrips).toHaveBeenCalledWith({ sort: 'LATEST', favorite: false, cursor: null });
   });
 
+  it('정리 중인 여행은 장수 대신 정리 중 안내와 스피너를 보여준다', async () => {
+    vi.mocked(getTrips).mockResolvedValue(
+      page([
+        trip({ id: 9, name: '정리 중인 여행', processingStatus: 'processing', photoCount: 0 }),
+      ]),
+    );
+    renderTripListPage();
+
+    expect(await screen.findByText('여담이 사진을 정리하고 있어요')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '사진 정리 중' })).toBeInTheDocument();
+    expect(screen.queryByText(/사진 0장/)).not.toBeInTheDocument();
+  });
+
   it('즐겨찾기만 보기를 켜면 favorite=true로 요청하고 즐겨찾기한 여행만 표시한다', async () => {
     renderTripListPage();
     await screen.findByRole('heading', { name: '파리 & 런던' });
