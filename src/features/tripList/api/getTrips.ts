@@ -3,8 +3,12 @@ import { apiClient } from '@/shared/api/browser';
 
 import type { TripListFilter, TripListItem } from '../model/types';
 
+/** 목록에는 PROCESSING과 COMPLETED만 내려옵니다. */
+type TripListItemStatus = 'PROCESSING' | 'COMPLETED';
+
 type TripListItemResponse = {
   tripId: number;
+  status: TripListItemStatus;
   tripName: string;
   startDate: string;
   endDate: string;
@@ -58,7 +62,7 @@ function toTripListItem(item: TripListItemResponse): TripListItem {
     nights: countNights(item.startDate, item.endDate),
     photoCount: item.attachmentCount,
     favorite: item.isFavorite,
-    processingStatus: 'ready',
+    processingStatus: item.status === 'PROCESSING' ? 'processing' : 'ready',
     thumbnailUrl: item.thumbnailUrl,
   };
 }
