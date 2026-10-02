@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
+import { createPreviewBlob } from '../model/createPreviewBlob';
 import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 
 type ImageUploadFieldProps = {
@@ -190,8 +191,9 @@ function ImagePreview({ file }: { file: File }) {
   useEffect(() => {
     let active = true;
     let previewUrl: string | null = null;
+    const abortController = new AbortController();
 
-    void createPreviewBlob(file)
+    void createPreviewBlob(file, abortController.signal)
       .then((previewBlob) => {
         if (!active) return;
         previewUrl = URL.createObjectURL(previewBlob);
@@ -203,6 +205,7 @@ function ImagePreview({ file }: { file: File }) {
 
     return () => {
       active = false;
+      abortController.abort();
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [file]);
@@ -231,26 +234,4 @@ function ImagePreview({ file }: { file: File }) {
       onError={() => setFailedFile(file)}
     />
   );
-}
-
-function isHeicFile(file: File) {
-  const mimeType = file.type.toLowerCase();
-  const fileName = file.name.toLowerCase();
-  return (
-    mimeType === 'image/heic' ||
-    mimeType === 'image/heif' ||
-    fileName.endsWith('.heic') ||
-    fileName.endsWith('.heif')
-  );
-}
-
-async function createPreviewBlob(file: File): Promise<Blob> {
-  if (!isHeicFile(file)) return file;
-
-  const { heicTo } = await import('heic-to');
-  return heicTo({
-    blob: file,
-    type: 'image/jpeg',
-    quality: 0.85,
-  });
 }
