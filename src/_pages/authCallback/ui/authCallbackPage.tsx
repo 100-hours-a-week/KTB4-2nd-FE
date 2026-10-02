@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { exchangeLoginTicket } from '@/features/kakaoLogin';
 import type { ApiErrorResponse } from '@/shared/api';
+import { EVENTS, identify, track } from '@/shared/lib/analytics';
 
 type FailureReason = 'canceled' | 'expired' | 'unavailable';
 
@@ -50,7 +51,14 @@ export function AuthCallbackPage({
 
     exchangeLoginTicket(loginTicket)
       .then((result) => {
-        window.location.replace(result.requiresNickname ? '/signup' : '/');
+        if (result.requiresNickname) {
+          window.location.replace('/signup');
+          return;
+        }
+
+        identify(result.user.userId, { signup_method: 'kakao' });
+        track(EVENTS.LOGIN, { method: 'kakao' });
+        window.location.replace('/');
       })
       .catch((error: unknown) => setExchangeFailure(getFailureReason(error)));
   }, [errorCode, loginTicket]);

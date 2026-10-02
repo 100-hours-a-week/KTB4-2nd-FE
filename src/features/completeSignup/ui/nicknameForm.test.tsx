@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ToastViewport, toast } from '@/shared/ui/toast';
+import { identify, track } from '@/shared/lib/analytics';
 
 import { completeSignup } from '../api/completeSignup';
 import { NicknameForm } from './nicknameForm';
@@ -16,6 +17,11 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('../api/completeSignup', () => ({
   completeSignup: vi.fn(),
+}));
+vi.mock('@/shared/lib/analytics', () => ({
+  EVENTS: { SIGN_UP: 'sign_up' },
+  identify: vi.fn(),
+  track: vi.fn(),
 }));
 
 afterEach(() => {
@@ -57,6 +63,8 @@ describe('NicknameForm', () => {
     await user.click(submitButton);
     await waitFor(() => expect(completeSignup).toHaveBeenCalledWith({ nickname: '여담2026' }));
     expect(await screen.findByRole('status')).toHaveTextContent('닉네임이 저장되었어요.');
+    expect(identify).toHaveBeenCalledWith(1, { signup_method: 'kakao' });
+    expect(track).toHaveBeenCalledWith('sign_up', { method: 'kakao' });
     expect(replace).toHaveBeenCalledWith('/');
   });
 
