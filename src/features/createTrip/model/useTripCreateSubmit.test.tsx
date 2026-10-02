@@ -4,6 +4,7 @@ import type { PropsWithChildren } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { EVENTS, track } from '@/shared/lib/analytics';
 
 import { cancelTripProcessing } from '../api/cancelTripProcessing';
 import { createTrip } from '../api/createTrip';
@@ -14,6 +15,15 @@ import { useTripCreateSubmit } from './useTripCreateSubmit';
 
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
+}));
+vi.mock('@/shared/lib/analytics', () => ({
+  EVENTS: {
+    TRIP_CREATE: 'trip_create',
+    PHOTO_UPLOAD_START: 'photo_upload_start',
+    PHOTO_UPLOAD_COMPLETE: 'photo_upload_complete',
+    LOCATION_RESTORE_COMPLETE: 'location_restore_complete',
+  },
+  track: vi.fn(),
 }));
 vi.mock('../api/createTrip', () => ({ createTrip: vi.fn() }));
 vi.mock('../api/cancelTripProcessing', () => ({ cancelTripProcessing: vi.fn() }));
@@ -73,6 +83,12 @@ describe('useTripCreateSubmit', () => {
         csrfToken: 'csrf-token',
       }),
     );
+    expect(track).toHaveBeenCalledWith(EVENTS.TRIP_CREATE, { trip_region: '제주시' });
+    expect(track).toHaveBeenCalledWith(EVENTS.PHOTO_UPLOAD_START, { photo_count: 1 });
+    expect(track).toHaveBeenCalledWith(EVENTS.PHOTO_UPLOAD_COMPLETE, {
+      photo_count: 1,
+      upload_duration_sec: expect.any(Number),
+    });
   });
 
   it('사진이 10장을 넘으면 10장씩 나눠 순서대로 보낸다', async () => {
@@ -117,6 +133,35 @@ describe('useTripCreateSubmit', () => {
     expect(status.status).toBe('FAILED');
   });
 
+  it('위치 복원 결과를 받은 뒤 성공·실패 사진 수를 기록한다', async () => {
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue({
+      tripId: 7,
+      status: 'COMPLETED',
+      progress: null,
+      currentStep: null,
+      result: {
+        tripId: 7,
+        placeFolderCount: 2,
+        classifiedAttachmentCount: 8,
+        unclassifiedAttachmentCount: 2,
+      },
+      error: null,
+    });
+    const photos = Array.from(
+      { length: 10 },
+      (_, index) => new File(['photo'], `photo-${index}.jpg`, { type: 'image/jpeg' }),
+    );
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync({ ...values, attachments: photos }));
+
+    expect(track).toHaveBeenCalledWith(EVENTS.LOCATION_RESTORE_COMPLETE, {
+      photo_count: 10,
+      restored_count: 8,
+      failed_count: 2,
+    });
+  });
+
   it('중간 묶음이 실패하면 다음 시도는 실패한 묶음부터 이어 보낸다', async () => {
     const photos = Array.from(
       { length: 23 },
@@ -139,6 +184,16 @@ describe('useTripCreateSubmit', () => {
       .mock.calls.map(([params]) => params.batchNo);
 
     expect(batchNumbers).toEqual([1, 2, 2, 3]);
+    expect(track).toHaveBeenCalledWith(EVENTS.TRIP_CREATE, { trip_region: '제주시' });
+    expect(vi.mocked(track).mock.calls.filter(([event]) => event === 'trip_create')).toHaveLength(
+      1,
+    );
+    expect(
+      vi.mocked(track).mock.calls.filter(([event]) => event === 'photo_upload_start'),
+    ).toHaveLength(1);
+    expect(
+      vi.mocked(track).mock.calls.filter(([event]) => event === 'photo_upload_complete'),
+    ).toHaveLength(1);
   });
 
   it('이어 보낼 때 이미 올린 묶음만큼 진행률을 채운 상태로 시작한다', async () => {

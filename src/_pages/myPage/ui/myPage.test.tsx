@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { logout } from '@/features/manageAccount/api/logout';
 import { withdraw } from '@/features/manageAccount/api/withdraw';
 import { redirectToLogin } from '@/features/manageAccount/model/redirectToLogin';
+import { clearIdentity } from '@/shared/lib/analytics';
 import { useToastStore } from '@/shared/ui/toast/toastStore';
 
 import { MyPage, type MyPageUser } from './myPage';
@@ -19,6 +20,7 @@ vi.mock('@/features/manageAccount/model/redirectToLogin', () => ({
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
+vi.mock('@/shared/lib/analytics', () => ({ clearIdentity: vi.fn() }));
 
 const user: MyPageUser = { nickname: '여행하는 혜준', oauthConnected: true };
 
@@ -117,6 +119,7 @@ describe('MyPage', () => {
 
     expect(logout).toHaveBeenCalledWith('csrf-token');
     await waitFor(() => expect(redirectToLogin).toHaveBeenCalledOnce());
+    expect(clearIdentity).toHaveBeenCalledOnce();
   });
 
   it('로그아웃에 실패하면 토스트를 띄우고 이동하지 않는다', async () => {
@@ -159,6 +162,7 @@ describe('MyPage', () => {
 
     expect(withdraw).toHaveBeenCalledWith('csrf-token');
     await waitFor(() => expect(redirectToLogin).toHaveBeenCalledOnce());
+    expect(clearIdentity).toHaveBeenCalledOnce();
   });
 
   it('탈퇴에 실패하면 다이얼로그를 닫고 토스트를 띄운다', async () => {

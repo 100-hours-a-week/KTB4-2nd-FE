@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { EVENTS, track } from '@/shared/lib/analytics';
 import { toast } from '@/shared/ui/toast';
 
 import { cancelTripProcessing } from '../api/cancelTripProcessing';
@@ -13,6 +14,7 @@ import {
   uploadInitialAttachmentBatch,
 } from '../api/uploadInitialAttachments';
 import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
+import { getTripRegion } from './getTripRegion';
 import type { TripCreateFormValues } from './types';
 
 function clampRatio(ratio: number) {
@@ -24,10 +26,16 @@ function isSameAttachments(left: File[], right: File[]) {
 }
 
 type UploadProgressPoint = { attachments: File[]; completedBatches: number };
+type UploadAnalyticsPoint = {
+  attachments: File[];
+  elapsedMs: number;
+  completed: boolean;
+};
 
 export function useTripCreateSubmit() {
   const createdTripId = useRef<number | null>(null);
   const uploadProgressPoint = useRef<UploadProgressPoint | null>(null);
+  const uploadAnalyticsPoint = useRef<UploadAnalyticsPoint | null>(null);
   const uploadAbortController = useRef<AbortController | null>(null);
   const [tripId, setTripId] = useState<number | null>(null);
   const [uploadRatio, setUploadRatio] = useState(0);
@@ -52,7 +60,9 @@ export function useTripCreateSubmit() {
         currentTripId = trip.tripId;
         createdTripId.current = currentTripId;
         uploadProgressPoint.current = null;
+        uploadAnalyticsPoint.current = null;
         setTripId(currentTripId);
+        track(EVENTS.TRIP_CREATE, { trip_region: getTripRegion(values.places) });
       }
 
       const uploadCsrfToken = await fetchCsrfToken();
@@ -66,6 +76,19 @@ export function useTripCreateSubmit() {
         resumePoint && isSameAttachments(resumePoint.attachments, values.attachments)
           ? Math.min(resumePoint.completedBatches, batches.length)
           : 0;
+
+      let uploadAnalytics = uploadAnalyticsPoint.current;
+      if (!uploadAnalytics || !isSameAttachments(uploadAnalytics.attachments, values.attachments)) {
+        uploadAnalytics = {
+          attachments: values.attachments,
+          elapsedMs: 0,
+          completed: false,
+        };
+        uploadAnalyticsPoint.current = uploadAnalytics;
+        track(EVENTS.PHOTO_UPLOAD_START, { photo_count: values.attachments.length });
+      }
+
+      const uploadAttemptStartedAt = Date.now();
 
       setUploadRatio(batches.length === 0 ? 0 : startIndex / batches.length);
 
@@ -97,7 +120,27 @@ export function useTripCreateSubmit() {
 
         if (lastStatus === null) throw new Error('사진 업로드 결과를 받지 못했습니다.');
 
+        uploadAnalytics.elapsedMs += Date.now() - uploadAttemptStartedAt;
+        if (!uploadAnalytics.completed) {
+          uploadAnalytics.completed = true;
+          track(EVENTS.PHOTO_UPLOAD_COMPLETE, {
+            photo_count: values.attachments.length,
+            upload_duration_sec: Math.round(uploadAnalytics.elapsedMs / 1000),
+          });
+        }
+
+        if (lastStatus.status === 'COMPLETED' && lastStatus.result) {
+          track(EVENTS.LOCATION_RESTORE_COMPLETE, {
+            photo_count: values.attachments.length,
+            restored_count: lastStatus.result.classifiedAttachmentCount,
+            failed_count: lastStatus.result.unclassifiedAttachmentCount,
+          });
+        }
+
         return lastStatus;
+      } catch (error) {
+        uploadAnalytics.elapsedMs += Date.now() - uploadAttemptStartedAt;
+        throw error;
       } finally {
         if (uploadAbortController.current === abortController) {
           uploadAbortController.current = null;
@@ -117,6 +160,7 @@ export function useTripCreateSubmit() {
     onSuccess: () => {
       createdTripId.current = null;
       uploadProgressPoint.current = null;
+      uploadAnalyticsPoint.current = null;
       setTripId(null);
       toast.success('여행 생성을 취소했어요.');
     },
@@ -139,6 +183,7 @@ export function useTripCreateSubmit() {
   const resetCreatedTrip = useCallback(() => {
     createdTripId.current = null;
     uploadProgressPoint.current = null;
+    uploadAnalyticsPoint.current = null;
     setTripId(null);
   }, []);
 

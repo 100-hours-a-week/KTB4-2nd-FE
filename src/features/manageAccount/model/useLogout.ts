@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { clearIdentity } from '@/shared/lib/analytics';
 import { toast } from '@/shared/ui/toast';
 
 import { logout } from '../api/logout';
@@ -17,6 +18,7 @@ export function useLogout() {
       await logout(csrfToken);
     },
     onSuccess: () => {
+      clearIdentity();
       queryClient.clear();
       redirectToLogin();
     },

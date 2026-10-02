@@ -1,12 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { exchangeLoginTicket } from '@/features/kakaoLogin';
+import { identify, track } from '@/shared/lib/analytics';
 
 import { AuthCallbackPage } from './authCallbackPage';
 
 vi.mock('@/features/kakaoLogin', () => ({
   exchangeLoginTicket: vi.fn(),
+}));
+vi.mock('@/shared/lib/analytics', () => ({
+  EVENTS: { LOGIN: 'login' },
+  identify: vi.fn(),
+  track: vi.fn(),
 }));
 
 describe('AuthCallbackPage', () => {
@@ -61,5 +67,18 @@ describe('AuthCallbackPage', () => {
     expect(screen.getByText('로그인하고 있어요')).toBeInTheDocument();
     expect(exchangeLoginTicket).toHaveBeenCalledOnce();
     expect(exchangeLoginTicket).toHaveBeenCalledWith('valid-login-ticket');
+  });
+
+  it('기존 회원 로그인 성공 이벤트에 내부 사용자 ID를 연결한다', async () => {
+    vi.mocked(exchangeLoginTicket).mockResolvedValue({
+      requiresNickname: false,
+      expiresIn: 1800,
+      user: { userId: 7, email: 'user@example.com', nickname: '여담' },
+    });
+
+    render(<AuthCallbackPage loginTicket="valid-login-ticket" />);
+
+    await waitFor(() => expect(identify).toHaveBeenCalledWith(7, { signup_method: 'kakao' }));
+    expect(track).toHaveBeenCalledWith('login', { method: 'kakao' });
   });
 });

@@ -8,7 +8,8 @@ import '../styles/globals.css';
 
 const GA_MEASUREMENT_ID = 'G-H7N5L6L033';
 const CLARITY_PROJECT_ID = 'yrc7paa483';
-const isProd = process.env.NODE_ENV === 'production';
+const isAnalyticsEnabled =
+  process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true';
 
 export function RootLayout({ children }: PropsWithChildren) {
   return (
@@ -17,7 +18,7 @@ export function RootLayout({ children }: PropsWithChildren) {
         <div className="bg-surface h-[min(100dvh,var(--app-max-height))] w-full max-w-107.5 overflow-x-hidden overflow-y-auto shadow-[0_0_60px_rgba(2,23,48,0.14)]">
           <AppProviders>{children}</AppProviders>
         </div>
-        {isProd && (
+        {isAnalyticsEnabled && (
           <>
             <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
             <Script id="ms-clarity" strategy="afterInteractive">
