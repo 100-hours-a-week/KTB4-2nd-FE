@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -10,6 +10,60 @@ vi.mock('heic-to', () => ({ heicTo: convertHeic }));
 
 const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
 const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
+const originalIntersectionObserver = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'IntersectionObserver',
+);
+
+class MockIntersectionObserver {
+  static instances: MockIntersectionObserver[] = [];
+
+  readonly root: Element | Document | null;
+  readonly rootMargin: string;
+  readonly thresholds: readonly number[];
+  readonly observedElements = new Set<Element>();
+
+  constructor(
+    private readonly callback: IntersectionObserverCallback,
+    options: IntersectionObserverInit = {},
+  ) {
+    this.root = options.root ?? null;
+    this.rootMargin = options.rootMargin ?? '0px';
+    this.thresholds = Array.isArray(options.threshold)
+      ? options.threshold
+      : [options.threshold ?? 0];
+    MockIntersectionObserver.instances.push(this);
+  }
+
+  observe = vi.fn((element: Element) => {
+    this.observedElements.add(element);
+  });
+
+  unobserve = vi.fn((element: Element) => {
+    this.observedElements.delete(element);
+  });
+
+  disconnect = vi.fn(() => {
+    this.observedElements.clear();
+  });
+
+  trigger(element: Element, isIntersecting = true) {
+    if (!this.observedElements.has(element)) return;
+
+    this.callback(
+      [{ isIntersecting, target: element } as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver,
+    );
+  }
+}
+
+function installIntersectionObserverMock() {
+  MockIntersectionObserver.instances = [];
+  Object.defineProperty(globalThis, 'IntersectionObserver', {
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+}
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -19,6 +73,106 @@ afterEach(() => {
   if (originalRevokeObjectURL)
     Object.defineProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
   else Reflect.deleteProperty(URL, 'revokeObjectURL');
+  if (originalIntersectionObserver)
+    Object.defineProperty(globalThis, 'IntersectionObserver', originalIntersectionObserver);
+  else Reflect.deleteProperty(globalThis, 'IntersectionObserver');
+});
+
+it('화면 근처에 들어온 사진만 미리보기로 변환한다', async () => {
+  installIntersectionObserverMock();
+  const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
+  const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
+  convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
+    blob === firstFile
+      ? new Blob(['first-preview'], { type: 'image/jpeg' })
+      : new Blob(['second-preview'], { type: 'image/jpeg' }),
+  );
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: vi.fn((blob: Blob) => `blob:http://localhost:3000/${blob.size}`),
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
+
+  render(
+    <ImageUploadField
+      files={[firstFile, secondFile]}
+      onSelect={vi.fn()}
+      onRemove={vi.fn()}
+    />,
+  );
+
+  const observer = MockIntersectionObserver.instances[0];
+  const scrollRoot = screen.getByRole('region', { name: '선택한 사진 스크롤 영역' });
+  const cards = screen.getAllByRole('listitem');
+
+  expect(observer.root).toBe(scrollRoot);
+  expect(observer.rootMargin).toBe('300px 0px');
+  expect(observer.thresholds).toEqual([0.01]);
+  expect(convertHeic).not.toHaveBeenCalled();
+
+  act(() => observer.trigger(cards[0]));
+
+  expect(await screen.findByRole('img', { name: 'first.HEIC' })).toBeInTheDocument();
+  expect(screen.queryByRole('img', { name: 'second.HEIC' })).not.toBeInTheDocument();
+  expect(convertHeic).toHaveBeenCalledTimes(1);
+  expect(convertHeic).toHaveBeenCalledWith({
+    blob: firstFile,
+    type: 'image/jpeg',
+    quality: 0.85,
+  });
+
+  act(() => observer.trigger(cards[1]));
+
+  expect(await screen.findByRole('img', { name: 'second.HEIC' })).toBeInTheDocument();
+  expect(convertHeic).toHaveBeenCalledTimes(2);
+
+  act(() => observer.trigger(cards[0]));
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(2));
+});
+
+it('앞 사진을 삭제해도 남은 HEIC 미리보기를 다시 변환하지 않는다', async () => {
+  installIntersectionObserverMock();
+  const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
+  const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
+  convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
+    blob === firstFile
+      ? new Blob(['first-preview'], { type: 'image/jpeg' })
+      : new Blob(['second-preview'], { type: 'image/jpeg' }),
+  );
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: vi.fn((blob: Blob) => `blob:http://localhost:3000/${blob.size}`),
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
+
+  const { rerender } = render(
+    <ImageUploadField
+      files={[firstFile, secondFile]}
+      onSelect={vi.fn()}
+      onRemove={vi.fn()}
+    />,
+  );
+
+  const observer = MockIntersectionObserver.instances[0];
+  const cards = screen.getAllByRole('listitem');
+  act(() => observer.trigger(cards[0]));
+  await screen.findByRole('img', { name: 'first.HEIC' });
+  act(() => observer.trigger(cards[1]));
+  await screen.findByRole('img', { name: 'second.HEIC' });
+  expect(convertHeic).toHaveBeenCalledTimes(2);
+
+  rerender(
+    <ImageUploadField files={[secondFile]} onSelect={vi.fn()} onRemove={vi.fn()} />,
+  );
+
+  await screen.findByRole('img', { name: 'second.HEIC' });
+  expect(convertHeic).toHaveBeenCalledTimes(2);
 });
 
 it('HEIC 사진을 JPEG blob으로 변환해 미리보기에 사용한다', async () => {
