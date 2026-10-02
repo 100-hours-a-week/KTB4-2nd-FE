@@ -133,6 +133,48 @@ it('화면 근처에 들어온 사진만 미리보기로 변환한다', async ()
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(2));
 });
 
+it('앞 사진을 삭제해도 남은 HEIC 미리보기를 다시 변환하지 않는다', async () => {
+  installIntersectionObserverMock();
+  const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
+  const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
+  convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
+    blob === firstFile
+      ? new Blob(['first-preview'], { type: 'image/jpeg' })
+      : new Blob(['second-preview'], { type: 'image/jpeg' }),
+  );
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: vi.fn((blob: Blob) => `blob:http://localhost:3000/${blob.size}`),
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
+
+  const { rerender } = render(
+    <ImageUploadField
+      files={[firstFile, secondFile]}
+      onSelect={vi.fn()}
+      onRemove={vi.fn()}
+    />,
+  );
+
+  const observer = MockIntersectionObserver.instances[0];
+  const cards = screen.getAllByRole('listitem');
+  act(() => observer.trigger(cards[0]));
+  await screen.findByRole('img', { name: 'first.HEIC' });
+  act(() => observer.trigger(cards[1]));
+  await screen.findByRole('img', { name: 'second.HEIC' });
+  expect(convertHeic).toHaveBeenCalledTimes(2);
+
+  rerender(
+    <ImageUploadField files={[secondFile]} onSelect={vi.fn()} onRemove={vi.fn()} />,
+  );
+
+  await screen.findByRole('img', { name: 'second.HEIC' });
+  expect(convertHeic).toHaveBeenCalledTimes(2);
+});
+
 it('HEIC 사진을 JPEG blob으로 변환해 미리보기에 사용한다', async () => {
   const convertedBlob = new Blob(['jpeg-preview'], { type: 'image/jpeg' });
   convertHeic.mockResolvedValue(convertedBlob);

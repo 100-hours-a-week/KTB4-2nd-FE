@@ -83,7 +83,7 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
               return (
                 <li
                   ref={(element) => registerCard(fileId, element)}
-                  key={`${file.name}-${file.lastModified}-${index}`}
+                  key={fileId}
                   className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
                 >
                   {shouldRenderPreview(fileId) && <ImagePreview file={file} />}
