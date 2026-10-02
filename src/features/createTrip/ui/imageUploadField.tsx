@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
 import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 
@@ -12,7 +12,11 @@ type ImageUploadFieldProps = {
   onRemove: (index: number) => void;
 };
 
+const PREVIEW_ROOT_MARGIN = '300px 0px';
+
 export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUploadFieldProps) {
+  const { scrollRootRef, registerCard, shouldRenderPreview } = useDeferredPreviewFiles(files);
+
   const selectFiles = (event: ChangeEvent<HTMLInputElement>) => {
     onSelect(Array.from(event.target.files ?? []));
     event.target.value = '';
@@ -67,32 +71,116 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
 
       {files.length > 0 && (
         <div
+          ref={scrollRootRef}
           role="region"
           aria-label="선택한 사진 스크롤 영역"
           className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1"
         >
           <ul className="grid grid-cols-3 gap-1.5" aria-label="선택한 사진 목록">
-            {files.map((file, index) => (
-              <li
-                key={`${file.name}-${file.lastModified}-${index}`}
-                className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
-              >
-                <ImagePreview file={file} />
-                <button
-                  type="button"
-                  aria-label={`${file.name} 삭제`}
-                  onClick={() => onRemove(index)}
-                  className="absolute top-1 right-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-slate-700/65 text-lg leading-none text-white"
+            {files.map((file, index) => {
+              const fileId = getFileIdentity(file);
+
+              return (
+                <li
+                  ref={(element) => registerCard(fileId, element)}
+                  key={`${file.name}-${file.lastModified}-${index}`}
+                  className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
                 >
-                  ×
-                </button>
-              </li>
-            ))}
+                  {shouldRenderPreview(fileId) && <ImagePreview file={file} />}
+                  <button
+                    type="button"
+                    aria-label={`${file.name} 삭제`}
+                    onClick={() => onRemove(index)}
+                    className="absolute top-1 right-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-slate-700/65 text-lg leading-none text-white"
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
     </div>
   );
+}
+
+function getFileIdentity(file: File) {
+  return `${file.name}\u0000${file.size}\u0000${file.lastModified}`;
+}
+
+function useDeferredPreviewFiles(files: File[]) {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const cardElementsRef = useRef(new Map<string, HTMLLIElement>());
+  const [previewFileIds, setPreviewFileIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  const registerCard = useCallback((fileId: string, element: HTMLLIElement | null) => {
+    if (element) {
+      cardElementsRef.current.set(fileId, element);
+      return;
+    }
+
+    cardElementsRef.current.delete(fileId);
+  }, []);
+
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return;
+
+    const currentFileIds = new Set(files.map(getFileIdentity));
+    const fileIdByElement = new Map<Element, string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const enteredFileIds: string[] = [];
+
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+
+          const fileId = fileIdByElement.get(entry.target);
+          if (!fileId) continue;
+
+          enteredFileIds.push(fileId);
+          observer.unobserve(entry.target);
+        }
+
+        if (enteredFileIds.length === 0) return;
+
+        setPreviewFileIds((previousFileIds) => {
+          const nextFileIds = new Set(previousFileIds);
+          let changed = false;
+
+          for (const fileId of enteredFileIds) {
+            if (nextFileIds.has(fileId)) continue;
+            nextFileIds.add(fileId);
+            changed = true;
+          }
+
+          return changed ? nextFileIds : previousFileIds;
+        });
+      },
+      {
+        root,
+        rootMargin: PREVIEW_ROOT_MARGIN,
+        threshold: 0.01,
+      },
+    );
+
+    for (const [fileId, element] of cardElementsRef.current) {
+      if (!currentFileIds.has(fileId)) continue;
+      fileIdByElement.set(element, fileId);
+      observer.observe(element);
+    }
+
+    return () => observer.disconnect();
+  }, [files]);
+
+  const canObserve = typeof IntersectionObserver !== 'undefined';
+
+  return {
+    scrollRootRef,
+    registerCard,
+    shouldRenderPreview: (fileId: string) => !canObserve || previewFileIds.has(fileId),
+  };
 }
 
 function ImagePreview({ file }: { file: File }) {
