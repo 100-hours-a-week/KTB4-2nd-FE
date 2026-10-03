@@ -1,4 +1,3 @@
-// 약 130px 정사각형 카드에 표시할 미리보기를 2배 해상도로 준비한다.
 const PREVIEW_EDGE = 260;
 const JPEG_QUALITY = 0.85;
 
