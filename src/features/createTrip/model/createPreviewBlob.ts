@@ -1,4 +1,5 @@
 import { createPreviewConversionQueue } from './previewConversionQueue';
+import { createThumbnailBlob } from './createThumbnailBlob';
 
 export const HEIC_PREVIEW_CONCURRENCY = 2;
 
@@ -35,10 +36,11 @@ export async function createPreviewBlob(file: File, signal: AbortSignal): Promis
     const { heicTo } = await loadHeicModule();
     signal.throwIfAborted();
 
-    return heicTo({
+    const bitmap = await heicTo({
       blob: file,
-      type: 'image/jpeg',
-      quality: 0.85,
+      type: 'bitmap',
     });
+
+    return createThumbnailBlob(bitmap, signal);
   }, signal);
 }
