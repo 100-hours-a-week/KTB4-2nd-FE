@@ -1,9 +1,7 @@
 import { createPreviewConversionQueue } from './previewConversionQueue';
 
-// 전후 비교 시 이 값을 1, 2, 4, Infinity로 바꿔 동일한 조건에서 측정합니다.
 export const HEIC_PREVIEW_CONCURRENCY = 2;
 
-// 모든 ImagePreview가 한 큐를 공유해야 전체 동시 실행 수가 제한됩니다.
 const heicPreviewQueue = createPreviewConversionQueue(HEIC_PREVIEW_CONCURRENCY);
 let heicModulePromise: Promise<typeof import('heic-to')> | null = null;
 
