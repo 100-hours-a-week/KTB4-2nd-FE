@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { ImageUploadField } from './imageUploadField';
 
@@ -73,17 +73,47 @@ function installPreviewUrlMocks() {
   return createUrl;
 }
 
+function previewBitmap(previewBlob = new Blob(['preview'], { type: 'image/jpeg' })) {
+  return {
+    width: 4000,
+    height: 3000,
+    close: vi.fn(),
+    previewBlob,
+  } as unknown as ImageBitmap;
+}
+
 function deferredPreview() {
-  let resolve!: (blob: Blob) => void;
+  let resolve!: (bitmap: ImageBitmap) => void;
   let reject!: (error: unknown) => void;
-  const promise = new Promise<Blob>((done, fail) => {
+  const promise = new Promise<ImageBitmap>((done, fail) => {
     resolve = done;
     reject = fail;
   });
   return { promise, resolve, reject };
 }
 
+beforeEach(() => {
+  convertHeic.mockReset();
+  const canvasPreviews = new WeakMap<HTMLCanvasElement, Blob>();
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (
+    this: HTMLCanvasElement,
+  ) {
+    return {
+      drawImage: (bitmap: ImageBitmap & { previewBlob: Blob }) => {
+        canvasPreviews.set(this, bitmap.previewBlob);
+      },
+    } as unknown as CanvasRenderingContext2D;
+  });
+  vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
+    this: HTMLCanvasElement,
+    callback,
+  ) {
+    callback(canvasPreviews.get(this) ?? null);
+  });
+});
+
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   if (originalCreateObjectURL)
     Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
@@ -101,9 +131,11 @@ it('화면 근처에 들어온 사진만 미리보기로 변환한다', async ()
   const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
   const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
   convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
-    blob === firstFile
-      ? new Blob(['first-preview'], { type: 'image/jpeg' })
-      : new Blob(['second-preview'], { type: 'image/jpeg' }),
+    previewBitmap(
+      blob === firstFile
+        ? new Blob(['first-preview'], { type: 'image/jpeg' })
+        : new Blob(['second-preview'], { type: 'image/jpeg' }),
+    ),
   );
   Object.defineProperty(URL, 'createObjectURL', {
     configurable: true,
@@ -134,8 +166,7 @@ it('화면 근처에 들어온 사진만 미리보기로 변환한다', async ()
   expect(convertHeic).toHaveBeenCalledTimes(1);
   expect(convertHeic).toHaveBeenCalledWith({
     blob: firstFile,
-    type: 'image/jpeg',
-    quality: 0.85,
+    type: 'bitmap',
   });
 
   act(() => observer.trigger(cards[1]));
@@ -152,9 +183,11 @@ it('앞 사진을 삭제해도 남은 HEIC 미리보기를 다시 변환하지 �
   const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
   const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
   convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
-    blob === firstFile
-      ? new Blob(['first-preview'], { type: 'image/jpeg' })
-      : new Blob(['second-preview'], { type: 'image/jpeg' }),
+    previewBitmap(
+      blob === firstFile
+        ? new Blob(['first-preview'], { type: 'image/jpeg' })
+        : new Blob(['second-preview'], { type: 'image/jpeg' }),
+    ),
   );
   Object.defineProperty(URL, 'createObjectURL', {
     configurable: true,
@@ -185,7 +218,7 @@ it('앞 사진을 삭제해도 남은 HEIC 미리보기를 다시 변환하지 �
 
 it('HEIC 사진을 JPEG blob으로 변환해 미리보기에 사용한다', async () => {
   const convertedBlob = new Blob(['jpeg-preview'], { type: 'image/jpeg' });
-  convertHeic.mockResolvedValue(convertedBlob);
+  convertHeic.mockResolvedValue(previewBitmap(convertedBlob));
   Object.defineProperty(URL, 'createObjectURL', {
     configurable: true,
     value: vi.fn((blob: Blob) =>
@@ -206,10 +239,26 @@ it('HEIC 사진을 JPEG blob으로 변환해 미리보기에 사용한다', asyn
   );
   expect(convertHeic).toHaveBeenCalledWith({
     blob: file,
-    type: 'image/jpeg',
-    quality: 0.85,
+    type: 'bitmap',
   });
 });
+
+it.each(['image/jpeg', 'image/png'])(
+  '%s 사진은 원본 파일을 그대로 미리보기에 사용한다',
+  async (type) => {
+    const createUrl = installPreviewUrlMocks();
+    const file = new File(['original-photo'], type === 'image/jpeg' ? 'photo.jpg' : 'photo.png', {
+      type,
+    });
+
+    render(<ImageUploadField files={[file]} onSelect={vi.fn()} onRemove={vi.fn()} />);
+
+    expect(await screen.findByRole('img', { name: file.name })).toBeInTheDocument();
+    expect(createUrl).toHaveBeenCalledWith(file);
+    expect(convertHeic).not.toHaveBeenCalled();
+    expect(HTMLCanvasElement.prototype.toBlob).not.toHaveBeenCalled();
+  },
+);
 
 it('HEIC는 선택 순서로 최대 두 장만 변환하고 JPEG는 기다리지 않는다', async () => {
   installPreviewUrlMocks();
@@ -229,15 +278,15 @@ it('HEIC는 선택 순서로 최대 두 장만 변환하고 JPEG는 기다리지
   expect(convertHeic.mock.calls.map(([params]) => params.blob)).toEqual(files.slice(0, 2));
   expect(screen.getByRole('img', { name: jpeg.name })).toBeInTheDocument();
 
-  await act(async () => pending[1].resolve(new Blob(['second'])));
+  await act(async () => pending[1].resolve(previewBitmap(new Blob(['second']))));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(3));
   expect(convertHeic.mock.calls[2][0].blob).toBe(files[2]);
-  await act(async () => pending[0].resolve(new Blob(['first'])));
+  await act(async () => pending[0].resolve(previewBitmap(new Blob(['first']))));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(4));
   expect(convertHeic.mock.calls[3][0].blob).toBe(files[3]);
   await act(async () => {
-    pending[2].resolve(new Blob(['third']));
-    pending[3].resolve(new Blob(['fourth']));
+    pending[2].resolve(previewBitmap(new Blob(['third'])));
+    pending[3].resolve(previewBitmap(new Blob(['fourth'])));
   });
   for (const file of files) {
     expect(await screen.findByRole('img', { name: file.name })).toBeInTheDocument();
@@ -266,15 +315,64 @@ it('대기 중인 사진을 삭제하면 변환하지 않고 나머지 사진을
       onRemove={vi.fn()}
     />,
   );
-  await act(async () => pending[0].resolve(new Blob(['first'])));
+  await act(async () => pending[0].resolve(previewBitmap(new Blob(['first']))));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(3));
   expect(convertHeic.mock.calls[2][0].blob).toBe(files[3]);
   await act(async () => {
-    pending[1].resolve(new Blob(['second']));
-    pending[3].resolve(new Blob(['fourth']));
+    pending[1].resolve(previewBitmap(new Blob(['second'])));
+    pending[3].resolve(previewBitmap(new Blob(['fourth'])));
   });
   expect(await screen.findByRole('img', { name: files[3].name })).toBeInTheDocument();
   expect(convertHeic.mock.calls.map(([params]) => params.blob)).not.toContain(files[2]);
+});
+
+it('디코딩이 끝나도 작은 JPEG 생성이 완료될 때까지 동시 처리 자리를 유지한다', async () => {
+  installPreviewUrlMocks();
+  const files = Array.from(
+    { length: 3 },
+    (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
+  );
+  const bitmaps = files.map(() => previewBitmap());
+  convertHeic.mockImplementation(async ({ blob }: { blob: File }) => bitmaps[files.indexOf(blob)]);
+  const finishEncoding: BlobCallback[] = [];
+  vi.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementation((callback) => {
+    finishEncoding.push(callback);
+  });
+
+  render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
+  await waitFor(() => expect(finishEncoding).toHaveLength(2));
+  expect(convertHeic).toHaveBeenCalledTimes(2);
+  expect(bitmaps[0].close).toHaveBeenCalledOnce();
+  expect(bitmaps[1].close).toHaveBeenCalledOnce();
+  expect(screen.queryByRole('img', { name: files[0].name })).not.toBeInTheDocument();
+
+  await act(async () => finishEncoding[1](new Blob(['second'], { type: 'image/jpeg' })));
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(3));
+  await waitFor(() => expect(finishEncoding).toHaveLength(3));
+  expect(await screen.findByRole('img', { name: files[1].name })).toBeInTheDocument();
+  await act(async () => {
+    finishEncoding[0](new Blob(['first'], { type: 'image/jpeg' }));
+    finishEncoding[2](new Blob(['third'], { type: 'image/jpeg' }));
+  });
+  expect(await screen.findByRole('img', { name: files[2].name })).toBeInTheDocument();
+});
+
+it('작은 JPEG 생성이 실패해도 다음 사진을 처리한다', async () => {
+  installPreviewUrlMocks();
+  const files = Array.from(
+    { length: 3 },
+    (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
+  );
+  convertHeic.mockImplementation(async () => previewBitmap());
+  vi.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementationOnce((callback) =>
+    callback(null),
+  );
+
+  render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
+
+  expect(await screen.findByText('미리보기 불가')).toBeInTheDocument();
+  expect(await screen.findByRole('img', { name: files[2].name })).toBeInTheDocument();
+  expect(convertHeic).toHaveBeenCalledTimes(3);
 });
 
 it('한 사진의 변환이 실패해도 대기 중인 다음 사진을 표시한다', async () => {
@@ -294,15 +392,15 @@ it('한 사진의 변환이 실패해도 대기 중인 다음 사진을 표시�
   expect(await screen.findByText('미리보기 불가')).toBeInTheDocument();
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(3));
   await act(async () => {
-    pending[1].resolve(new Blob(['second']));
-    pending[2].resolve(new Blob(['third']));
+    pending[1].resolve(previewBitmap(new Blob(['second'])));
+    pending[2].resolve(previewBitmap(new Blob(['third'])));
   });
   expect(await screen.findByRole('img', { name: files[2].name })).toBeInTheDocument();
 });
 
 it('Strict Mode에서는 정리된 HEIC 작업을 건너뛰고 한 번만 변환한다', async () => {
   const createUrl = installPreviewUrlMocks();
-  convertHeic.mockResolvedValue(new Blob(['preview']));
+  convertHeic.mockResolvedValue(previewBitmap());
   const file = new File(['heic'], 'photo.HEIC', { type: 'image/heic' });
   const { unmount } = render(
     <StrictMode>
@@ -333,13 +431,16 @@ it('페이지를 나가면 대기 변환을 취소하고 실행 중 결과의 UR
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(2));
 
   unmount();
+  const lateBitmaps = [previewBitmap(), previewBitmap()];
   await act(async () => {
-    pending[0].resolve(new Blob(['first']));
-    pending[1].resolve(new Blob(['second']));
+    pending[0].resolve(lateBitmaps[0]);
+    pending[1].resolve(lateBitmaps[1]);
   });
 
   expect(convertHeic).toHaveBeenCalledTimes(2);
   expect(createUrl).not.toHaveBeenCalled();
+  for (const bitmap of lateBitmaps) expect(bitmap.close).toHaveBeenCalledOnce();
+  expect(HTMLCanvasElement.prototype.toBlob).not.toHaveBeenCalled();
 });
 
 it('Strict Mode에서도 사진 미리보기의 blob URL이 유효하다', async () => {
