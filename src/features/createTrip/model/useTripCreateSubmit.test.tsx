@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { EVENTS, track } from '@/shared/lib/analytics';
 
 import { cancelTripProcessing } from '../api/cancelTripProcessing';
 import { createTrip } from '../api/createTrip';
-import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
+import {
+  getTripProcessingStatus,
+  type TripProcessingStatusResponse,
+} from '../api/getTripProcessingStatus';
 import { uploadInitialAttachmentBatch } from '../api/uploadInitialAttachments';
 import type { TripCreateFormValues } from './types';
 import { useTripCreateSubmit } from './useTripCreateSubmit';
@@ -22,11 +25,13 @@ vi.mock('@/shared/lib/analytics', () => ({
     PHOTO_UPLOAD_START: 'photo_upload_start',
     PHOTO_UPLOAD_COMPLETE: 'photo_upload_complete',
     LOCATION_RESTORE_COMPLETE: 'location_restore_complete',
+    DIARY_GENERATE_COMPLETE: 'diary_generate_complete',
   },
   track: vi.fn(),
 }));
 vi.mock('../api/createTrip', () => ({ createTrip: vi.fn() }));
 vi.mock('../api/cancelTripProcessing', () => ({ cancelTripProcessing: vi.fn() }));
+vi.mock('../api/getTripProcessingStatus', () => ({ getTripProcessingStatus: vi.fn() }));
 vi.mock('../api/uploadInitialAttachments', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/uploadInitialAttachments')>()),
   uploadInitialAttachmentBatch: vi.fn(),
@@ -47,6 +52,22 @@ function uploaded(
   return { tripId: 7, status, progress: null, currentStep: null, result: null, error: null };
 }
 
+function completed(): TripProcessingStatusResponse {
+  return {
+    ...uploaded(),
+    result: {
+      tripId: 7,
+      placeFolderCount: 1,
+      classifiedAttachmentCount: 1,
+      unclassifiedAttachmentCount: 0,
+    },
+  };
+}
+
+function diaryCompletionCalls() {
+  return vi.mocked(track).mock.calls.filter(([event]) => event === EVENTS.DIARY_GENERATE_COMPLETE);
+}
+
 function wrapper({ children }: PropsWithChildren) {
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
@@ -56,6 +77,151 @@ describe('useTripCreateSubmit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(createTrip).mockResolvedValue({ tripId: 7, status: 'PROCESSING' });
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(uploaded('PROCESSING'));
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it('일기 생성 시간은 전체 업로드가 아닌 마지막 Batch 요청부터 계산한다', async () => {
+    let now = 10_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const photos = Array.from({ length: 11 }, () => new File(['photo'], 'photo.jpg'));
+    vi.mocked(uploadInitialAttachmentBatch).mockImplementation(async ({ complete }) => {
+      now += complete ? 2_400 : 9_000;
+      return complete ? completed() : null;
+    });
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync({ ...values, attachments: photos }));
+
+    expect(diaryCompletionCalls()).toEqual([
+      [EVENTS.DIARY_GENERATE_COMPLETE, { photo_count: 11, generation_time_sec: 2 }],
+    ]);
+  });
+
+  it('마지막 응답이 PROCESSING이면 완료를 기다리고 폴링 완료 시 한 번 기록한다', async () => {
+    let resolveStatus!: (status: TripProcessingStatusResponse) => void;
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(uploaded('PROCESSING'));
+    vi.mocked(getTripProcessingStatus).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStatus = resolve;
+        }),
+    );
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync(values));
+    await waitFor(() => expect(getTripProcessingStatus).toHaveBeenCalledWith(7));
+    expect(result.current.isPending).toBe(true);
+    expect(result.current.processingResult).toBeNull();
+    expect(diaryCompletionCalls()).toHaveLength(0);
+
+    await act(async () => resolveStatus(completed()));
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    expect(result.current.processingResult?.status).toBe('COMPLETED');
+    expect(diaryCompletionCalls()).toEqual([
+      [EVENTS.DIARY_GENERATE_COMPLETE, { photo_count: 1, generation_time_sec: expect.any(Number) }],
+    ]);
+    expect(track).toHaveBeenCalledWith(EVENTS.LOCATION_RESTORE_COMPLETE, {
+      photo_count: 1,
+      restored_count: 1,
+      failed_count: 0,
+    });
+  });
+
+  it('완료된 여행을 다시 제출해도 완료 이벤트를 중복 전송하지 않는다', async () => {
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(completed());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync(values));
+    await act(() =>
+      result.current.mutateAsync({
+        ...values,
+        attachments: [new File(['other'], 'other.jpg')],
+      }),
+    );
+
+    expect(diaryCompletionCalls()).toHaveLength(1);
+    expect(
+      vi.mocked(track).mock.calls.filter(([event]) => event === EVENTS.LOCATION_RESTORE_COMPLETE),
+    ).toHaveLength(1);
+  });
+
+  it('새 여행을 만들면 완료 이벤트도 새로 기록한다', async () => {
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(completed());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync(values));
+    act(() => result.current.resetCreatedTrip());
+    await act(() => result.current.mutateAsync(values));
+
+    expect(diaryCompletionCalls()).toHaveLength(2);
+  });
+
+  it.each(['FAILED', 'CANCELED'] as const)(
+    '폴링 결과가 %s면 대기를 끝내고 완료 이벤트는 보내지 않는다',
+    async (status) => {
+      vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(uploaded('PROCESSING'));
+      vi.mocked(getTripProcessingStatus).mockResolvedValue(uploaded(status));
+      const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+      await act(() => result.current.mutateAsync(values));
+
+      await waitFor(() => expect(result.current.processingResult?.status).toBe(status));
+      expect(result.current.isPending).toBe(false);
+      expect(diaryCompletionCalls()).toHaveLength(0);
+    },
+  );
+
+  it('결과 없는 COMPLETED 응답은 일기 완료 이벤트를 보내지 않는다', async () => {
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(uploaded());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+    await act(() => result.current.mutateAsync(values));
+    expect(diaryCompletionCalls()).toHaveLength(0);
+  });
+
+  it('마지막 Batch 요청 실패 후 재시도하면 재요청 시점부터 생성 시간을 계산한다', async () => {
+    let now = 10_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockRejectedValueOnce(new Error('upload failed'))
+      .mockImplementationOnce(async () => {
+        now += 1_600;
+        return completed();
+      });
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync(values).catch(() => undefined));
+    expect(diaryCompletionCalls()).toHaveLength(0);
+    now += 60_000;
+    await act(() => result.current.mutateAsync(values));
+
+    expect(diaryCompletionCalls()).toEqual([
+      [EVENTS.DIARY_GENERATE_COMPLETE, { photo_count: 1, generation_time_sec: 2 }],
+    ]);
+  });
+
+  it('취소한 뒤 늦게 도착한 폴링 완료 응답은 기록하지 않는다', async () => {
+    let resolveStatus!: (status: TripProcessingStatusResponse) => void;
+    vi.mocked(cancelTripProcessing).mockResolvedValue(undefined);
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(uploaded('PROCESSING'));
+    vi.mocked(getTripProcessingStatus).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStatus = resolve;
+        }),
+    );
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync(values));
+    await waitFor(() => expect(getTripProcessingStatus).toHaveBeenCalled());
+    act(() => result.current.cancelProcessing());
+    await waitFor(() => expect(result.current.tripId).toBeNull());
+    await act(async () => resolveStatus(completed()));
+
+    expect(result.current.processingResult).toBeNull();
+    expect(diaryCompletionCalls()).toHaveLength(0);
   });
 
   it('여행을 만든 뒤 같은 tripId로 사진을 올린다', async () => {
