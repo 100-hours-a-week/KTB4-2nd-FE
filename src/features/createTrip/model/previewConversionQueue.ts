@@ -4,6 +4,7 @@ type PreviewTask = {
   reject: (error: unknown) => void;
   signal: AbortSignal;
   onAbort: () => void;
+  getPriority: () => number;
 };
 
 export function createPreviewConversionQueue(maxConcurrency: number) {
@@ -16,7 +17,17 @@ export function createPreviewConversionQueue(maxConcurrency: number) {
 
   const drain = () => {
     while (running < maxConcurrency && waiting.length > 0) {
-      const task = waiting.shift()!;
+      // 같은 우선순위는 요청 순서를 유지하고, 스크롤 위치는 실행 직전에 반영한다.
+      let nextIndex = 0;
+      let priority = waiting[0].getPriority();
+      for (let index = 1; index < waiting.length; index += 1) {
+        const candidatePriority = waiting[index].getPriority();
+        if (candidatePriority > priority) {
+          nextIndex = index;
+          priority = candidatePriority;
+        }
+      }
+      const [task] = waiting.splice(nextIndex, 1);
       task.signal.removeEventListener('abort', task.onAbort);
       running += 1;
 
@@ -34,7 +45,11 @@ export function createPreviewConversionQueue(maxConcurrency: number) {
   };
 
   return {
-    enqueue(run: () => Promise<Blob>, signal: AbortSignal): Promise<Blob> {
+    enqueue(
+      run: () => Promise<Blob>,
+      signal: AbortSignal,
+      getPriority: () => number = () => 0,
+    ): Promise<Blob> {
       if (signal.aborted) return Promise.reject(signal.reason);
 
       return new Promise((resolve, reject) => {
@@ -43,6 +58,7 @@ export function createPreviewConversionQueue(maxConcurrency: number) {
           resolve,
           reject,
           signal,
+          getPriority,
           onAbort: () => {
             const index = waiting.indexOf(task);
             if (index < 0) return;

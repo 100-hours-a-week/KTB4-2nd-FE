@@ -14,6 +14,28 @@ function deferredBlob() {
 }
 
 describe('previewConversionQueue', () => {
+  it('다음 실행 직전의 우선순위를 반영하고 같은 우선순위는 등록 순서를 유지한다', async () => {
+    const queue = createPreviewConversionQueue(1);
+    const first = deferredBlob();
+    const started: number[] = [];
+    const priorities = [0, 0, 0, 0];
+    const results = priorities.map((_, index) =>
+      queue.enqueue(
+        () => {
+          started.push(index);
+          return index === 0 ? first.promise : Promise.resolve(new Blob());
+        },
+        new AbortController().signal,
+        () => priorities[index],
+      ),
+    );
+    await waitFor(() => expect(started).toEqual([0]));
+    priorities[3] = 1;
+    first.resolve(new Blob());
+    await Promise.all(results);
+    expect(started).toEqual([0, 3, 1, 2]);
+  });
+
   it.each([1, 2, 4, Infinity])(
     '동시 실행 수 %s를 넘지 않고 모든 작업을 처리한다',
     async (limit) => {

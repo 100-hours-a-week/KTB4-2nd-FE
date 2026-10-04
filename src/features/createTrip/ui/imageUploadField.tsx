@@ -18,7 +18,7 @@ type ImageUploadFieldProps = {
 const PREVIEW_ROOT_MARGIN = '300px 0px';
 
 export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUploadFieldProps) {
-  const { scrollRootRef, registerCard, shouldRenderPreview } = useDeferredPreviewFiles(files);
+  const { scrollRootRef, registerCard, getPreviewPriority } = usePreviewPriorities(files);
 
   const selectFiles = (event: ChangeEvent<HTMLInputElement>) => {
     onSelect(Array.from(event.target.files ?? []));
@@ -89,9 +89,11 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
                   key={fileId}
                   className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
                 >
-                  {shouldRenderPreview(fileId) && (
-                    <ImagePreview file={file} delayMs={(index % 3) * 120} />
-                  )}
+                  <ImagePreview
+                    file={file}
+                    delayMs={(index % 3) * 120}
+                    getPreviewPriority={getPreviewPriority}
+                  />
                   <button
                     type="button"
                     aria-label={`${file.name} 삭제`}
@@ -114,10 +116,15 @@ function getFileIdentity(file: File) {
   return `${file.name}\u0000${file.size}\u0000${file.lastModified}`;
 }
 
-function useDeferredPreviewFiles(files: File[]) {
+function usePreviewPriorities(files: File[]) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const cardElementsRef = useRef(new Map<string, HTMLLIElement>());
-  const [previewFileIds, setPreviewFileIds] = useState<ReadonlySet<string>>(() => new Set());
+  const nearFileIdsRef = useRef(new Set<string>());
+
+  const getPreviewPriority = useCallback(
+    (fileId: string) => (nearFileIdsRef.current.has(fileId) ? 1 : 0),
+    [],
+  );
 
   const registerCard = useCallback((fileId: string, element: HTMLLIElement | null) => {
     if (element) {
@@ -129,39 +136,23 @@ function useDeferredPreviewFiles(files: File[]) {
   }, []);
 
   useEffect(() => {
+    const nearFileIds = nearFileIdsRef.current;
+    const currentFileIds = new Set(files.map(getFileIdentity));
+    for (const fileId of nearFileIds) {
+      if (!currentFileIds.has(fileId)) nearFileIds.delete(fileId);
+    }
     const root = scrollRootRef.current;
     if (!root || typeof IntersectionObserver === 'undefined') return;
 
-    const currentFileIds = new Set(files.map(getFileIdentity));
     const fileIdByElement = new Map<Element, string>();
     const observer = new IntersectionObserver(
       (entries) => {
-        const enteredFileIds: string[] = [];
-
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-
           const fileId = fileIdByElement.get(entry.target);
           if (!fileId) continue;
-
-          enteredFileIds.push(fileId);
-          observer.unobserve(entry.target);
+          if (entry.isIntersecting) nearFileIds.add(fileId);
+          else nearFileIds.delete(fileId);
         }
-
-        if (enteredFileIds.length === 0) return;
-
-        setPreviewFileIds((previousFileIds) => {
-          const nextFileIds = new Set(previousFileIds);
-          let changed = false;
-
-          for (const fileId of enteredFileIds) {
-            if (nextFileIds.has(fileId)) continue;
-            nextFileIds.add(fileId);
-            changed = true;
-          }
-
-          return changed ? nextFileIds : previousFileIds;
-        });
       },
       {
         root,
@@ -179,16 +170,22 @@ function useDeferredPreviewFiles(files: File[]) {
     return () => observer.disconnect();
   }, [files]);
 
-  const canObserve = typeof IntersectionObserver !== 'undefined';
-
   return {
     scrollRootRef,
     registerCard,
-    shouldRenderPreview: (fileId: string) => !canObserve || previewFileIds.has(fileId),
+    getPreviewPriority,
   };
 }
 
-function ImagePreview({ file, delayMs }: { file: File; delayMs: number }) {
+function ImagePreview({
+  file,
+  delayMs,
+  getPreviewPriority,
+}: {
+  file: File;
+  delayMs: number;
+  getPreviewPriority: (fileId: string) => number;
+}) {
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   const [failedFile, setFailedFile] = useState<File | null>(null);
 
@@ -197,7 +194,9 @@ function ImagePreview({ file, delayMs }: { file: File; delayMs: number }) {
     let previewUrl: string | null = null;
     const abortController = new AbortController();
 
-    void createPreviewBlob(file, abortController.signal)
+    void createPreviewBlob(file, abortController.signal, () =>
+      getPreviewPriority(getFileIdentity(file)),
+    )
       .then((previewBlob) => {
         if (!active) return;
         previewUrl = URL.createObjectURL(previewBlob);
@@ -212,7 +211,7 @@ function ImagePreview({ file, delayMs }: { file: File; delayMs: number }) {
       abortController.abort();
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
-  }, [file]);
+  }, [file, getPreviewPriority]);
 
   const url = preview?.file === file ? preview.url : null;
 
