@@ -100,6 +100,8 @@ describe('useTripCreateSubmit', () => {
   });
 
   it('마지막 응답이 PROCESSING이면 완료를 기다리고 폴링 완료 시 한 번 기록한다', async () => {
+    let now = 10_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
     let resolveStatus!: (status: TripProcessingStatusResponse) => void;
     vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(uploaded('PROCESSING'));
     vi.mocked(getTripProcessingStatus).mockImplementation(
@@ -116,18 +118,52 @@ describe('useTripCreateSubmit', () => {
     expect(result.current.processingResult).toBeNull();
     expect(diaryCompletionCalls()).toHaveLength(0);
 
+    now += 4_400;
     await act(async () => resolveStatus(completed()));
 
     await waitFor(() => expect(result.current.isPending).toBe(false));
     expect(result.current.processingResult?.status).toBe('COMPLETED');
     expect(diaryCompletionCalls()).toEqual([
-      [EVENTS.DIARY_GENERATE_COMPLETE, { photo_count: 1, generation_time_sec: expect.any(Number) }],
+      [EVENTS.DIARY_GENERATE_COMPLETE, { photo_count: 1, generation_time_sec: 4 }],
     ]);
     expect(track).toHaveBeenCalledWith(EVENTS.LOCATION_RESTORE_COMPLETE, {
       photo_count: 1,
       restored_count: 1,
       failed_count: 0,
     });
+  });
+
+  it('마지막 Batch 응답 전에 시작한 조회는 완료로 처리하지 않고 새 조회를 기다린다', async () => {
+    let resolveUpload!: (status: TripProcessingStatusResponse) => void;
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    vi.mocked(uploadInitialAttachmentBatch).mockImplementation(({ onUploadProgress }) => {
+      onUploadProgress?.(1);
+      return new Promise((resolve) => {
+        resolveUpload = resolve;
+      });
+    });
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(completed());
+    const { result } = renderHook(() => useTripCreateSubmit(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
+    });
+
+    act(() => result.current.mutate(values));
+    await waitFor(() => expect(result.current.processingStatus?.status).toBe('COMPLETED'));
+    expect(result.current.processingResult).toBeNull();
+    expect(diaryCompletionCalls()).toHaveLength(0);
+    await act(async () => resolveUpload(uploaded('PROCESSING')));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.isPending).toBe(true);
+    expect(diaryCompletionCalls()).toHaveLength(0);
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['createTrip', 'processingStatus', 7] });
+    });
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    expect(diaryCompletionCalls()).toHaveLength(1);
   });
 
   it('완료된 여행을 다시 제출해도 완료 이벤트를 중복 전송하지 않는다', async () => {

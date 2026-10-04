@@ -226,8 +226,11 @@ export function useTripCreateSubmit() {
       }
       return status;
     },
-    refetchInterval: (query) =>
-      awaitingProcessing ? 2_000 : processingQuery.refetchInterval(query),
+    refetchInterval: (query) => {
+      if (awaitingProcessing) return 2_000;
+      const interval = processingQuery.refetchInterval;
+      return typeof interval === 'function' ? interval(query) : interval;
+    },
     enabled: isPending && tripId !== null && uploadRatio >= 1,
   });
 
