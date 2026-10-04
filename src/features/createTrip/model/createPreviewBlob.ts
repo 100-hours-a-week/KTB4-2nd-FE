@@ -40,23 +40,31 @@ function isHeicFile(file: File) {
   );
 }
 
-export async function createPreviewBlob(file: File, signal: AbortSignal): Promise<Blob> {
+export async function createPreviewBlob(
+  file: File,
+  signal: AbortSignal,
+  getPriority?: () => number,
+): Promise<Blob> {
   signal.throwIfAborted();
   if (!isHeicFile(file)) return file;
 
-  return heicPreviewQueue.enqueue(async () => {
-    const mode = getHeicPreviewDecoderMode();
-    let bitmap: ImageBitmap;
-    if (mode === 'wasm') {
-      const { decodeHeicWithWasm } = await loadWasmModule();
-      signal.throwIfAborted();
-      bitmap = await decodeHeicWithWasm(file, signal);
-    } else {
-      const { heicTo } = await loadHeicModule();
-      signal.throwIfAborted();
-      bitmap = await heicTo({ blob: file, type: 'bitmap' });
-    }
+  return heicPreviewQueue.enqueue(
+    async () => {
+      const mode = getHeicPreviewDecoderMode();
+      let bitmap: ImageBitmap;
+      if (mode === 'wasm') {
+        const { decodeHeicWithWasm } = await loadWasmModule();
+        signal.throwIfAborted();
+        bitmap = await decodeHeicWithWasm(file, signal);
+      } else {
+        const { heicTo } = await loadHeicModule();
+        signal.throwIfAborted();
+        bitmap = await heicTo({ blob: file, type: 'bitmap' });
+      }
 
-    return createThumbnailBlob(bitmap, signal);
-  }, signal);
+      return createThumbnailBlob(bitmap, signal);
+    },
+    signal,
+    getPriority,
+  );
 }

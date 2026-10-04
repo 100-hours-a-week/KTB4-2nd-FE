@@ -134,7 +134,7 @@ afterEach(() => {
   else Reflect.deleteProperty(globalThis, 'IntersectionObserver');
 });
 
-it('활성화된 미리보기만 호흡 모션을 보여주고 이미지가 준비되면 제거한다', async () => {
+it('화면 밖의 대기 사진도 스켈레톤을 보여주고 이미지가 준비되면 제거한다', async () => {
   installIntersectionObserverMock();
   installPreviewUrlMocks();
   const pending = deferredPreview();
@@ -145,10 +145,8 @@ it('활성화된 미리보기만 호흡 모션을 보여주고 이미지가 준�
   ];
   render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
   const cards = screen.getAllByRole('listitem');
-  expect(cards[0].querySelector('span[aria-hidden="true"]')).toBeNull();
-  act(() => MockIntersectionObserver.instances[0].trigger(cards[0]));
   expect(cards[0].querySelector('span[aria-hidden="true"]')).toHaveClass(skeletonStyles.breathe);
-  expect(cards[1].querySelector('span[aria-hidden="true"]')).toBeNull();
+  expect(cards[1].querySelector('span[aria-hidden="true"]')).toHaveClass(skeletonStyles.breathe);
 
   await act(async () => {
     pending.resolve(previewBitmap());
@@ -209,7 +207,7 @@ it('미리보기 이미지 로드 오류는 실패 상태를 표시하고 URL을
   expect(URL.revokeObjectURL).toHaveBeenCalledWith(url);
 });
 
-it('화면 근처에 들어온 사진만 미리보기로 변환한다', async () => {
+it('스크롤하지 않아도 선택한 모든 사진의 미리보기를 차례로 준비한다', async () => {
   installIntersectionObserverMock();
   const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
   const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
@@ -240,25 +238,58 @@ it('화면 근처에 들어온 사진만 미리보기로 변환한다', async ()
   expect(observer.root).toBe(scrollRoot);
   expect(observer.rootMargin).toBe('300px 0px');
   expect(observer.thresholds).toEqual([0.01]);
-  expect(convertHeic).not.toHaveBeenCalled();
-
-  act(() => observer.trigger(cards[0]));
-
   expect(await screen.findByRole('img', { name: 'first.HEIC' })).toBeInTheDocument();
-  expect(screen.queryByRole('img', { name: 'second.HEIC' })).not.toBeInTheDocument();
-  expect(convertHeic).toHaveBeenCalledTimes(1);
+  expect(await screen.findByRole('img', { name: 'second.HEIC' })).toBeInTheDocument();
+  expect(convertHeic).toHaveBeenCalledTimes(2);
   expect(convertHeic).toHaveBeenCalledWith({
     blob: firstFile,
     type: 'bitmap',
   });
 
-  act(() => observer.trigger(cards[1]));
-
-  expect(await screen.findByRole('img', { name: 'second.HEIC' })).toBeInTheDocument();
-  expect(convertHeic).toHaveBeenCalledTimes(2);
-
   act(() => observer.trigger(cards[0]));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(2));
+});
+
+it('스크롤로 화면 근처에 온 사진을 먼저 처리하고 남은 사진도 모두 준비한다', async () => {
+  installIntersectionObserverMock();
+  installPreviewUrlMocks();
+  const files = Array.from(
+    { length: 5 },
+    (_, index) => new File(['heic'], `${index}.heic`, { type: 'image/heic' }),
+  );
+  const pending = files.map(() => deferredPreview());
+  convertHeic.mockImplementation(
+    ({ blob }: { blob: File }) => pending[files.indexOf(blob)].promise,
+  );
+  render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(2));
+  expect(convertHeic.mock.calls.map(([params]) => params.blob)).toEqual(files.slice(0, 2));
+
+  const observer = MockIntersectionObserver.instances[0];
+  const cards = screen.getAllByRole('listitem');
+  act(() => {
+    observer.trigger(cards[3]);
+    observer.trigger(cards[4]);
+    observer.trigger(cards[3], false);
+  });
+  await act(async () => pending[0].resolve(previewBitmap()));
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(3));
+  expect(convertHeic.mock.calls[2][0].blob).toBe(files[4]);
+
+  await act(async () => pending[1].resolve(previewBitmap()));
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(4));
+  expect(convertHeic.mock.calls[3][0].blob).toBe(files[2]);
+  await act(async () => pending[4].resolve(previewBitmap()));
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(5));
+  expect(convertHeic.mock.calls[4][0].blob).toBe(files[3]);
+  await act(async () => {
+    pending[2].resolve(previewBitmap());
+    pending[3].resolve(previewBitmap());
+  });
+  for (const file of files) {
+    expect(await screen.findByRole('img', { name: file.name })).toBeInTheDocument();
+  }
+  expect(convertHeic).toHaveBeenCalledTimes(5);
 });
 
 it('앞 사진을 삭제해도 남은 HEIC 미리보기를 다시 변환하지 않는다', async () => {
