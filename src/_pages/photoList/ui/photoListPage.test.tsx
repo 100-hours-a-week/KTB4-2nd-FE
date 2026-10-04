@@ -13,6 +13,7 @@ import {
 } from '@/features/photoList/api/photoDownload';
 import { triggerDownload } from '@/features/photoList/lib/triggerDownload';
 import type { PhotoListItem } from '@/features/photoList/model/types';
+import skeletonStyles from '@/shared/ui/skeleton/skeleton.module.css';
 
 import { PhotoListPage } from './photoListPage';
 
@@ -85,6 +86,31 @@ describe('PhotoListPage', () => {
     expect(getPlacePhotos).toHaveBeenCalledWith(7, 3, null);
   });
 
+  it('조회 중에는 시차가 있는 호흡 모션 카드 18개를 보여주고 완료 후 제거한다', async () => {
+    let finish!: (result: PlacePhotoPageResult) => void;
+    vi.mocked(getPlacePhotos).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    renderPhotoListPage();
+
+    const loading = screen.getByRole('status', { name: '사진 불러오는 중' });
+    expect(loading).toHaveAttribute('aria-busy', 'true');
+    const cards = loading.querySelectorAll('span[aria-hidden="true"]');
+    expect(cards).toHaveLength(18);
+    cards.forEach((card) => expect(card).toHaveClass(skeletonStyles.breathe));
+    expect(cards[0]).toHaveStyle({ animationDelay: '0ms' });
+    expect(cards[1]).toHaveStyle({ animationDelay: '120ms' });
+    expect(cards[3]).toHaveStyle({ animationDelay: '60ms' });
+
+    await act(async () => {
+      finish(page([photo(1)]));
+    });
+    await findFirstPhoto();
+    expect(screen.queryByRole('status', { name: '사진 불러오는 중' })).not.toBeInTheDocument();
+  });
+
   it('헤더의 뒤로가기는 여행 상세를 새로 쌓지 않고 이전 기록으로 돌아간다', async () => {
     const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
     renderPhotoListPage();
@@ -124,6 +150,8 @@ describe('PhotoListPage', () => {
     renderPhotoListPage();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('사진을 가져오지 못했어요.');
+    expect(screen.queryByRole('status', { name: '사진 불러오는 중' })).not.toBeInTheDocument();
+    expect(document.querySelectorAll(`.${skeletonStyles.breathe}`)).toHaveLength(0);
 
     vi.mocked(getPlacePhotos).mockResolvedValue(page([photo(1)]));
     await userEvent.click(screen.getByRole('button', { name: '다시 시도' }));

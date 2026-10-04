@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
+import { Skeleton } from '@/shared/ui/skeleton';
+
 import { createPreviewBlob } from '../model/createPreviewBlob';
 import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 
@@ -87,7 +89,9 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
                   key={fileId}
                   className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
                 >
-                  {shouldRenderPreview(fileId) && <ImagePreview file={file} />}
+                  {shouldRenderPreview(fileId) && (
+                    <ImagePreview file={file} delayMs={(index % 3) * 120} />
+                  )}
                   <button
                     type="button"
                     aria-label={`${file.name} 삭제`}
@@ -184,7 +188,7 @@ function useDeferredPreviewFiles(files: File[]) {
   };
 }
 
-function ImagePreview({ file }: { file: File }) {
+function ImagePreview({ file, delayMs }: { file: File; delayMs: number }) {
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   const [failedFile, setFailedFile] = useState<File | null>(null);
 
@@ -221,7 +225,9 @@ function ImagePreview({ file }: { file: File }) {
     );
   }
 
-  if (!url) return null;
+  if (!url) {
+    return <Skeleton animation="breathe" delayMs={delayMs} className="size-full rounded-none" />;
+  }
 
   return (
     <Image

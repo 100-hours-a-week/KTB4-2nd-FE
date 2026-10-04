@@ -1,12 +1,18 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import skeletonStyles from '@/shared/ui/skeleton/skeleton.module.css';
+
 import { ImageUploadField } from './imageUploadField';
 
-const { convertHeic } = vi.hoisted(() => ({ convertHeic: vi.fn() }));
+const { convertHeic, convertHeicWasm } = vi.hoisted(() => ({
+  convertHeic: vi.fn(),
+  convertHeicWasm: vi.fn(),
+}));
 
 vi.mock('heic-to', () => ({ heicTo: convertHeic }));
+vi.mock('../model/decodeHeicWithWasm', () => ({ decodeHeicWithWasm: convertHeicWasm }));
 
 const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
 const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
@@ -94,6 +100,7 @@ function deferredPreview() {
 
 beforeEach(() => {
   convertHeic.mockReset();
+  convertHeicWasm.mockReset();
   const canvasPreviews = new WeakMap<HTMLCanvasElement, Blob>();
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (
     this: HTMLCanvasElement,
@@ -114,6 +121,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   vi.clearAllMocks();
   if (originalCreateObjectURL)
     Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
@@ -124,6 +132,81 @@ afterEach(() => {
   if (originalIntersectionObserver)
     Object.defineProperty(globalThis, 'IntersectionObserver', originalIntersectionObserver);
   else Reflect.deleteProperty(globalThis, 'IntersectionObserver');
+});
+
+it('활성화된 미리보기만 호흡 모션을 보여주고 이미지가 준비되면 제거한다', async () => {
+  installIntersectionObserverMock();
+  installPreviewUrlMocks();
+  const pending = deferredPreview();
+  convertHeic.mockReturnValue(pending.promise);
+  const files = [
+    new File(['first'], 'first.heic', { type: 'image/heic' }),
+    new File(['second'], 'second.heic', { type: 'image/heic' }),
+  ];
+  render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
+  const cards = screen.getAllByRole('listitem');
+  expect(cards[0].querySelector('span[aria-hidden="true"]')).toBeNull();
+  act(() => MockIntersectionObserver.instances[0].trigger(cards[0]));
+  expect(cards[0].querySelector('span[aria-hidden="true"]')).toHaveClass(skeletonStyles.breathe);
+  expect(cards[1].querySelector('span[aria-hidden="true"]')).toBeNull();
+
+  await act(async () => {
+    pending.resolve(previewBitmap());
+  });
+  await screen.findByRole('img', { name: 'first.heic' });
+  expect(cards[0].querySelector('span[aria-hidden="true"]')).toBeNull();
+});
+
+it('Wasm 경로도 두 장씩 처리하고 기존 썸네일과 URL 정리 흐름을 유지한다', async () => {
+  vi.stubEnv('NEXT_PUBLIC_HEIC_PREVIEW_DECODER', 'wasm');
+  installIntersectionObserverMock();
+  const createUrl = installPreviewUrlMocks();
+  const files = Array.from(
+    { length: 3 },
+    (_, index) => new File(['heic'], `${index}.heic`, { type: 'image/heic' }),
+  );
+  const conversions = files.map(() => deferredPreview());
+  convertHeicWasm.mockImplementation((file: File) => conversions[files.indexOf(file)].promise);
+  const { unmount } = render(
+    <ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />,
+  );
+  act(() => {
+    const observer = MockIntersectionObserver.instances[0];
+    screen.getAllByRole('listitem').forEach((card) => observer.trigger(card));
+  });
+  await waitFor(() => expect(convertHeicWasm).toHaveBeenCalledTimes(2));
+  expect(convertHeic).not.toHaveBeenCalled();
+  await act(async () => {
+    conversions[0].resolve(previewBitmap());
+  });
+  await waitFor(() => expect(convertHeicWasm).toHaveBeenCalledTimes(3));
+  await act(async () => {
+    conversions[1].resolve(previewBitmap());
+    conversions[2].resolve(previewBitmap());
+  });
+  await waitFor(() => expect(createUrl).toHaveBeenCalledTimes(3));
+  expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalledWith(
+    expect.any(Function),
+    'image/jpeg',
+    0.85,
+  );
+  unmount();
+  expect(URL.revokeObjectURL).toHaveBeenCalledTimes(3);
+});
+
+it('미리보기 이미지 로드 오류는 실패 상태를 표시하고 URL을 정리한다', async () => {
+  installPreviewUrlMocks();
+  const file = new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' });
+  const { unmount } = render(
+    <ImageUploadField files={[file]} onSelect={vi.fn()} onRemove={vi.fn()} />,
+  );
+  const image = await screen.findByRole('img', { name: 'photo.jpg' });
+  const url = image.getAttribute('src');
+  fireEvent.error(image);
+  expect(screen.getByText('미리보기 불가')).toBeInTheDocument();
+  expect(screen.queryByRole('img', { name: 'photo.jpg' })).not.toBeInTheDocument();
+  unmount();
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith(url);
 });
 
 it('화면 근처에 들어온 사진만 미리보기로 변환한다', async () => {
