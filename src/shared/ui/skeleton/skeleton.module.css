@@ -1,0 +1,41 @@
+.breathe {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--surface, #ffffff);
+}
+
+.breathe::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  border-radius: inherit;
+  background-color: #f2f4f6;
+  mask-image: linear-gradient(110deg, #000000, transparent);
+  -webkit-mask-image: linear-gradient(110deg, #000000, transparent);
+  transform-origin: center;
+  animation: skeleton-breathe 2s ease-in-out infinite;
+  animation-delay: inherit;
+}
+
+@keyframes skeleton-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.97);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe::after {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

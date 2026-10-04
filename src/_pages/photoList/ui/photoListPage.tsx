@@ -371,10 +371,19 @@ function SelectionActions({
 
 function PhotoGridSkeleton({ showError, onRetry }: { showError: boolean; onRetry: () => void }) {
   return (
-    <div role="status" aria-label="사진 불러오는 중">
+    <div
+      role={showError ? undefined : 'status'}
+      aria-label={showError ? undefined : '사진 불러오는 중'}
+      aria-busy={!showError}
+    >
       <div className="mt-3 grid grid-cols-3 gap-1">
         {Array.from({ length: 18 }).map((_, index) => (
-          <Skeleton key={index} className="aspect-square w-full rounded-[5px]" />
+          <Skeleton
+            key={index}
+            animation={showError ? 'none' : 'breathe'}
+            delayMs={(index % 3) * 120 + Math.floor(index / 3) * 60}
+            className="aspect-square w-full rounded-[5px]"
+          />
         ))}
       </div>
       {showError && (
