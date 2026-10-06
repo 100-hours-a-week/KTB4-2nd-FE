@@ -6,13 +6,17 @@ import skeletonStyles from '@/shared/ui/skeleton/skeleton.module.css';
 
 import { ImageUploadField } from './imageUploadField';
 
-const { convertHeic, convertHeicWasm } = vi.hoisted(() => ({
+const { convertHeic, convertHeicWasm, prepareWasm } = vi.hoisted(() => ({
   convertHeic: vi.fn(),
   convertHeicWasm: vi.fn(),
+  prepareWasm: vi.fn(),
 }));
 
 vi.mock('heic-to', () => ({ heicTo: convertHeic }));
-vi.mock('../model/decodeHeicWithWasm', () => ({ decodeHeicWithWasm: convertHeicWasm }));
+vi.mock('../model/decodeHeicWithWasm', () => ({
+  decodeHeicWithWasm: convertHeicWasm,
+  prepareHeicWasmWorker: prepareWasm,
+}));
 
 const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
 const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
@@ -101,6 +105,14 @@ function deferredPreview() {
 beforeEach(() => {
   convertHeic.mockReset();
   convertHeicWasm.mockReset();
+  prepareWasm.mockReset().mockResolvedValue(undefined);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      text: async () => 'heic-preview-online',
+    })),
+  );
   const canvasPreviews = new WeakMap<HTMLCanvasElement, Blob>();
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (
     this: HTMLCanvasElement,
@@ -122,6 +134,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
   if (originalCreateObjectURL)
     Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);

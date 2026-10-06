@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { Skeleton } from '@/shared/ui/skeleton';
 
 import { createPreviewBlob } from '../model/createPreviewBlob';
+import { prepareHeicPreviewDecoder } from '../model/heicPreviewDecoder';
+import { HeicPreviewResourceError } from '../model/heicPreviewError';
 import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 
 type ImageUploadFieldProps = {
@@ -16,9 +18,43 @@ type ImageUploadFieldProps = {
 };
 
 const PREVIEW_ROOT_MARGIN = '300px 0px';
+const PREVIEW_READY_EVENT = 'heic-preview-ready';
 
 export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUploadFieldProps) {
   const { scrollRootRef, registerCard, getPreviewPriority } = usePreviewPriorities(files);
+
+  useEffect(() => {
+    let active = true;
+    let preparing = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryDelay = 5_000;
+    const prepare = () => {
+      if (!active || preparing) return;
+      clearTimeout(retryTimer);
+      preparing = true;
+      void prepareHeicPreviewDecoder()
+        .then(() => {
+          if (active) window.dispatchEvent(new Event(PREVIEW_READY_EVENT));
+          retryDelay = 5_000;
+        })
+        .catch((error: unknown) => {
+          if (active && error instanceof HeicPreviewResourceError && error.kind === 'network') {
+            retryTimer = setTimeout(prepare, retryDelay);
+            retryDelay = Math.min(retryDelay * 2, 30_000);
+          }
+        })
+        .finally(() => {
+          preparing = false;
+        });
+    };
+    prepare();
+    window.addEventListener('online', prepare);
+    return () => {
+      active = false;
+      clearTimeout(retryTimer);
+      window.removeEventListener('online', prepare);
+    };
+  }, []);
 
   const selectFiles = (event: ChangeEvent<HTMLInputElement>) => {
     onSelect(Array.from(event.target.files ?? []));
@@ -187,7 +223,21 @@ function ImagePreview({
   getPreviewPriority: (fileId: string) => number;
 }) {
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
-  const [failedFile, setFailedFile] = useState<File | null>(null);
+  const [failure, setFailure] = useState<{
+    file: File;
+    kind: 'network' | 'module' | 'conversion';
+  } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => {
+    setFailure(null);
+    setAttempt((previous) => previous + 1);
+  }, []);
+
+  useEffect(() => {
+    if (failure?.file !== file || failure.kind === 'conversion') return;
+    window.addEventListener(PREVIEW_READY_EVENT, retry);
+    return () => window.removeEventListener(PREVIEW_READY_EVENT, retry);
+  }, [failure, file, retry]);
 
   useEffect(() => {
     let active = true;
@@ -202,8 +252,15 @@ function ImagePreview({
         previewUrl = URL.createObjectURL(previewBlob);
         setPreview({ file, url: previewUrl });
       })
-      .catch(() => {
-        if (active) setFailedFile(file);
+      .catch((error: unknown) => {
+        if (!active) return;
+        const kind =
+          error instanceof HeicPreviewResourceError
+            ? navigator.onLine
+              ? error.kind
+              : 'network'
+            : 'conversion';
+        setFailure({ file, kind });
       });
 
     return () => {
@@ -211,15 +268,28 @@ function ImagePreview({
       abortController.abort();
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
-  }, [file, getPreviewPriority]);
+  }, [file, getPreviewPriority, attempt]);
 
   const url = preview?.file === file ? preview.url : null;
 
-  if (failedFile === file) {
+  if (failure?.file === file) {
+    const message = {
+      network: '인터넷 연결을 기다리고 있어요',
+      module: '미리보기 준비에 실패했어요',
+      conversion: '미리보기 불가',
+    }[failure.kind];
     return (
       <div className="text-muted flex size-full flex-col items-center justify-center px-2 text-center text-[10px]">
-        <span>미리보기 불가</span>
+        <span role="status">{message}</span>
         <span className="mt-1 max-w-full truncate">{file.name}</span>
+        <button
+          type="button"
+          aria-label={`${file.name} 미리보기 다시 시도`}
+          onClick={retry}
+          className="text-brand mt-2 cursor-pointer rounded px-2 py-1 font-semibold underline"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }
@@ -236,7 +306,7 @@ function ImagePreview({
       sizes="(max-width: 430px) 33vw, 130px"
       unoptimized
       className="object-cover"
-      onError={() => setFailedFile(file)}
+      onError={() => setFailure({ file, kind: 'conversion' })}
     />
   );
 }
