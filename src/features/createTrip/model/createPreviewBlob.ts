@@ -1,33 +1,11 @@
 import { createPreviewConversionQueue } from './previewConversionQueue';
 import { createThumbnailBlob } from './createThumbnailBlob';
-import { getHeicPreviewDecoderMode } from './heicPreviewDecoderMode';
+import { prepareHeicPreviewDecoder, resetHeicPreviewDecoder } from './heicPreviewDecoder';
+import { HeicPreviewResourceError } from './heicPreviewError';
 
 export const HEIC_PREVIEW_CONCURRENCY = 2;
 
 const heicPreviewQueue = createPreviewConversionQueue(HEIC_PREVIEW_CONCURRENCY);
-let heicModulePromise: Promise<typeof import('heic-to')> | null = null;
-let wasmModulePromise: Promise<typeof import('./decodeHeicWithWasm')> | null = null;
-
-function loadWasmModule() {
-  if (!wasmModulePromise) {
-    wasmModulePromise = import('./decodeHeicWithWasm').catch((error: unknown) => {
-      wasmModulePromise = null;
-      throw error;
-    });
-  }
-  return wasmModulePromise;
-}
-
-function loadHeicModule() {
-  if (!heicModulePromise) {
-    heicModulePromise = import('heic-to').catch((error: unknown) => {
-      heicModulePromise = null;
-      throw error;
-    });
-  }
-
-  return heicModulePromise;
-}
 
 function isHeicFile(file: File) {
   const mimeType = file.type.toLowerCase();
@@ -48,21 +26,21 @@ export async function createPreviewBlob(
   signal.throwIfAborted();
   if (!isHeicFile(file)) return file;
 
+  // 모든 사진이 동일한 준비 요청을 기다린다. 오프라인 실패를 큐에서 사진마다 재요청하지 않는다.
+  await prepareHeicPreviewDecoder();
+  signal.throwIfAborted();
+
   return heicPreviewQueue.enqueue(
     async () => {
-      const mode = getHeicPreviewDecoderMode();
-      let bitmap: ImageBitmap;
-      if (mode === 'wasm') {
-        const { decodeHeicWithWasm } = await loadWasmModule();
-        signal.throwIfAborted();
-        bitmap = await decodeHeicWithWasm(file, signal);
-      } else {
-        const { heicTo } = await loadHeicModule();
-        signal.throwIfAborted();
-        bitmap = await heicTo({ blob: file, type: 'bitmap' });
+      const decode = await prepareHeicPreviewDecoder();
+      signal.throwIfAborted();
+      try {
+        const bitmap = await decode(file, signal);
+        return await createThumbnailBlob(bitmap, signal);
+      } catch (error) {
+        if (error instanceof HeicPreviewResourceError) resetHeicPreviewDecoder();
+        throw error;
       }
-
-      return createThumbnailBlob(bitmap, signal);
     },
     signal,
     getPriority,

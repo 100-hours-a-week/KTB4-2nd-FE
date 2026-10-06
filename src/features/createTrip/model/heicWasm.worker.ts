@@ -21,10 +21,25 @@ function loadLibheif() {
   return modulePromise;
 }
 
-scope.onmessage = async ({ data: { id, buffer } }) => {
+scope.onmessage = async ({ data }) => {
+  const { id } = data;
+  let libheif: LibheifModule;
   try {
-    const libheif = await loadLibheif();
-    const imageData = await decodeHeicPixels(libheif, buffer);
+    libheif = await loadLibheif();
+  } catch (error) {
+    scope.postMessage({
+      id,
+      error: error instanceof Error ? error.message : 'Wasm 초기화에 실패했습니다.',
+      kind: 'module',
+    });
+    return;
+  }
+  if (data.type === 'prepare') {
+    scope.postMessage({ id, ready: true });
+    return;
+  }
+  try {
+    const imageData = await decodeHeicPixels(libheif, data.buffer);
     // Match heic-to's structured-clone communication for this decoder comparison.
     // Do not also change transfer, resize, or JPEG encoding in this experiment.
     scope.postMessage({ id, imageData });

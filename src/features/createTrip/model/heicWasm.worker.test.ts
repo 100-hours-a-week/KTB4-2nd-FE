@@ -53,8 +53,23 @@ it('초기화 실패를 전달하고 다음 요청에서 다시 초기화한다'
   factory.mockRejectedValueOnce(new Error('Wasm 초기화 실패'));
   await import('./heicWasm.worker');
   await scope.onmessage(request(1));
-  expect(scope.postMessage).toHaveBeenCalledWith({ id: 1, error: 'Wasm 초기화 실패' });
+  expect(scope.postMessage).toHaveBeenCalledWith({
+    id: 1,
+    error: 'Wasm 초기화 실패',
+    kind: 'module',
+  });
   await scope.onmessage(request(2));
   expect(factory).toHaveBeenCalledTimes(2);
   expect(scope.postMessage).toHaveBeenCalledWith({ id: 2, imageData: pixels });
+});
+
+it('사진 없이 Wasm을 미리 준비하고 실제 디코딩에서 초기화 결과를 재사용한다', async () => {
+  await import('./heicWasm.worker');
+  await scope.onmessage({ data: { id: 1, type: 'prepare' } });
+  expect(factory).toHaveBeenCalledOnce();
+  expect(decode).not.toHaveBeenCalled();
+  expect(scope.postMessage).toHaveBeenCalledWith({ id: 1, ready: true });
+  await scope.onmessage(request(2));
+  expect(factory).toHaveBeenCalledOnce();
+  expect(decode).toHaveBeenCalledOnce();
 });
