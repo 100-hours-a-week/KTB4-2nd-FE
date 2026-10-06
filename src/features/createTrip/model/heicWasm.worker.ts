@@ -40,8 +40,7 @@ scope.onmessage = async ({ data }) => {
   }
   try {
     const imageData = await decodeHeicPixels(libheif, data.buffer);
-    // Match heic-to's structured-clone communication for this decoder comparison.
-    // Do not also change transfer, resize, or JPEG encoding in this experiment.
+
     scope.postMessage({ id, imageData });
   } catch (error) {
     scope.postMessage({

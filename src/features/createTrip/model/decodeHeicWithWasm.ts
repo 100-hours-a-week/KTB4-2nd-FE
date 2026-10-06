@@ -101,8 +101,6 @@ export async function decodeHeicWithWasm(file: Blob, signal: AbortSignal): Promi
   signal.throwIfAborted();
   const response = await requestWorker(loadWorker(), { id: ++nextRequestId, buffer });
   if (!('imageData' in response) || !response.imageData) throw new Error('HEIC 결과가 없습니다.');
-
-  // A running decode must settle before releasing a queue slot, even after removal.
   signal.throwIfAborted();
   const bitmap = await createImageBitmap(response.imageData);
   if (signal.aborted) {

@@ -7,7 +7,6 @@ const decoders = new Map<HeicPreviewDecoderMode, Promise<Decoder>>();
 async function checkConnection() {
   if (!navigator.onLine) throw new HeicPreviewResourceError('network');
   try {
-    // 작은 정적 파일로 실제 접근 가능 여부를 확인한다. 인증/백엔드 API는 필요 없다.
     const response = await fetch(`/heic-preview-connectivity.txt?check=${Date.now()}`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(5_000),

@@ -26,7 +26,6 @@ export async function createPreviewBlob(
   signal.throwIfAborted();
   if (!isHeicFile(file)) return file;
 
-  // 모든 사진이 동일한 준비 요청을 기다린다. 오프라인 실패를 큐에서 사진마다 재요청하지 않는다.
   await prepareHeicPreviewDecoder();
   signal.throwIfAborted();
 

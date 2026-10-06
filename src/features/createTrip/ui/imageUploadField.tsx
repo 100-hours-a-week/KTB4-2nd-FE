@@ -38,7 +38,6 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
           retryDelay = 5_000;
         })
         .catch((error: unknown) => {
-          // online 이벤트가 없는 연결 복구도 확인하되, 파일/모듈 오류는 반복하지 않는다.
           if (active && error instanceof HeicPreviewResourceError && error.kind === 'network') {
             retryTimer = setTimeout(prepare, retryDelay);
             retryDelay = Math.min(retryDelay * 2, 30_000);
