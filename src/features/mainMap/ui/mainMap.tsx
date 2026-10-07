@@ -79,6 +79,7 @@ function makeMarkerContent(group: TripMarkerGroup, onClick: (marker: HTMLElement
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'trip-map-marker';
+  if (group.tripCount > 1) button.setAttribute('aria-haspopup', 'dialog');
   button.setAttribute(
     'aria-label',
     group.tripCount === 1 && group.trips[0]
@@ -143,6 +144,8 @@ export function MainMap({
   resetSignal?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const popupTriggerRef = useRef<HTMLElement | null>(null);
+  const popupCloseRef = useRef<HTMLButtonElement>(null);
   const mapRef = useRef<KakaoMap | null>(null);
   const overlaysRef = useRef<KakaoCustomOverlay[]>([]);
   const tripsRef = useRef(trips);
@@ -153,6 +156,24 @@ export function MainMap({
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [openGroup, setOpenGroup] = useState<OpenGroup | null>(null);
   const [visibleCount, setVisibleCount] = useState(5);
+
+  const closePopup = useCallback(() => {
+    setOpenGroup(null);
+    if (popupTriggerRef.current?.isConnected) popupTriggerRef.current.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!openGroup) return;
+
+    popupCloseRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closePopup();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [openGroup, closePopup]);
 
   useEffect(() => {
     tripsRef.current = trips;
@@ -194,6 +215,7 @@ export function MainMap({
         const markerBottom = bounds.bottom - containerTop;
         const placeBelow = markerTop < MARKER_POPUP_MAX_HEIGHT + MARKER_POPUP_GAP;
 
+        popupTriggerRef.current = marker;
         setVisibleCount(5);
         setOpenGroup({
           group,
@@ -414,14 +436,30 @@ export function MainMap({
 
       {openGroup && (
         <div
+          role="dialog"
+          aria-label="여행 목록"
           className={`absolute z-30 w-48 -translate-x-1/2 overflow-hidden rounded-xl bg-white p-1 shadow-xl ${openGroup.placement === 'above' ? '-translate-y-full' : ''}`}
           style={{
             left: openGroup.x,
             top: openGroup.y,
           }}
         >
+          <div className="flex items-center justify-between pl-2">
+            <h2 className="text-brand text-xs font-bold">여행 목록</h2>
+            <button
+              ref={popupCloseRef}
+              type="button"
+              aria-label="여행 목록 닫기"
+              onClick={closePopup}
+              className="text-muted hover:bg-slate-100 focus-visible:outline-brand grid size-11 shrink-0 cursor-pointer place-items-center rounded-lg focus-visible:outline-2"
+            >
+              <span aria-hidden="true" className="text-lg">
+                ×
+              </span>
+            </button>
+          </div>
           <div
-            className={`overflow-y-auto ${openGroup.group.trips.length > visibleCount ? 'h-40' : 'max-h-56'}`}
+            className={`overflow-y-auto ${openGroup.group.trips.length > visibleCount ? 'h-40' : 'max-h-44'}`}
             onScroll={handleListScroll}
           >
             {openGroup.group.trips.slice(0, visibleCount).map((trip) => (

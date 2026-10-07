@@ -175,6 +175,55 @@ describe('PhotoListPage', () => {
     await waitFor(() => expect(getPhotoOriginal).toHaveBeenCalledWith(1));
   });
 
+  it('키보드로 사진을 순환하고 Escape로 닫으면 원래 사진으로 포커스를 돌려준다', async () => {
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    const first = await findFirstPhoto();
+    first.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('button', { name: '원본 보기 닫기' })).toHaveFocus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('2 / 3');
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 3');
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('3 / 3');
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 3');
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: '사진 원본 보기' })).not.toBeInTheDocument();
+    expect(first).toHaveFocus();
+  });
+
+  it('Tab과 Shift+Tab 포커스가 사진 뷰어 안에서 순환한다', async () => {
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await user.click(await findFirstPhoto());
+    const close = screen.getByRole('button', { name: '원본 보기 닫기' });
+    const next = screen.getByRole('button', { name: '다음 사진' });
+
+    await user.tab({ shift: true });
+    expect(next).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+  });
+
+  it('삭제 확인창에서는 화살표로 사진을 바꾸지 않고 Escape로 확인창만 닫는다', async () => {
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await user.click(await findFirstPhoto());
+    await user.click(screen.getByRole('button', { name: '사진 더보기 메뉴' }));
+    await user.click(screen.getByRole('menuitem', { name: '삭제' }));
+
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 3');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '사진 원본 보기' })).toBeInTheDocument();
+  });
+
   it('원본 보기에서 다운로드를 누르면 단일 다운로드 URL을 발급받아 내려받는다', async () => {
     vi.mocked(issuePhotoDownloadUrl).mockResolvedValue({
       tripAttachmentId: 1,
@@ -206,6 +255,28 @@ describe('PhotoListPage', () => {
       expect(issueBulkPhotoDownloadUrl).toHaveBeenCalledWith([1, 2, 3], 'csrf-token'),
     );
     expect(triggerDownload).toHaveBeenCalledWith('https://cdn.test/jeju.zip', 'jeju.zip');
+  });
+
+  it('201장 선택 시 다운로드만 비활성화하고 200장으로 줄이면 다시 활성화한다', async () => {
+    vi.mocked(getPlacePhotos).mockResolvedValue(
+      page(Array.from({ length: 201 }, (_, index) => photo(index + 1))),
+    );
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(screen.getByRole('button', { name: '전체 선택' }));
+
+    const download = screen.getByRole('button', { name: /다운로드/ });
+    expect(download).toBeDisabled();
+    expect(screen.getByRole('button', { name: /삭제/ })).toBeEnabled();
+    expect(screen.getByRole('status')).toHaveTextContent('한 번에 200장까지 받을 수 있어요.');
+    await user.click(download);
+    expect(issueBulkPhotoDownloadUrl).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '1번째 사진 선택 해제' }));
+    expect(download).toBeEnabled();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('선택한 사진을 확인 후 일괄 삭제 API로 지운다', async () => {
