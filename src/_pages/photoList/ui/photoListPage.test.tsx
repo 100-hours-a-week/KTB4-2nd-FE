@@ -175,6 +175,55 @@ describe('PhotoListPage', () => {
     await waitFor(() => expect(getPhotoOriginal).toHaveBeenCalledWith(1));
   });
 
+  it('키보드로 사진을 순환하고 Escape로 닫으면 원래 사진으로 포커스를 돌려준다', async () => {
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    const first = await findFirstPhoto();
+    first.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('button', { name: '원본 보기 닫기' })).toHaveFocus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('2 / 3');
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 3');
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('3 / 3');
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 3');
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: '사진 원본 보기' })).not.toBeInTheDocument();
+    expect(first).toHaveFocus();
+  });
+
+  it('Tab과 Shift+Tab 포커스가 사진 뷰어 안에서 순환한다', async () => {
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await user.click(await findFirstPhoto());
+    const close = screen.getByRole('button', { name: '원본 보기 닫기' });
+    const next = screen.getByRole('button', { name: '다음 사진' });
+
+    await user.tab({ shift: true });
+    expect(next).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+  });
+
+  it('삭제 확인창에서는 화살표로 사진을 바꾸지 않고 Escape로 확인창만 닫는다', async () => {
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await user.click(await findFirstPhoto());
+    await user.click(screen.getByRole('button', { name: '사진 더보기 메뉴' }));
+    await user.click(screen.getByRole('menuitem', { name: '삭제' }));
+
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 3');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '사진 원본 보기' })).toBeInTheDocument();
+  });
+
   it('원본 보기에서 다운로드를 누르면 단일 다운로드 URL을 발급받아 내려받는다', async () => {
     vi.mocked(issuePhotoDownloadUrl).mockResolvedValue({
       tripAttachmentId: 1,

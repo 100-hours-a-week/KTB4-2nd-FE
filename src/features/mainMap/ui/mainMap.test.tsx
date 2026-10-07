@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mapConstructor } = vi.hoisted(() => {
@@ -24,6 +25,7 @@ import type { KakaoMaps } from '../lib/kakaoMaps';
 let containerWidth = 430;
 let containerHeight = 932;
 let resizeCallback: ResizeObserverCallback | null = null;
+let mapContainer: HTMLElement;
 
 const map = {
   setBounds: vi.fn(),
@@ -83,12 +85,22 @@ describe('MainMap', () => {
         },
         Map: class {
           constructor(container: HTMLElement) {
+            mapContainer = container;
             mapConstructor(container.childElementCount);
             return map;
           }
         } as unknown as KakaoMaps['Map'],
         CustomOverlay: class {
-          setMap() {}
+          content: HTMLElement;
+
+          constructor({ content }: { content: HTMLElement }) {
+            this.content = content;
+            mapContainer.append(content);
+          }
+
+          setMap() {
+            this.content.remove();
+          }
         },
         event: {
           addListener: vi.fn(),
@@ -125,4 +137,47 @@ describe('MainMap', () => {
 
     expect(map.relayout).not.toHaveBeenCalled();
   });
+
+  it.each(['닫기 버튼', 'Escape'])(
+    '%s으로 여행 목록을 닫고 마커로 포커스를 돌려준다',
+    async (method) => {
+      const user = userEvent.setup();
+      const onTripSelect = vi.fn();
+      render(
+        <MainMap
+          trips={[
+            {
+              regionCode: '11000',
+              regionName: '서울',
+              latitude: 37.56,
+              longitude: 126.97,
+              tripCount: 2,
+              trips: [
+                { tripId: 1, tripName: '서울 여행', thumbnailUrl: null, attachmentCount: 0 },
+                { tripId: 2, tripName: '가을 여행', thumbnailUrl: null, attachmentCount: 0 },
+              ],
+            },
+          ]}
+          onTripSelect={onTripSelect}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: '지도 SDK 준비' }));
+      const marker = screen.getByRole('button', { name: '겹친 여행 2개 보기' });
+      marker.focus();
+      await user.keyboard('{Enter}');
+
+      expect(screen.getByRole('dialog', { name: '여행 목록' })).toBeInTheDocument();
+      const closeButton = screen.getByRole('button', { name: '여행 목록 닫기' });
+      expect(closeButton).toHaveFocus();
+      await user.tab();
+      expect(screen.getByRole('button', { name: /서울 여행/ })).toHaveFocus();
+
+      if (method === 'Escape') await user.keyboard('{Escape}');
+      else await user.click(closeButton);
+
+      expect(screen.queryByRole('dialog', { name: '여행 목록' })).not.toBeInTheDocument();
+      expect(marker).toHaveFocus();
+      expect(onTripSelect).not.toHaveBeenCalled();
+    },
+  );
 });
