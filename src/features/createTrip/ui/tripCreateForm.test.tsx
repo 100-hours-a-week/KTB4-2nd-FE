@@ -159,6 +159,42 @@ describe('TripCreateForm', () => {
     expect(searchPlaces).not.toHaveBeenCalled();
   });
 
+  it.each(['ㅅ', 'ㄱ', 'ㅂ', 'ㅏ', '서울ㅅ'])(
+    '한글 낱자가 포함된 검색어 %s는 디바운스 이후에도 요청하지 않는다',
+    async (query) => {
+      renderTripCreateForm();
+      const user = await moveToLocationStep();
+
+      await user.type(screen.getByRole('searchbox', { name: '여행지 검색' }), query);
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 350));
+      });
+
+      expect(screen.getByText('띄어쓰기 없이 한글로 입력해주세요.')).toBeInTheDocument();
+      expect(screen.queryByText('검색하고 있어요…')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('검색하지 못했어요. 잠시 후 다시 시도해주세요.'),
+      ).not.toBeInTheDocument();
+      expect(searchPlaces).not.toHaveBeenCalled();
+    },
+  );
+
+  it('낱자 입력을 완성형 한글로 바꾸면 정상적으로 검색한다', async () => {
+    vi.mocked(searchPlaces).mockResolvedValue([{ regionCode: '11000', regionName: '서울특별시' }]);
+    renderTripCreateForm();
+    const user = await moveToLocationStep();
+    const input = screen.getByRole('searchbox', { name: '여행지 검색' });
+
+    await user.type(input, 'ㅅ');
+    expect(screen.getByText('띄어쓰기 없이 한글로 입력해주세요.')).toBeInTheDocument();
+
+    await user.clear(input);
+    await user.type(input, ' 서울 ');
+
+    expect(await screen.findByRole('button', { name: '서울특별시' })).toBeInTheDocument();
+    expect(searchPlaces).toHaveBeenCalledExactlyOnceWith('서울');
+  });
+
   it('이름 입력 후 엔터를 누르면 여행을 만들지 않고 다음 단계로 이동한다', async () => {
     const user = userEvent.setup();
     renderTripCreateForm();
