@@ -126,7 +126,19 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       </div>
 
       <section aria-label="장소별 사진" className="mt-5">
-        {viewState === 'ready' ? (
+        {viewState !== 'ready' ? (
+          <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
+        ) : folders.length === 0 ? (
+          <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
+            <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100 [&>svg]:size-7">
+              <PhotoIcon />
+            </span>
+            <h2 className="mt-4 text-[15px] font-extrabold">
+              장소별 사진이 아직 정리되지 않았어요
+            </h2>
+            <p className="text-muted mt-1.5 text-xs">장소별 사진 정리 기능은 준비 중이에요.</p>
+          </div>
+        ) : (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
             {folders.map((folder) => (
               <li key={folder.id}>
@@ -134,8 +146,6 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
               </li>
             ))}
           </ul>
-        ) : (
-          <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
         )}
       </section>
 
