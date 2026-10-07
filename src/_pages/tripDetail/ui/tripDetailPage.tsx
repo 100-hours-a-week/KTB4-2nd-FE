@@ -14,7 +14,6 @@ import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
 import { PageHeader } from '@/shared/ui/pageHeader';
-import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
 
@@ -22,33 +21,11 @@ export type TripDetailPageProps = {
   trip: TripDetail;
 };
 
-type SharePermission = 'read' | 'edit';
-
-type SharedPerson = {
-  id: number;
-  email: string;
-  permission: SharePermission;
-};
-
-const INITIAL_SHARED_PEOPLE: SharedPerson[] = [
-  { id: 1, email: 'alice5855@gmail.com', permission: 'read' },
-  { id: 2, email: 'hazel@naver.com', permission: 'read' },
-  { id: 3, email: 'hazel@gmail.com', permission: 'edit' },
-];
-
-const PERMISSION_OPTIONS = [
-  { value: 'read', label: '읽기 허용' },
-  { value: 'edit', label: '편집 허용' },
-] as const;
-
 export function TripDetailPage({ trip }: TripDetailPageProps) {
   const router = useRouter();
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [sharedPeople, setSharedPeople] = useState(INITIAL_SHARED_PEOPLE);
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -72,7 +49,9 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       id: 'share-link',
       label: '링크로 공유하기',
       icon: <LinkIcon />,
-      onSelect: () => setShareOpen(true),
+      badge: '준비 중',
+      disabled: true,
+      onSelect: showUnsupportedToast,
     },
     {
       id: 'delete',
@@ -191,69 +170,6 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
             삭제하기
           </Button>
         </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
-        size="wide"
-        title="공유할 이메일을 입력해주세요"
-        description={`‘${trip.name}’을 함께 볼 사람을 초대해요`}
-      >
-        <div className="text-left">
-          <label className="border-field-border flex min-h-12 items-center gap-2.5 rounded-[12px] border-2 px-3.5">
-            <MailIcon />
-            <span className="sr-only">공유할 이메일</span>
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(event) => setInviteEmail(event.target.value)}
-              placeholder="email@example.com"
-              className="text-brand min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-            />
-          </label>
-
-          <p className="text-muted mt-4 text-xs font-bold">공유할 사람 {sharedPeople.length}</p>
-          <ul className="bg-surface-subtle mt-2 overflow-visible rounded-[14px]">
-            {sharedPeople.map((person) => (
-              <li
-                key={person.id}
-                className="border-border-subtle flex min-h-14 items-center gap-2 border-b px-3 last:border-b-0"
-              >
-                <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
-                  {person.email}
-                </span>
-                <SelectDropdown
-                  label={`${person.email} 공유 권한`}
-                  value={person.permission}
-                  options={PERMISSION_OPTIONS}
-                  onChange={(permission) =>
-                    setSharedPeople((people) =>
-                      people.map((item) =>
-                        item.id === person.id ? { ...item, permission } : item,
-                      ),
-                    )
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-
-          <Button
-            onClick={showUnsupportedToast}
-            disabled={!inviteEmail.trim()}
-            className="mt-5 w-full text-sm"
-          >
-            추가하기
-          </Button>
-          <button
-            type="button"
-            onClick={() => setShareOpen(false)}
-            className="text-muted hover:text-brand focus-visible:outline-brand mx-auto mt-4 block cursor-pointer rounded text-sm font-semibold focus-visible:outline-2"
-          >
-            나중에 할게요
-          </button>
-        </div>
       </Dialog>
     </main>
   );
@@ -494,22 +410,6 @@ function LinkIcon() {
     >
       <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
       <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" />
-    </svg>
-  );
-}
-function MailIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m4 7 8 6 8-6" />
     </svg>
   );
 }
