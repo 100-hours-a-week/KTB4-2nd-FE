@@ -16,7 +16,7 @@ class PhotoDownloadLimitError extends Error {
 }
 
 export function usePhotoDownload() {
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (photoIds: number[]) => {
       if (photoIds.length > BULK_DOWNLOAD_LIMIT) throw new PhotoDownloadLimitError();
 
@@ -40,4 +40,23 @@ export function usePhotoDownload() {
       toast.error('사진을 다운로드하지 못했어요.');
     },
   });
+
+  const mutate: typeof mutation.mutate = (photoIds, options) => {
+    if (photoIds.length > BULK_DOWNLOAD_LIMIT) {
+      toast.warning(new PhotoDownloadLimitError().message);
+      return;
+    }
+    mutation.mutate(photoIds, options);
+  };
+
+  const mutateAsync: typeof mutation.mutateAsync = async (photoIds, options) => {
+    if (photoIds.length > BULK_DOWNLOAD_LIMIT) {
+      const error = new PhotoDownloadLimitError();
+      toast.warning(error.message);
+      throw error;
+    }
+    return mutation.mutateAsync(photoIds, options);
+  };
+
+  return { ...mutation, mutate, mutateAsync };
 }

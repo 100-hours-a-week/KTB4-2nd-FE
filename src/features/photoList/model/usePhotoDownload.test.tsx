@@ -22,11 +22,12 @@ vi.mock('../lib/triggerDownload', () => ({ triggerDownload: vi.fn() }));
 
 function renderDownloadHook() {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  return renderHook(() => usePhotoDownload(), {
+  const hook = renderHook(() => usePhotoDownload(), {
     wrapper: ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     ),
   });
+  return { ...hook, client };
 }
 
 describe('usePhotoDownload', () => {
@@ -40,7 +41,7 @@ describe('usePhotoDownload', () => {
   });
 
   it('201장을 요청하면 네트워크 요청 없이 경고만 한 번 표시한다', async () => {
-    const { result } = renderDownloadHook();
+    const { result, client } = renderDownloadHook();
     act(() => result.current.mutate(Array.from({ length: 201 }, (_, index) => index + 1)));
 
     await waitFor(() => expect(result.current.isPending).toBe(false));
@@ -52,6 +53,24 @@ describe('usePhotoDownload', () => {
     expect(triggerDownload).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
+    expect(result.current.isIdle).toBe(true);
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+  });
+
+  it('mutateAsync도 제한 초과 시 mutation을 시작하지 않는다', async () => {
+    const { result, client } = renderDownloadHook();
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync(Array.from({ length: 201 }, (_, index) => index + 1)),
+      ).rejects.toThrow('한 번에 200장까지 받을 수 있어요.');
+    });
+
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+    expect(result.current.isIdle).toBe(true);
+    expect(fetchCsrfToken).not.toHaveBeenCalled();
+    expect(issueBulkPhotoDownloadUrl).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledOnce();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('정확히 200장은 정상적으로 다운로드한다', async () => {
