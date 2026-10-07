@@ -11,6 +11,7 @@ import {
 import { createPortal } from 'react-dom';
 
 import {
+  BULK_DOWNLOAD_LIMIT,
   usePhotoDelete,
   usePhotoDownload,
   usePhotoOriginal,
@@ -140,6 +141,7 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
       {selectionMode && photos.length > 0 && (
         <SelectionActions
           disabled={selectedCount === 0 || isDownloading || isDeleting}
+          downloadLimitExceeded={selectedCount > BULK_DOWNLOAD_LIMIT}
           isDownloading={isDownloading}
           onDownload={() => requestDownload([...selectedIds])}
           onDelete={() => setPendingDeleteIds([...selectedIds])}
@@ -330,11 +332,13 @@ function PhotoListHeader({
 
 function SelectionActions({
   disabled,
+  downloadLimitExceeded,
   isDownloading,
   onDownload,
   onDelete,
 }: {
   disabled: boolean;
+  downloadLimitExceeded: boolean;
   isDownloading: boolean;
   onDownload: () => void;
   onDelete: () => void;
@@ -349,7 +353,8 @@ function SelectionActions({
     >
       <Button
         variant="secondary"
-        disabled={disabled}
+        disabled={disabled || downloadLimitExceeded}
+        aria-describedby={downloadLimitExceeded ? 'bulk-download-limit' : undefined}
         isLoading={isDownloading}
         onClick={onDownload}
         className="min-h-11 gap-2 px-2 text-sm"
@@ -364,6 +369,15 @@ function SelectionActions({
       >
         <TrashIcon /> 삭제
       </Button>
+      {downloadLimitExceeded && (
+        <p
+          id="bulk-download-limit"
+          className="text-muted col-span-2 text-center text-xs"
+          role="status"
+        >
+          한 번에 {BULK_DOWNLOAD_LIMIT}장까지 받을 수 있어요. 선택한 사진 수를 줄여주세요.
+        </p>
+      )}
     </div>,
     document.body,
   );

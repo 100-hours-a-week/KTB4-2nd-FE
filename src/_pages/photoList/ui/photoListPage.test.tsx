@@ -257,6 +257,28 @@ describe('PhotoListPage', () => {
     expect(triggerDownload).toHaveBeenCalledWith('https://cdn.test/jeju.zip', 'jeju.zip');
   });
 
+  it('201장 선택 시 다운로드만 비활성화하고 200장으로 줄이면 다시 활성화한다', async () => {
+    vi.mocked(getPlacePhotos).mockResolvedValue(
+      page(Array.from({ length: 201 }, (_, index) => photo(index + 1))),
+    );
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(screen.getByRole('button', { name: '전체 선택' }));
+
+    const download = screen.getByRole('button', { name: /다운로드/ });
+    expect(download).toBeDisabled();
+    expect(screen.getByRole('button', { name: /삭제/ })).toBeEnabled();
+    expect(screen.getByRole('status')).toHaveTextContent('한 번에 200장까지 받을 수 있어요.');
+    await user.click(download);
+    expect(issueBulkPhotoDownloadUrl).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '1번째 사진 선택 해제' }));
+    expect(download).toBeEnabled();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('선택한 사진을 확인 후 일괄 삭제 API로 지운다', async () => {
     vi.mocked(deletePhotos).mockResolvedValue(undefined);
     renderPhotoListPage();
