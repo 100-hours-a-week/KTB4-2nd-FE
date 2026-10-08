@@ -88,7 +88,7 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
         <input
           id="trip-images"
           type="file"
-          accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif"
+          accept="image/jpeg,image/png,image/heic,.jpg,.jpeg,.png,.heic"
           multiple
           onChange={selectFiles}
           className="sr-only"

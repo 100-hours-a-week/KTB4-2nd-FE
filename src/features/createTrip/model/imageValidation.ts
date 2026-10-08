@@ -2,8 +2,8 @@ export const TRIP_IMAGE_MAX_COUNT = 200;
 export const TRIP_IMAGE_MAX_SIZE = 15 * 1024 * 1024;
 export const TRIP_IMAGE_MAX_TOTAL_SIZE = 3 * 1024 * 1024 * 1024;
 
-const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/heic', 'image/heif']);
-const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif'];
+const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/heic']);
+const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic'];
 
 function isSupportedImage(file: File) {
   const lowerName = file.name.toLowerCase();
