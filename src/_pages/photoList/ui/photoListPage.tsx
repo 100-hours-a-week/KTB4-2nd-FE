@@ -11,6 +11,7 @@ import {
 import { createPortal } from 'react-dom';
 
 import {
+  BULK_DOWNLOAD_LIMIT,
   usePhotoDelete,
   usePhotoDownload,
   usePhotoOriginal,
@@ -140,6 +141,7 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
       {selectionMode && photos.length > 0 && (
         <SelectionActions
           disabled={selectedCount === 0 || isDownloading || isDeleting}
+          downloadLimitExceeded={selectedCount > BULK_DOWNLOAD_LIMIT}
           isDownloading={isDownloading}
           onDownload={() => requestDownload([...selectedIds])}
           onDelete={() => setPendingDeleteIds([...selectedIds])}
@@ -330,11 +332,13 @@ function PhotoListHeader({
 
 function SelectionActions({
   disabled,
+  downloadLimitExceeded,
   isDownloading,
   onDownload,
   onDelete,
 }: {
   disabled: boolean;
+  downloadLimitExceeded: boolean;
   isDownloading: boolean;
   onDownload: () => void;
   onDelete: () => void;
@@ -349,7 +353,8 @@ function SelectionActions({
     >
       <Button
         variant="secondary"
-        disabled={disabled}
+        disabled={disabled || downloadLimitExceeded}
+        aria-describedby={downloadLimitExceeded ? 'bulk-download-limit' : undefined}
         isLoading={isDownloading}
         onClick={onDownload}
         className="min-h-11 gap-2 px-2 text-sm"
@@ -364,6 +369,15 @@ function SelectionActions({
       >
         <TrashIcon /> 삭제
       </Button>
+      {downloadLimitExceeded && (
+        <p
+          id="bulk-download-limit"
+          className="text-muted col-span-2 text-center text-xs"
+          role="status"
+        >
+          한 번에 {BULK_DOWNLOAD_LIMIT}장까지 받을 수 있어요. 선택한 사진 수를 줄여주세요.
+        </p>
+      )}
     </div>,
     document.body,
   );
@@ -445,14 +459,56 @@ function PhotoViewer({
 }) {
   // 원본은 열었을 때만 발급받고, 도착하기 전에는 목록 썸네일을 그대로 보여줍니다.
   const originalUrl = usePhotoOriginal(photo.id);
+  const viewerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    viewerRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const viewer = viewerRef.current;
+      if (!viewer || event.defaultPrevented) return;
+
+      const active = document.activeElement;
+      const activeDialog = active?.closest('[role="dialog"], [role="alertdialog"]');
+      // 삭제 확인창 등 다른 대화상자가 열렸다면 해당 창이 키보드 입력을 처리합니다.
+      if (activeDialog && activeDialog !== viewer) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        if (active?.closest('[role="menu"]')) return;
+        event.preventDefault();
+        if (event.key === 'ArrowLeft') onPrevious();
+        else onNext();
+      } else if (event.key === 'Tab') {
+        const buttons = viewer.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        if (!first || !last) return;
+
+        if (event.shiftKey && (active === first || !viewer.contains(active))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (active === last || !viewer.contains(active))) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, onPrevious, onNext]);
 
   const menuItems: DropdownMenuItem[] = useMemo(
     () => [
@@ -471,6 +527,7 @@ function PhotoViewer({
 
   return (
     <section
+      ref={viewerRef}
       role="dialog"
       aria-modal="true"
       aria-label="사진 원본 보기"

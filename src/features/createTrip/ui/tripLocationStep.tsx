@@ -45,7 +45,7 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
     enabled: isSearchablePlaceQuery(searchQuery),
     placeholderData: keepPreviousData,
   });
-  const isSearchable = /^[가-힣ㄱ-ㅎㅏ-ㅣ]+$/.test(query.trim());
+  const isSearchable = isSearchablePlaceQuery(query.trim());
 
   const selectPlace = (place: PlaceCandidate) => {
     if (places.some((selected) => selected.regionCode === place.regionCode)) return;

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +8,6 @@ import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripPlaceFolderPageResult } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripDetail } from '@/features/tripDetail/model/types';
-import { toast } from '@/shared/ui/toast';
 
 import { TripDetailPage } from './tripDetailPage';
 
@@ -139,24 +138,33 @@ describe('TripDetailPage', () => {
     expect(await screen.findByRole('link', { name: /서귀포/ })).toBeInTheDocument();
   });
 
-  it('공유 이메일 추가는 아직 지원하지 않는다고 알린다', async () => {
-    const warning = vi.spyOn(toast, 'warning');
+  it('링크 공유는 준비 중으로 표시하고 모달 진입을 막는다', async () => {
     const user = userEvent.setup();
     renderTripDetailPage();
 
     await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
-    await user.click(screen.getByRole('menuitem', { name: '링크로 공유하기' }));
+    const shareItem = screen.getByRole('menuitem', { name: /링크로 공유하기/ });
 
-    expect(
-      screen.getByRole('dialog', { name: '공유할 이메일을 입력해주세요' }),
-    ).toBeInTheDocument();
+    expect(within(shareItem).getByText('준비 중')).toBeInTheDocument();
+    expect(shareItem).toBeDisabled();
+    await user.click(shareItem);
 
-    await user.type(screen.getByRole('textbox', { name: '공유할 이메일' }), 'new@example.com');
-    await user.click(screen.getByRole('button', { name: '추가하기' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '공유할 이메일' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/공유할 사람/)).not.toBeInTheDocument();
+  });
 
-    expect(warning).toHaveBeenCalledWith('아직 지원하지 않는 기능이에요.');
-    expect(screen.queryByText('new@example.com')).not.toBeInTheDocument();
-    expect(screen.getByText('공유할 사람 3')).toBeInTheDocument();
+  it('키보드 메뉴 탐색에서도 준비 중인 링크 공유를 건너뛴다', async () => {
+    const user = userEvent.setup();
+    renderTripDetailPage();
+
+    screen.getByRole('button', { name: '여행 더보기 메뉴' }).focus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: /여행 수정/ })).toHaveFocus();
+
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: '여행 삭제' })).toHaveFocus();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('더보기 메뉴에서 여행 삭제를 누르면 확인 창을 표시한다', async () => {
