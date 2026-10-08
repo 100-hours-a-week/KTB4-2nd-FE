@@ -1,0 +1,55 @@
+export const STORY_PHOTO_LIMIT = 30;
+
+export type StoryPhoto = {
+  id: string;
+  /** 기존 원본 조회 API에 전달할 첨부 ID입니다. */
+  attachmentId: number | null;
+  placeName: string;
+  situation: string;
+  detailSummary?: string;
+  sentence: string;
+  thumbnailUrl: string | null;
+};
+
+export type StoryDay = {
+  date: string;
+  dayNumber: number;
+  dayLabel?: string;
+  placeName: string;
+  photos: StoryPhoto[];
+};
+
+export type TripStory = {
+  tripId: number;
+  tripName: string;
+  startDate: string;
+  endDate: string;
+  photoCount: number;
+  days: StoryDay[];
+};
+
+/** GET /trips/{tripId}/story — REST API 시트의 STORY_FOUND 응답. */
+export type TripStoryResponse = {
+  storyId: number;
+  tripId: number;
+  userByMe: boolean;
+  mood: string;
+  storySummary: string;
+  days: {
+    date: string;
+    dayLabel: string;
+    blocks: {
+      storyBlockId: number;
+      orderNumber: number;
+      tripPlaceId: number;
+      tripAttachmentId: number;
+      thumbnailUrl: string | null;
+      detailSummary: string;
+      memo: string;
+    }[];
+  }[];
+};
+
+export function getStoryPhotoLabel(photo: StoryPhoto) {
+  return photo.detailSummary ?? [photo.placeName, photo.situation].filter(Boolean).join(' · ');
+}
