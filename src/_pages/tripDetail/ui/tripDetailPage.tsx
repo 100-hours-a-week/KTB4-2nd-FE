@@ -75,9 +75,8 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       <TripMeta trip={trip} />
 
       <section aria-label="여행 바로가기" className="mt-5 grid grid-cols-[1fr_100px] gap-2.5">
-        <button
-          type="button"
-          onClick={showUnsupportedToast}
+        <Link
+          href={`/trips/${trip.id}/story`}
           className="bg-brand hover:bg-brand-hover focus-visible:outline-brand flex min-h-[66px] cursor-pointer items-center gap-3 rounded-[14px] px-4 text-left text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white/10">
@@ -90,7 +89,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
             </span>
           </span>
           <ChevronIcon />
-        </button>
+        </Link>
 
         <button
           type="button"
