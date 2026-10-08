@@ -58,9 +58,7 @@ it('online 이벤트 없이 실제 연결만 복구되어도 재확인 후 미�
 it('사진 단계에서 나가면 연결 재확인 타이머도 중지한다', async () => {
   vi.useFakeTimers();
   prepare.mockRejectedValue(new HeicPreviewResourceError('network'));
-  const { unmount } = render(
-    <ImageUploadField files={[]} onSelect={vi.fn()} onRemove={vi.fn()} />,
-  );
+  const { unmount } = render(<ImageUploadField files={[]} onSelect={vi.fn()} onRemove={vi.fn()} />);
   await act(async () => vi.advanceTimersByTimeAsync(0));
   unmount();
   const count = prepare.mock.calls.length;
