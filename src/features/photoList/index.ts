@@ -9,3 +9,4 @@ export { usePhotoDelete } from './model/usePhotoDelete';
 export { usePhotoDownload } from './model/usePhotoDownload';
 export { usePhotoOriginal } from './model/usePhotoOriginal';
 export { usePlacePhotos } from './model/usePlacePhotos';
+export { PhotoViewer, PhotoArtwork } from './ui/photoViewer';
