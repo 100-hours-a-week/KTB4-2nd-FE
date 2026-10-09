@@ -1,4 +1,6 @@
 import type { PhotoAccent } from '@/features/photoList';
+import type { ApiResponse } from '@/shared/api';
+import { apiClient } from '@/shared/api/browser';
 
 import type { SearchResult } from '../model/types';
 
@@ -35,8 +37,11 @@ const PHOTO_ACCENTS: readonly PhotoAccent[] = [
 ];
 
 export async function searchTrips(query: string): Promise<SearchResult> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-  return toSearchResult(createMockSearchResponse(query));
+  const { data } = await apiClient.get<ApiResponse<SearchResponse>>('/search', {
+    params: { query },
+  });
+
+  return toSearchResult(data.data);
 }
 
 function toSearchResult(response: SearchResponse): SearchResult {
@@ -59,47 +64,6 @@ function toSearchResult(response: SearchResponse): SearchResult {
       tripPlaceId: attachment.tripPlaceId,
       thumbnailUrl: attachment.thumbnailUrl,
       accent: PHOTO_ACCENTS[index % PHOTO_ACCENTS.length],
-    })),
-  };
-}
-
-function createMockSearchResponse(query: string): SearchResponse {
-  if (query.includes('없음')) {
-    return { query, answer: null, answerError: null, folders: [], attachments: [] };
-  }
-
-  return {
-    query,
-    answer: '2026년 8월 25일 화요일이에요.',
-    answerError: null,
-    folders: [
-      {
-        tripId: 1,
-        tripName: '제주도 가을 여행',
-        startDate: '2026-08-24',
-        endDate: '2026-08-27',
-        regionNames: ['제주시', '서귀포시'],
-        attachmentCount: 128,
-        thumbnailUrl: null,
-        score: 0.92,
-      },
-      {
-        tripId: 2,
-        tripName: '부산 바다 여행',
-        startDate: '2026-06-12',
-        endDate: '2026-06-14',
-        regionNames: ['해운대구'],
-        attachmentCount: 64,
-        thumbnailUrl: null,
-        score: 0.71,
-      },
-    ],
-    attachments: Array.from({ length: 14 }, (_, index) => ({
-      tripAttachmentId: index + 1,
-      tripId: 1,
-      tripPlaceId: 1,
-      thumbnailUrl: null,
-      score: 1 - index * 0.05,
     })),
   };
 }
