@@ -31,7 +31,7 @@ export type TripStoryResponse = {
   storyId: number;
   tripId: number;
   userByMe: boolean;
-  mood: string;
+  mood: 'PLAIN' | 'EMOTIONAL' | 'HUMOROUS' | 'CALM' | 'LITERARY';
   storySummary: string;
   days: {
     date: string;

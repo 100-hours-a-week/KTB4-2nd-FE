@@ -109,12 +109,12 @@ export function TripStoryPage({
         </section>
       ) : (
         <div className="px-5 pt-6">
-          {story.days.map((day) => {
+          {story.days.map((day, dayIndex) => {
             const dayEntries = entries.filter((entry) => entry.day === day);
             if (dayEntries.length === 0) return null;
             return (
               <section
-                key={day.date}
+                key={`${day.date}-${dayIndex}`}
                 aria-label={day.dayLabel ?? `${day.dayNumber}일째 ${day.placeName}`}
                 className="relative pb-7 last:pb-0"
               >
