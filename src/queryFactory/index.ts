@@ -6,4 +6,5 @@ export { photoListQueries } from './photoListQueries';
 export { searchQueries } from './searchQueries';
 export { tripDetailQueries } from './tripDetailQueries';
 export { tripListQueries } from './tripListQueries';
+export { tripStoryQueries } from './tripStoryQueries';
 export { unclassifiedPhotosQueries } from './unclassifiedPhotosQueries';
