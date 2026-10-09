@@ -29,7 +29,7 @@ const navigationItems: BottomNavigationItem[] = [
     href: '/trips/create?step=name',
     action: true,
   },
-  { id: 'search', label: '검색', icon: 'search', disabled: true },
+  { id: 'search', label: '검색', icon: 'search', href: '/search' },
   { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 

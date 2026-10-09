@@ -3,6 +3,7 @@ export { createTripQueries } from './createTripQueries';
 export { kakaoLoginQueries } from './kakaoLoginQueries';
 export { mainMapQueries } from './mainMapQueries';
 export { photoListQueries } from './photoListQueries';
+export { searchQueries } from './searchQueries';
 export { tripDetailQueries } from './tripDetailQueries';
 export { tripListQueries } from './tripListQueries';
 export { unclassifiedPhotosQueries } from './unclassifiedPhotosQueries';
