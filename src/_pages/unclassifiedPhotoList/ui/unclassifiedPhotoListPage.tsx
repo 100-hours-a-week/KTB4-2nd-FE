@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import type { PhotoAccent, PhotoListItem } from '@/features/photoList';
+import { PhotoArtwork, PhotoViewer, usePhotoDownload } from '@/features/photoList';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
   useDeleteUnclassifiedPhotos,
@@ -31,8 +31,13 @@ export function UnclassifiedPhotoListPage({
   const { photos, viewState, refetch } = useUnclassifiedPhotos(tripId, issue);
   const { mutate: requestRestore, isPending: isRestoring } = useRestoreUnclassifiedPhotos(tripId);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteUnclassifiedPhotos(tripId);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([]);
+  const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
+  const { mutate: requestDownload } = usePhotoDownload();
+  const activeIndex = photos.findIndex((photo) => photo.id === activePhotoId);
+  const activePhoto = photos[activeIndex];
 
   const visibleSelectedIds = photos
     .filter((photo) => selectedIds.has(photo.id))
@@ -40,6 +45,11 @@ export function UnclassifiedPhotoListPage({
   const selectedCount = visibleSelectedIds.length;
   const allSelected = photos.length > 0 && selectedCount === photos.length;
   const label = UNCLASSIFIED_ISSUE_LABEL[issue];
+
+  function leaveSelectionMode() {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }
 
   function togglePhoto(photoId: number) {
     setSelectedIds((current) => {
@@ -60,42 +70,58 @@ export function UnclassifiedPhotoListPage({
   }
 
   function restoreSelected() {
-    requestRestore(
-      { photoIds: visibleSelectedIds },
-      { onSuccess: () => setSelectedIds(new Set()) },
-    );
+    requestRestore({ photoIds: visibleSelectedIds }, { onSuccess: leaveSelectionMode });
   }
 
   function confirmDelete() {
-    requestDelete(visibleSelectedIds, {
-      onSuccess: () => setSelectedIds(new Set()),
-      onSettled: () => setDeleteOpen(false),
+    requestDelete(pendingDeleteIds, {
+      onSuccess: () => {
+        setActivePhotoId(null);
+        leaveSelectionMode();
+      },
+      onSettled: () => setPendingDeleteIds([]),
     });
   }
 
   return (
     <main className="page-enter text-brand bg-surface relative mx-auto min-h-dvh w-full max-w-[430px] px-4 pt-[max(20px,env(safe-area-inset-top))] pb-8">
       <header className="grid min-h-12 grid-cols-[64px_1fr_64px] items-center">
-        <button
-          type="button"
-          onClick={handleBack}
-          aria-label="미분류 폴더로 돌아가기"
-          className="hover:bg-brand/5 focus-visible:outline-brand grid size-10 place-items-center rounded-full transition-colors focus-visible:outline-2"
-        >
-          <BackIcon />
-        </button>
+        {selectionMode ? (
+          <button
+            type="button"
+            onClick={leaveSelectionMode}
+            disabled={isRestoring || isDeleting}
+            className="focus-visible:outline-brand justify-self-start rounded px-1 py-2 text-sm font-bold focus-visible:outline-2"
+          >
+            취소
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label="미분류 폴더로 돌아가기"
+            className="hover:bg-brand/5 focus-visible:outline-brand grid size-10 place-items-center rounded-full transition-colors focus-visible:outline-2"
+          >
+            <BackIcon />
+          </button>
+        )}
 
-        <h1 className="truncate text-center text-[17px] font-extrabold">{label}</h1>
+        <h1 className="truncate text-center text-[17px] font-extrabold">
+          {selectionMode ? `${selectedCount}장 선택됨` : label}
+        </h1>
 
         {photos.length > 0 && (
           <button
             type="button"
             onClick={() =>
-              setSelectedIds(allSelected ? new Set() : new Set(photos.map((photo) => photo.id)))
+              selectionMode
+                ? setSelectedIds(allSelected ? new Set() : new Set(photos.map((photo) => photo.id)))
+                : setSelectionMode(true)
             }
+            disabled={isRestoring || isDeleting}
             className="focus-visible:outline-brand justify-self-end rounded px-1 py-2 text-sm font-bold focus-visible:outline-2"
           >
-            {allSelected ? '선택 취소' : '전체 선택'}
+            {selectionMode ? (allSelected ? '전체 해제' : '전체 선택') : '선택'}
           </button>
         )}
       </header>
@@ -103,7 +129,7 @@ export function UnclassifiedPhotoListPage({
       <p className="text-muted mt-1 text-[11px]">
         {tripName}
         {viewState === 'ready' &&
-          ` · ${selectedCount > 0 ? `선택된 사진 ${selectedCount}장` : `사진 ${photos.length}장`}`}
+          ` · ${selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장`}`}
       </p>
 
       {viewState !== 'ready' ? (
@@ -111,43 +137,75 @@ export function UnclassifiedPhotoListPage({
       ) : photos.length === 0 ? (
         <EmptyPhotoList />
       ) : (
-        <ul aria-label={`${label} 목록`} className="mt-3 grid grid-cols-3 gap-1 pb-20">
+        <ul
+          aria-label={`${label} 목록`}
+          className={`mt-3 grid grid-cols-3 gap-1 ${selectionMode ? 'pb-20' : ''}`}
+        >
           {photos.map((photo, index) => {
             const selected = selectedIds.has(photo.id);
             return (
               <li key={photo.id}>
-                <button
-                  type="button"
-                  aria-label={`${index + 1}번째 사진 ${selected ? '선택 해제' : '선택'}`}
-                  aria-pressed={selected}
-                  onClick={() => togglePhoto(photo.id)}
-                  className={`focus-visible:outline-brand relative block aspect-square w-full touch-manipulation cursor-pointer overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1 ${selected ? 'ring-brand ring-2 ring-inset' : ''}`}
-                >
-                  <PhotoArtwork photo={photo} />
-                  <SelectionMark selected={selected} />
-                </button>
+                {selectionMode ? (
+                  <button
+                    type="button"
+                    disabled={isRestoring || isDeleting}
+                    aria-label={`${index + 1}번째 사진 ${selected ? '선택 해제' : '선택'}`}
+                    aria-pressed={selected}
+                    onClick={() => togglePhoto(photo.id)}
+                    className={`focus-visible:outline-brand relative block aspect-square w-full touch-manipulation cursor-pointer overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1 ${selected ? 'ring-brand ring-2 ring-inset' : ''}`}
+                  >
+                    <PhotoArtwork photo={photo} />
+                    <SelectionMark selected={selected} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`${index + 1}번째 사진 상세보기`}
+                    onClick={() => setActivePhotoId(photo.id)}
+                    className="focus-visible:outline-brand relative block aspect-square w-full cursor-pointer overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1"
+                  >
+                    <PhotoArtwork photo={photo} />
+                  </button>
+                )}
               </li>
             );
           })}
         </ul>
       )}
 
-      {viewState === 'ready' && photos.length > 0 && (
+      {selectionMode && viewState === 'ready' && photos.length > 0 && (
         <SelectionActions
           disabled={selectedCount === 0 || isRestoring || isDeleting}
           isRestoring={isRestoring}
           onRestore={restoreSelected}
-          onDelete={() => setDeleteOpen(true)}
+          onDelete={() => setPendingDeleteIds(visibleSelectedIds)}
+        />
+      )}
+
+      {activePhoto && (
+        <PhotoViewer
+          photo={activePhoto}
+          current={activeIndex + 1}
+          total={photos.length}
+          tripName={tripName}
+          placeName={label}
+          onClose={() => setActivePhotoId(null)}
+          onPrevious={() =>
+            setActivePhotoId(photos[(activeIndex - 1 + photos.length) % photos.length].id)
+          }
+          onNext={() => setActivePhotoId(photos[(activeIndex + 1) % photos.length].id)}
+          onDownload={() => requestDownload([activePhoto.id])}
+          onDelete={() => setPendingDeleteIds([activePhoto.id])}
         />
       )}
 
       <Dialog
         destructive
-        open={deleteOpen}
-        onClose={() => !isDeleting && setDeleteOpen(false)}
+        open={pendingDeleteIds.length > 0}
+        onClose={() => !isDeleting && setPendingDeleteIds([])}
         title={
-          selectedCount > 1
-            ? `사진 ${selectedCount}장을 삭제하시겠습니까?`
+          pendingDeleteIds.length > 1
+            ? `사진 ${pendingDeleteIds.length}장을 삭제하시겠습니까?`
             : '정말 삭제하시겠습니까?'
         }
         description="삭제 후에는 되돌릴 수 없습니다."
@@ -155,7 +213,7 @@ export function UnclassifiedPhotoListPage({
         <DialogActions>
           <Button
             variant="secondary"
-            onClick={() => setDeleteOpen(false)}
+            onClick={() => setPendingDeleteIds([])}
             disabled={isDeleting}
             className="min-h-11 w-full px-0 text-sm"
           >
@@ -271,38 +329,6 @@ function SelectionMark({ selected }: { selected: boolean }) {
       className={`absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full border-2 text-[11px] font-bold ${selected ? 'border-brand bg-brand text-white' : 'border-white bg-black/15 text-transparent'}`}
     >
       ✓
-    </span>
-  );
-}
-
-function PhotoArtwork({ photo }: { photo: PhotoListItem }) {
-  if (photo.thumbnailUrl) {
-    return (
-      <span
-        aria-hidden="true"
-        className="block size-full bg-slate-100 bg-cover bg-center"
-        style={{ backgroundImage: `url(${JSON.stringify(photo.thumbnailUrl)})` }}
-      />
-    );
-  }
-
-  const accentClass: Record<PhotoAccent, string> = {
-    coast: 'from-[#cee7f0] via-[#70abc5] to-[#e6d6a5]',
-    night: 'from-[#34476f] via-[#1d2c50] to-[#0e1a2e]',
-    blossom: 'from-[#d9edf3] via-[#f4b9ca] to-[#8fb77b]',
-    sunset: 'from-[#1d2945] via-[#293657] to-[#f1a456]',
-    island: 'from-[#acd8ee] via-[#80b76d] to-[#407a3d]',
-    desert: 'from-[#f4d9ad] via-[#d77b46] to-[#a94728]',
-  };
-
-  return (
-    <span
-      aria-hidden="true"
-      className={`relative block size-full overflow-hidden bg-gradient-to-b ${accentClass[photo.accent]}`}
-    >
-      <span className="absolute top-[14%] right-[14%] size-[17%] rounded-full bg-[#ffe59a]" />
-      <span className="absolute -right-[8%] bottom-[-10%] h-[42%] w-[82%] rounded-[50%] bg-black/15" />
-      <span className="absolute bottom-[-13%] -left-[10%] h-[48%] w-[92%] rounded-[50%] bg-white/18" />
     </span>
   );
 }

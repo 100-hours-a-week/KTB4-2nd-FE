@@ -98,9 +98,6 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
         >
           <ReviewIcon />
           <strong className="mt-1 text-[11px]">확인 필요</strong>
-          <span className="absolute top-2.5 right-2.5 grid min-w-5 place-items-center rounded-full bg-[#e78b00] px-1.5 py-0.5 text-[10px] font-bold text-white">
-            {trip.reviewCount > 99 ? '99+' : trip.reviewCount}
-          </span>
         </Link>
       </section>
 
