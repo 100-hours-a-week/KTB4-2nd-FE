@@ -5,3 +5,4 @@ export { mainMapQueries } from './mainMapQueries';
 export { photoListQueries } from './photoListQueries';
 export { tripDetailQueries } from './tripDetailQueries';
 export { tripListQueries } from './tripListQueries';
+export { unclassifiedPhotosQueries } from './unclassifiedPhotosQueries';
