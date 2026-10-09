@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
+import { AxiosError, AxiosHeaders } from 'axios';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -89,5 +90,23 @@ describe('SearchPage', () => {
     renderPage('없음');
 
     expect(await screen.findByText('검색 결과가 없어요.')).toBeInTheDocument();
+  });
+
+  it('검색 서비스를 쓸 수 없으면 503 안내를 보여준다', async () => {
+    const config = { headers: new AxiosHeaders() };
+    vi.mocked(searchTrips).mockRejectedValue(
+      new AxiosError('unavailable', undefined, config, null, {
+        status: 503,
+        statusText: '',
+        data: null,
+        headers: {},
+        config,
+      }),
+    );
+    renderPage('제주 바다');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '지금은 검색을 사용할 수 없어요. 잠시 후 다시 시도해주세요.',
+    );
   });
 });
