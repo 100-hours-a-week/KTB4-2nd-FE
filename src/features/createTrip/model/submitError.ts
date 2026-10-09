@@ -29,6 +29,8 @@ export function getTripCreateSubmitError(error: unknown): TripCreateSubmitError 
       return { message: '여행을 만들지 못했어요. 다시 시도해주세요.', resetTrip: true };
     case 'TRIP_INITIAL_ATTACHMENT_UPLOAD_NOT_ALLOWED':
       return { message: '이미 사진을 정리했거나 정리 중인 여행이에요.' };
+    case 'ATTACHMENT_UPLOAD_URL_PROVIDER_UNAVAILABLE':
+      return { message: '사진 업로드를 준비하지 못했어요. 잠시 후 다시 시도해주세요.' };
     default:
       return { message: '사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.' };
   }

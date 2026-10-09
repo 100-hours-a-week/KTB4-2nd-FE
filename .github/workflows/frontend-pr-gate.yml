@@ -56,7 +56,6 @@ jobs:
           push: false
           provenance: false
           build-args: |
-            NEXT_PUBLIC_API_BASE_URL=https://example.invalid/api
             NEXT_PUBLIC_KAKAO_MAP_JS_KEY=ci-placeholder
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true

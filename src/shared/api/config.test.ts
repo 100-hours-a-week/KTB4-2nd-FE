@@ -1,21 +1,19 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.resetModules();
-});
+import { API_BASE_URL } from './config';
+import { apiClient } from './browser/apiClient';
 
-it.each([
-  ['http://localhost:8080', 'http://localhost:8080/api'],
-  ['http://localhost:8080/api', 'http://localhost:8080/api'],
-  ['http://localhost:8080/api/', 'http://localhost:8080/api'],
-])('API 주소 %s에서 /api 경로를 한 번만 사용한다', async (configuredUrl, expectedBaseUrl) => {
-  vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', configuredUrl);
-  vi.resetModules();
+afterEach(() => vi.unstubAllEnvs());
 
-  const { API_BASE_URL } = await import('./config');
-  const { apiClient } = await import('./browser/apiClient');
+it.each(['https://production.example', 'https://staging.example'])(
+  '브라우저 요청은 %s의 /api를 사용한다',
+  (origin) => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://legacy-production.example/api');
+    vi.stubEnv('SERVER_API_BASE_URL', 'http://private-backend:8080/api');
 
-  expect(API_BASE_URL).toBe(expectedBaseUrl);
-  expect(apiClient.getUri({ url: '/places' })).toBe(`${expectedBaseUrl}/places`);
-});
+    expect(API_BASE_URL).toBe('/api');
+    expect(apiClient.getUri({ url: '/places' })).toBe('/api/places');
+    expect(new URL(apiClient.getUri({ url: '/places' }), origin).href).toBe(`${origin}/api/places`);
+    expect(apiClient.defaults.withCredentials).toBe(true);
+  },
+);

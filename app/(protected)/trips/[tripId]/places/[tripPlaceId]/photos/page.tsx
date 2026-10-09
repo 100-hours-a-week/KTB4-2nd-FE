@@ -33,7 +33,6 @@ export default async function Page({
 
   if (session.status === 'notFound') redirect('/login');
 
-  // 여행 상세에서 넘겨주는 이름이며, 직접 접근하면 비어 있을 수 있습니다.
   const placeName = typeof query.place === 'string' ? query.place : '장소';
   const tripName = typeof query.trip === 'string' ? query.trip : '여행';
 

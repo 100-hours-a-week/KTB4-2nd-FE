@@ -67,6 +67,16 @@ describe('여행 사진 선택 검증', () => {
     });
   });
 
+  it('HEIF 사진은 거부하고 image/heif로 알려진 HEIC 사진은 허용한다', () => {
+    expect(validateImageSelection([], [createFile('photo.heif', 'image/heif')])).toEqual({
+      ok: false,
+      message: 'JPG, PNG, HEIC 형식의 사진만 선택할 수 있어요.',
+    });
+    expect(validateImageSelection([], [createFile('photo.heic', 'image/heif')])).toMatchObject({
+      ok: true,
+    });
+  });
+
   it('장당 용량과 전체 사진 수 제한을 검사한다', () => {
     expect(
       validateImageSelection([], [createFile('large.jpg', 'image/jpeg', TRIP_IMAGE_MAX_SIZE + 1)]),

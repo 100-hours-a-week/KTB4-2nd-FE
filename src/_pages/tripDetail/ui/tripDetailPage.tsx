@@ -91,17 +91,13 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
           <ChevronIcon />
         </Link>
 
-        <button
-          type="button"
-          onClick={showUnsupportedToast}
+        <Link
+          href={`/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`}
           className="focus-visible:outline-warning relative flex min-h-[66px] cursor-pointer flex-col justify-center rounded-[14px] bg-[#fff4d8] px-3 text-left text-[#71511b] transition-colors hover:bg-[#ffedc0] focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <ReviewIcon />
           <strong className="mt-1 text-[11px]">확인 필요</strong>
-          <span className="absolute top-2.5 right-2.5 grid min-w-5 place-items-center rounded-full bg-[#e78b00] px-1.5 py-0.5 text-[10px] font-bold text-white">
-            {trip.reviewCount > 99 ? '99+' : trip.reviewCount}
-          </span>
-        </button>
+        </Link>
       </section>
 
       <div className="bg-surface-subtle mt-4 grid grid-cols-2 rounded-[12px] p-1">
