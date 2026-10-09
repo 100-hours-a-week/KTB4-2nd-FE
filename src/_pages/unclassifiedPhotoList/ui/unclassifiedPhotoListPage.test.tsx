@@ -24,11 +24,6 @@ vi.mock('@/features/unclassifiedPhotos/api/deleteUnclassifiedPhotos', () => ({
 vi.mock('@/features/photoList/model/usePhotoOriginal', () => ({
   usePhotoOriginal: () => null,
 }));
-vi.mock('@/features/photoList/model/usePhotoDownload', () => ({
-  usePhotoDownload: () => ({ mutate: requestDownload }),
-}));
-const { requestDownload } = vi.hoisted(() => ({ requestDownload: vi.fn() }));
-
 const photos: PhotoListItem[] = [1, 2, 3].map((id) => ({
   id,
   thumbnailUrl: null,
@@ -140,14 +135,24 @@ describe('UnclassifiedPhotoListPage', () => {
     expect(trigger).toHaveFocus();
   });
 
-  it('상세보기에서 개별 다운로드와 삭제 확인을 지원한다', async () => {
+  it('상세보기 메뉴에서 현재 사진만 복구하고 뷰어를 닫는다', async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(await screen.findByRole('button', { name: '2번째 사진 상세보기' }));
     await user.click(screen.getByRole('button', { name: '사진 더보기 메뉴' }));
-    await user.click(screen.getByRole('menuitem', { name: '원본 다운로드' }));
-    expect(requestDownload).toHaveBeenCalledWith([2]);
+    expect(screen.queryByRole('menuitem', { name: '원본 다운로드' })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: '삭제' })).toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: '복구' }));
+    await waitFor(() =>
+      expect(restoreUnclassifiedPhotos).toHaveBeenCalledWith(7, { photoIds: [2] }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
 
+  it('상세보기에서 삭제 확인을 지원한다', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: '2번째 사진 상세보기' }));
     await user.click(screen.getByRole('button', { name: '사진 더보기 메뉴' }));
     await user.click(screen.getByRole('menuitem', { name: '삭제' }));
     let dialog = screen.getByRole('alertdialog', { name: '정말 삭제하시겠습니까?' });

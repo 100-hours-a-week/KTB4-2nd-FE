@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { PhotoArtwork, PhotoViewer, usePhotoDownload } from '@/features/photoList';
+import { PhotoArtwork, PhotoViewer } from '@/features/photoList';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
   useDeleteUnclassifiedPhotos,
@@ -35,7 +35,6 @@ export function UnclassifiedPhotoListPage({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([]);
   const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
-  const { mutate: requestDownload } = usePhotoDownload();
   const activeIndex = photos.findIndex((photo) => photo.id === activePhotoId);
   const activePhoto = photos[activeIndex];
 
@@ -194,7 +193,13 @@ export function UnclassifiedPhotoListPage({
             setActivePhotoId(photos[(activeIndex - 1 + photos.length) % photos.length].id)
           }
           onNext={() => setActivePhotoId(photos[(activeIndex + 1) % photos.length].id)}
-          onDownload={() => requestDownload([activePhoto.id])}
+          actionsDisabled={isRestoring || isDeleting}
+          onRestore={() =>
+            requestRestore(
+              { photoIds: [activePhoto.id] },
+              { onSuccess: () => setActivePhotoId(null) },
+            )
+          }
           onDelete={() => setPendingDeleteIds([activePhoto.id])}
         />
       )}

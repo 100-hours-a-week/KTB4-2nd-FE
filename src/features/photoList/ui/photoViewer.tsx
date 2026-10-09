@@ -17,6 +17,8 @@ export function PhotoViewer({
   onPrevious,
   onNext,
   onDownload,
+  onRestore,
+  actionsDisabled = false,
   onDelete,
 }: {
   photo: PhotoListItem;
@@ -27,7 +29,9 @@ export function PhotoViewer({
   onClose: () => void;
   onPrevious: () => void;
   onNext: () => void;
-  onDownload: () => void;
+  onDownload?: () => void;
+  onRestore?: () => void;
+  actionsDisabled?: boolean;
   onDelete: () => void;
 }) {
   // 원본은 열었을 때만 발급받고, 도착하기 전에는 목록 썸네일을 그대로 보여줍니다.
@@ -85,9 +89,30 @@ export function PhotoViewer({
 
   const menuItems: DropdownMenuItem[] = useMemo(
     () => [
-      { id: 'download', label: '원본 다운로드', icon: <DownloadIcon />, onSelect: onDownload },
+      ...(onRestore
+        ? [
+            {
+              id: 'restore',
+              label: '복구',
+              icon: <RestoreIcon />,
+              onSelect: onRestore,
+              disabled: actionsDisabled,
+            },
+          ]
+        : onDownload
+          ? [
+              {
+                id: 'download',
+                label: '원본 다운로드',
+                icon: <DownloadIcon />,
+                onSelect: onDownload,
+                disabled: actionsDisabled,
+              },
+            ]
+          : []),
       {
         id: 'delete',
+        disabled: actionsDisabled,
         label: '삭제',
         icon: <TrashIcon />,
         destructive: true,
@@ -95,7 +120,7 @@ export function PhotoViewer({
         onSelect: onDelete,
       },
     ],
-    [onDelete, onDownload],
+    [onDelete, onDownload, onRestore, actionsDisabled],
   );
 
   return (
@@ -303,6 +328,23 @@ function EmptyImageIcon() {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <circle cx="8.5" cy="9" r="1.5" />
       <path d="m4 17 5-5 4 4 2-2 5 5" />
+    </svg>
+  );
+}
+
+function RestoreIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
     </svg>
   );
 }
