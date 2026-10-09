@@ -19,7 +19,6 @@ export function useRestoreUnclassifiedPhotos(tripId: number) {
       await queryClient.invalidateQueries({
         queryKey: unclassifiedPhotosQueries.tripKeys(tripId),
       });
-      // 해제된 사진이 장소 폴더로 돌아가므로 다음 진입 때 폴더 목록을 다시 받습니다.
       void queryClient.invalidateQueries({ queryKey: ['tripDetail'], refetchType: 'none' });
       void queryClient.invalidateQueries({ queryKey: ['photoList'], refetchType: 'none' });
       toast.success('사진을 원래 폴더로 되돌렸어요.');

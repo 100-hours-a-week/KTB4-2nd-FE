@@ -1,6 +1,5 @@
 import type { PhotoAccent } from '@/features/photoList';
 
-/** 백엔드 `AttachmentIssue`에서 NONE을 뺀 미분류 사유입니다. */
 export type UnclassifiedIssue = 'UNCLEAR_LOCATION' | 'BLURRY' | 'DUPLICATED';
 
 export type UnclassifiedFolder = {
@@ -12,7 +11,6 @@ export type UnclassifiedFolder = {
 
 export type UnclassifiedViewState = 'ready' | 'loading' | 'error';
 
-/** 백엔드 응답 순서와 같은 사유 순서입니다. */
 export const UNCLASSIFIED_ISSUES: readonly UnclassifiedIssue[] = [
   'UNCLEAR_LOCATION',
   'BLURRY',
