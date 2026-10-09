@@ -2,7 +2,6 @@ import type { PhotoAccent } from '@/features/photoList';
 
 import type { SearchResult } from '../model/types';
 
-/** 백엔드 `GET /search?query=` 응답입니다. */
 export type SearchResponse = {
   query: string;
   answer: string | null;
@@ -35,13 +34,6 @@ const PHOTO_ACCENTS: readonly PhotoAccent[] = [
   'desert',
 ];
 
-/**
- * TODO(API): 백엔드에 API가 준비되어 있습니다. 연결할 때 mock 대신 아래 요청으로 교체합니다.
- * const { data } = await apiClient.get<ApiResponse<SearchResponse>>('/search', {
- *   params: { query },
- * });
- * return toSearchResult(data.data);
- */
 export async function searchTrips(query: string): Promise<SearchResult> {
   await new Promise((resolve) => setTimeout(resolve, 600));
   return toSearchResult(createMockSearchResponse(query));
@@ -71,7 +63,6 @@ function toSearchResult(response: SearchResponse): SearchResult {
   };
 }
 
-/** TODO(API): 연결 후 삭제합니다. '없음'이 들어간 검색어로 빈 결과 화면을 확인할 수 있습니다. */
 function createMockSearchResponse(query: string): SearchResponse {
   if (query.includes('없음')) {
     return { query, answer: null, answerError: null, folders: [], attachments: [] };

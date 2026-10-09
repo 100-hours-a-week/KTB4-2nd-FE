@@ -52,8 +52,8 @@ export function SearchPage({ query }: SearchPageProps) {
   }
 
   return (
-    <main className="text-brand bg-app-background relative mx-auto min-h-dvh w-full max-w-[430px] px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(100px+env(safe-area-inset-bottom))]">
-      <header>
+    <main className="text-brand bg-app-background relative mx-auto flex h-[min(100dvh,var(--app-max-height))] w-full max-w-[430px] flex-col overflow-hidden px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(61px+max(8px,env(safe-area-inset-bottom)))]">
+      <header className="shrink-0">
         <h1 className="text-[26px] leading-tight font-extrabold tracking-[-0.03em]">검색</h1>
         <p className="text-muted mt-1.5 text-xs">
           그때 어디서, 무엇을 찍었는지 말하듯 검색해보세요.
@@ -64,11 +64,15 @@ export function SearchPage({ query }: SearchPageProps) {
       <SearchForm key={query} initialValue={query} onSearch={search} />
 
       {viewState === 'idle' ? (
-        <SearchExamples onSelect={search} />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <SearchExamples onSelect={search} />
+        </div>
       ) : viewState === 'ready' && result ? (
         <SearchResults key={result.query} result={result} />
       ) : (
-        <SearchSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <SearchSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
+        </div>
       )}
 
       <BottomNavigation items={navigationItems} activeId="search" />
@@ -104,7 +108,7 @@ function SearchForm({
   }
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="mt-5">
+    <form role="search" onSubmit={handleSubmit} className="mt-5 shrink-0">
       <label htmlFor={inputId} className="sr-only">
         검색어
       </label>
@@ -187,17 +191,19 @@ function SearchResults({ result }: { result: SearchResult }) {
     selectedTab ?? (result.photos.length === 0 && result.folders.length > 0 ? 'folder' : 'photo');
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <AnswerCard answer={result.answer} answerError={result.answerError} />
 
       {isEmpty ? (
-        <EmptySearchResult />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <EmptySearchResult />
+        </div>
       ) : (
         <>
           <div
             role="tablist"
             aria-label="검색 결과 종류"
-            className="border-border-subtle mt-6 flex gap-5 border-b"
+            className="border-border-subtle mt-6 flex shrink-0 gap-5 border-b"
           >
             <ResultTab
               id="folder"
@@ -215,7 +221,14 @@ function SearchResults({ result }: { result: SearchResult }) {
             />
           </div>
 
-          <div role="tabpanel" id={`search-panel-${tab}`} aria-labelledby={`search-tab-${tab}`}>
+          <div
+            key={tab}
+            role="tabpanel"
+            id={`search-panel-${tab}`}
+            aria-labelledby={`search-tab-${tab}`}
+            tabIndex={0}
+            className="focus-visible:outline-brand min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 focus-visible:outline-2 focus-visible:-outline-offset-2"
+          >
             {tab === 'folder' ? (
               <FolderResults folders={result.folders} />
             ) : (
@@ -224,7 +237,7 @@ function SearchResults({ result }: { result: SearchResult }) {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -240,7 +253,7 @@ function AnswerCard({
   return (
     <section
       aria-label="AI의 한 줄 답변"
-      className="border-border-subtle bg-surface mt-4 rounded-[18px] border px-4 py-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)]"
+      className="border-border-subtle bg-surface mt-4 shrink-0 rounded-[18px] border px-4 py-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)]"
     >
       <h2 className="flex items-center gap-1.5 text-[13px] font-extrabold">
         <span className="text-[#3973b9]">
