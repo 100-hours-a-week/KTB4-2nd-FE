@@ -19,6 +19,7 @@ const trip = {
   nights: 2,
   photoCount: 8,
   reviewCount: 0,
+  hasStory: false,
 };
 const response: TripStoryResponse = {
   storyId: 9,

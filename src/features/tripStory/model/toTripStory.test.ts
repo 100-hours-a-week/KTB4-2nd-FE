@@ -14,6 +14,7 @@ const trip: TripDetail = {
   nights: 2,
   photoCount: 8,
   reviewCount: 0,
+  hasStory: false,
 };
 
 function block(storyBlockId: number, orderNumber: number) {

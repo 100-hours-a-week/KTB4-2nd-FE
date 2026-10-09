@@ -32,6 +32,7 @@ const trip: TripDetail = {
   nights: 2,
   photoCount: 128,
   reviewCount: 0,
+  hasStory: false,
 };
 
 const folders: TripPlaceFolderPageResult = {
@@ -54,14 +55,14 @@ function axiosErrorWithStatus(status: number) {
   });
 }
 
-function renderTripDetailPage() {
+function renderTripDetailPage(tripOverride: Partial<TripDetail> = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <TripDetailPage trip={trip} />
+      <TripDetailPage trip={{ ...trip, ...tripOverride }} />
     </QueryClientProvider>,
   );
 }
@@ -79,10 +80,7 @@ describe('TripDetailPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: '제주도 가을 여행' })).toBeInTheDocument();
     expect(screen.getByText('서귀포시 외 2개')).toBeInTheDocument();
     expect(screen.getByText('사진 128장')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /스토리 보기/ })).toHaveAttribute(
-      'href',
-      '/trips/7/story',
-    );
+    expect(screen.getByRole('button', { name: /스토리 보기/ })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /서귀포 사진 35장 보기/ })).toHaveAttribute(
       'href',
       '/trips/7/places/1/photos?place=%EC%84%9C%EA%B7%80%ED%8F%AC&trip=%EC%A0%9C%EC%A3%BC%EB%8F%84%20%EA%B0%80%EC%9D%84%20%EC%97%AC%ED%96%89',
@@ -217,5 +215,30 @@ describe('TripDetailPage', () => {
     await user.click(screen.getByRole('button', { name: '삭제하기' }));
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips'));
+  });
+
+  it('hasStory가 true면 스토리 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderTripDetailPage({ hasStory: true });
+
+    await user.click(screen.getByRole('button', { name: /스토리 보기/ }));
+
+    expect(push).toHaveBeenCalledWith('/trips/7/story');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('hasStory가 false면 생성 유도 모달을 띄우고 나중에 할게요로 닫는다', async () => {
+    const user = userEvent.setup();
+    renderTripDetailPage({ hasStory: false });
+
+    await user.click(screen.getByRole('button', { name: /스토리 보기/ }));
+
+    const dialog = screen.getByRole('dialog', { name: '아직 스토리가 없어요' });
+    expect(dialog).toHaveTextContent('여행 스토리를 자동으로 만들어드릴게요.');
+    expect(within(dialog).getByRole('button', { name: '스토리 만들기' })).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: '나중에 할게요' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
