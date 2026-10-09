@@ -34,7 +34,6 @@ export function PhotoViewer({
   actionsDisabled?: boolean;
   onDelete: () => void;
 }) {
-  // 원본은 열었을 때만 발급받고, 도착하기 전에는 목록 썸네일을 그대로 보여줍니다.
   const originalUrl = usePhotoOriginal(photo.id);
   const viewerRef = useRef<HTMLElement>(null);
 
@@ -56,7 +55,6 @@ export function PhotoViewer({
 
       const active = document.activeElement;
       const activeDialog = active?.closest('[role="dialog"], [role="alertdialog"]');
-      // 삭제 확인창 등 다른 대화상자가 열렸다면 해당 창이 키보드 입력을 처리합니다.
       if (activeDialog && activeDialog !== viewer) return;
 
       if (event.key === 'Escape') {
