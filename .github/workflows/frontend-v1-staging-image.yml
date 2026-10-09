@@ -1,0 +1,107 @@
+name: Frontend V1 Staging Image
+
+# Only manual runs; never dispatch an image-published event to Cloud.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/100-hours-a-week/yeodam-frontend
+  APP_SOURCE_SHA: 1536b98074ea041aafd915bae8c804dfe7031c5d
+  STAGING_API_BASE_URL: https://v1-staging.yeodam-2gether.com/api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout deployed V1 application source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.APP_SOURCE_SHA }}
+          path: app-source
+          persist-credentials: false
+
+      - name: Verify source and create isolated image tag
+        id: reference
+        working-directory: app-source
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$APP_SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+
+          # A build-only commit supplies a unique 40-character commit SHA for the
+          # Cloud tag format. Its tree is identical to V1; no branch is updated.
+          tree=$(git rev-parse 'HEAD^{tree}')
+          build_sha=$(printf 'V1 staging build\nWorkflow: %s\nRun: %s/%s\nAPI: %s\n' \
+            "$WORKFLOW_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$STAGING_API_BASE_URL" |
+            git -c user.name=github-actions -c user.email=github-actions@github.com \
+              commit-tree "$tree" -p "$APP_SOURCE_SHA")
+          test "$(git rev-parse "${build_sha}^{tree}")" = "$tree"
+          test "$build_sha" != "$APP_SOURCE_SHA"
+          test "$build_sha" != "$WORKFLOW_SHA"
+          echo "build_sha=$build_sha" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE_NAME}:sha-${build_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push V1 staging image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./app-source
+          file: ./app-source/Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ steps.reference.outputs.image }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ env.STAGING_API_BASE_URL }}
+            NEXT_PUBLIC_KAKAO_MAP_JS_KEY=${{ vars.NEXT_PUBLIC_KAKAO_MAP_JS_KEY }}
+          labels: |
+            org.opencontainers.image.revision=${{ env.APP_SOURCE_SHA }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            com.yeodam.environment=v1-staging
+            com.yeodam.build-commit=${{ steps.reference.outputs.build_sha }}
+          cache-from: type=gha,scope=frontend-v1-staging
+          cache-to: type=gha,scope=frontend-v1-staging,mode=max
+
+      - name: Record Cloud handoff
+        env:
+          IMAGE: ${{ steps.reference.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          BUILD_SHA: ${{ steps.reference.outputs.build_sha }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          {
+            echo '### V1 staging image (manual handoff only)'
+            echo ''
+            echo '```text'
+            echo "FRONTEND_IMAGE=$IMAGE"
+            echo "FRONTEND_DIGEST=$DIGEST"
+            echo "APP_SOURCE_SHA=$APP_SOURCE_SHA"
+            echo "BUILD_COMMIT_SHA=$BUILD_SHA"
+            echo "WORKFLOW_SHA=$WORKFLOW_SHA"
+            echo "NEXT_PUBLIC_API_BASE_URL=$STAGING_API_BASE_URL"
+            echo 'PLATFORM=linux/amd64'
+            echo "BUILD_RUN_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}"
+            echo '```'
+            echo ''
+            echo 'The image tag uses a build-only commit with the unchanged V1 source tree.'
+            echo 'No Cloud release manifest notification or deployment is performed.'
+          } >> "$GITHUB_STEP_SUMMARY"
