@@ -2,7 +2,6 @@ export const STORY_PHOTO_LIMIT = 30;
 
 export type StoryPhoto = {
   id: string;
-  /** 기존 원본 조회 API에 전달할 첨부 ID입니다. */
   attachmentId: number | null;
   placeName: string;
   situation: string;
@@ -28,7 +27,6 @@ export type TripStory = {
   days: StoryDay[];
 };
 
-/** GET /trips/{tripId}/story — REST API 시트의 STORY_FOUND 응답. */
 export type TripStoryResponse = {
   storyId: number;
   tripId: number;

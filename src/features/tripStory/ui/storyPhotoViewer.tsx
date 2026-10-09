@@ -109,7 +109,6 @@ export function StoryPhotoViewer({
             사진을 불러오지 못했어요
           </p>
         ) : url ? (
-          // 서명된 원본 URL은 이미지 최적화 프록시를 거치지 않고 그대로 표시합니다.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={url}

@@ -204,7 +204,6 @@ function StoryPhotoCard({ photo, onOpen }: { photo: StoryPhoto; onOpen: () => vo
           사진을 불러오지 못했어요
         </span>
       ) : (
-        // 스토리 API의 WebP 썸네일(320×320, quality 70)을 직접 사용하며 원본과 분리합니다.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={photo.thumbnailUrl!}
