@@ -26,6 +26,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -37,6 +38,16 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
   };
 
   const showUnsupportedToast = () => toast.warning('아직 지원하지 않는 기능이에요.');
+
+  function openStory() {
+    if (trip.hasStory) {
+      router.push(`/trips/${trip.id}/story`);
+      return;
+    }
+
+    setStoryEmptyOpen(true);
+  }
+
   const menuItems: DropdownMenuItem[] = [
     {
       id: 'edit',
@@ -75,8 +86,9 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       <TripMeta trip={trip} />
 
       <section aria-label="여행 바로가기" className="mt-5 grid grid-cols-[1fr_100px] gap-2.5">
-        <Link
-          href={`/trips/${trip.id}/story`}
+        <button
+          type="button"
+          onClick={openStory}
           className="bg-brand hover:bg-brand-hover focus-visible:outline-brand flex min-h-[66px] cursor-pointer items-center gap-3 rounded-[14px] px-4 text-left text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white/10">
@@ -89,7 +101,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
             </span>
           </span>
           <ChevronIcon />
-        </Link>
+        </button>
 
         <Link
           href={`/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`}
@@ -143,6 +155,40 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
           </ul>
         )}
       </section>
+
+      <Dialog
+        open={storyEmptyOpen}
+        onClose={() => setStoryEmptyOpen(false)}
+        icon={<StoryIcon />}
+        title="아직 스토리가 없어요"
+        description={
+          <>
+            모든 사진과 분위기를 바탕으로
+            <br />
+            여행 스토리를 자동으로 만들어드릴게요.
+          </>
+        }
+      >
+        <div className="flex flex-col gap-1">
+          <Button
+            onClick={() => {
+              setStoryEmptyOpen(false);
+              // TODO: 스토리 생성 화면과 생성 API가 준비되면 해당 화면으로 이동합니다.
+              showUnsupportedToast();
+            }}
+            className="min-h-11 w-full px-0 text-sm"
+          >
+            스토리 만들기
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setStoryEmptyOpen(false)}
+            className="min-h-10 w-full px-0 text-[13px] font-medium"
+          >
+            나중에 할게요
+          </Button>
+        </div>
+      </Dialog>
 
       <Dialog
         destructive

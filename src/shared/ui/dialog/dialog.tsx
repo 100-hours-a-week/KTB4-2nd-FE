@@ -11,11 +11,9 @@ export type DialogProps = {
   onClose: () => void;
   title: string;
   description?: ReactNode;
-  /** 하단 버튼 영역. 보통 DialogActions를 넣습니다. */
+  icon?: ReactNode;
   children: ReactNode;
-  /** 되돌릴 수 없는 작업을 확인할 때 alertdialog로 알립니다. */
   destructive?: boolean;
-  /** 입력 폼처럼 내용이 많은 다이얼로그는 넓은 크기를 사용합니다. */
   size?: 'default' | 'wide';
 };
 
@@ -24,6 +22,7 @@ export function Dialog({
   onClose,
   title,
   description,
+  icon,
   children,
   destructive = false,
   size = 'default',
@@ -80,7 +79,6 @@ export function Dialog({
     };
   }, [open, handleKeyDown]);
 
-  // 서버 렌더 시점에는 portal 대상이 없으므로 클라이언트에서만 렌더합니다.
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
@@ -98,6 +96,14 @@ export function Dialog({
         aria-describedby={description ? descriptionId : undefined}
         className={`bg-surface rounded-sheet relative w-full px-5 pt-6 pb-5 text-center shadow-[0_20px_48px_rgb(2_23_48_/_0.28)] ${size === 'wide' ? 'max-w-[380px]' : 'max-w-[300px]'}`}
       >
+        {icon && (
+          <span
+            aria-hidden="true"
+            className="bg-surface-subtle text-muted mx-auto mb-4 grid size-14 place-items-center rounded-full"
+          >
+            {icon}
+          </span>
+        )}
         <h2 id={titleId} className="text-brand text-base font-bold tracking-[-0.01em]">
           {title}
         </h2>
