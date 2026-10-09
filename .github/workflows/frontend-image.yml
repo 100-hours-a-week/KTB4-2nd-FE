@@ -39,7 +39,6 @@ jobs:
           provenance: false
           tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           build-args: |
-            NEXT_PUBLIC_API_BASE_URL=https://yeodam-2gether.com/api
             NEXT_PUBLIC_KAKAO_MAP_JS_KEY=${{ vars.NEXT_PUBLIC_KAKAO_MAP_JS_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -52,6 +51,7 @@ jobs:
             echo "\`deploy/image-versions.env\`에 넣을 값:"
             echo ""
             echo '```'
+            echo "SOURCE_SHA=${GITHUB_SHA}"
             echo "FRONTEND_IMAGE=${IMAGE_NAME}:sha-${GITHUB_SHA}"
             echo "FRONTEND_DIGEST=${{ steps.build.outputs.digest }}"
             echo '```'
