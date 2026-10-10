@@ -8,7 +8,7 @@ import {
   startStoryGeneration,
   useStoryGenerationStore,
 } from './storyGenerationStore';
-ㄴ
+
 export function useStoryGeneration(tripId: number, request?: StoryGenerationRequest) {
   const job = useStoryGenerationStore((state) => state.jobs[tripId] ?? EMPTY_STORY_JOB);
   return {
