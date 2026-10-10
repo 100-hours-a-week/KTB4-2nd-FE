@@ -241,4 +241,11 @@ describe('TripDetailPage', () => {
     await user.click(within(dialog).getByRole('button', { name: '나중에 할게요' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+  it('스토리 만들기로 생성 화면에 진입한다', async () => {
+    const user = userEvent.setup();
+    renderTripDetailPage({ hasStory: false });
+    await user.click(screen.getByRole('button', { name: /스토리 보기/ }));
+    await user.click(screen.getByRole('button', { name: '스토리 만들기' }));
+    expect(push).toHaveBeenCalledWith('/trips/7/story/create');
+  });
 });
