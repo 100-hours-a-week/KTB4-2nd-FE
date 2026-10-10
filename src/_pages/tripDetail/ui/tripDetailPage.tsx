@@ -173,8 +173,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
           <Button
             onClick={() => {
               setStoryEmptyOpen(false);
-              // TODO: 스토리 생성 화면과 생성 API가 준비되면 해당 화면으로 이동합니다.
-              showUnsupportedToast();
+              router.push(`/trips/${trip.id}/story/create`);
             }}
             className="min-h-11 w-full px-0 text-sm"
           >
