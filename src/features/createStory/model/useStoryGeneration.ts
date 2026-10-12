@@ -28,10 +28,6 @@ const EMPTY_JOB: StoryJob = { generationId: null, startedAt: null };
 const PREPARING_MESSAGE = '스토리 생성을 준비하고 있어요';
 const WRITING_MESSAGE = '회원님의 사진을 살펴보고 있어요';
 
-/**
- * 생성 요청 후 받은 generationId를 저장해 두고, 생성이 끝날 때까지 2초마다 상태를 확인합니다.
- * 새로고침해도 저장된 generationId로 진행 상태를 다시 이어서 보여줍니다.
- */
 export function useStoryGeneration(tripId: number) {
   const queryClient = useQueryClient();
   const [job, setJob] = useState<StoryJob>(() => {
@@ -94,7 +90,6 @@ export function useStoryGeneration(tripId: number) {
   });
 
   const result = job.generationId !== null ? statusQuery.data : undefined;
-  // 저장해 둔 작업이 서버에 없거나(404) 취소됐다면 다시 고를 수 있는 상태로 봅니다.
   const jobGone = isAxiosError(statusQuery.error) && statusQuery.error.response?.status === 404;
   const status: StoryGenerationViewStatus = create.isPending
     ? 'processing'
@@ -125,7 +120,6 @@ export function useStoryGeneration(tripId: number) {
     if (status === 'failed') toast.error('잠시 후 다시 시도해주세요.');
     if (status !== 'completed') return;
 
-    // 완성된 스토리는 서버가 hasStory로 알려주므로 임시 저장을 지우고 관련 화면을 새로 받습니다.
     clearStoryCreateDraft(tripId);
     void queryClient.invalidateQueries({ queryKey: tripStoryQueries.detail(tripId).queryKey });
     void queryClient.invalidateQueries({ queryKey: ['tripDetail'], refetchType: 'none' });
