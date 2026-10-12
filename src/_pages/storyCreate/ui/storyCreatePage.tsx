@@ -1,21 +1,15 @@
 'use client';
 
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { TripDetail } from '@/features/tripDetail';
-import {
-  STORY_FOLDER_LIMIT,
-  type StoryMood,
-  type StorySourceFolder,
-} from '@/features/createStory/model/types';
+import { STORY_FOLDER_LIMIT, type StoryMood } from '@/features/createStory/model/types';
 import { useStoryGeneration } from '@/features/createStory/model/useStoryGeneration';
-import { storyCreateQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
-import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { PageHeader } from '@/shared/ui/pageHeader';
-import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
+import { StoryCancelDialog } from './storyCancelDialog';
+import { StoryFolderGrid } from './storyFolderGrid';
 import { StoryCreateIntro } from './storyCreateIntro';
 import { StoryMoodSelector } from './storyMoodSelector';
 import { StoryGenerationView } from './storyGenerationView';
@@ -120,208 +114,20 @@ export function StoryCreatePage({
           </footer>
         </>
       )}
-      <Dialog
+      <StoryCancelDialog
         open={cancelOpen && generation.status === 'processing'}
+        canCancel={generation.canCancel}
+        isCanceling={generation.isCanceling}
         onClose={() => setCancelOpen(false)}
-        title="스토리 생성을 취소할까요?"
-        description="지금 취소하면 폴더 선택 화면으로 돌아가요."
-      >
-        <DialogActions>
-          <Button
-            variant="secondary"
-            disabled={!generation.canCancel || generation.isCanceling}
-            onClick={() =>
-              generation.cancel({
-                onSuccess: () => {
-                  setCancelOpen(false);
-                  setStep('folder');
-                },
-              })
-            }
-            className="w-full min-h-11 px-0 text-sm"
-          >
-            취소하기
-          </Button>
-          <Button onClick={() => setCancelOpen(false)} className="w-full min-h-11 px-0 text-sm">
-            이어서 만들기
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={() =>
+          generation.cancel({
+            onSuccess: () => {
+              setCancelOpen(false);
+              setStep('folder');
+            },
+          })
+        }
+      />
     </main>
-  );
-}
-
-function StoryFolderGrid({
-  tripId,
-  selectedIds,
-  onToggle,
-}: {
-  tripId: number;
-  selectedIds: Set<number>;
-  onToggle: (id: number) => void;
-}) {
-  const query = useInfiniteQuery(storyCreateQueries.sourceFolders(tripId));
-  const [visibleCount, setVisibleCount] = useState(6);
-  const root = useRef<HTMLDivElement>(null);
-  const sentinel = useRef<HTMLDivElement>(null);
-  const folders = query.data?.pages.flatMap((page) => page.folders) ?? [];
-  const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = query;
-  const hasMore = visibleCount < folders.length || hasNextPage;
-  useEffect(() => {
-    if (!sentinel.current || !hasMore || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting) || isFetchingNextPage || isError) return;
-        if (visibleCount < folders.length) setVisibleCount((count) => count + 6);
-        else if (hasNextPage) void fetchNextPage();
-      },
-      { root: root.current, rootMargin: '80px' },
-    );
-    observer.observe(sentinel.current);
-    return () => observer.disconnect();
-  }, [
-    hasMore,
-    visibleCount,
-    folders.length,
-    hasNextPage,
-    isFetchingNextPage,
-    isError,
-    fetchNextPage,
-  ]);
-
-  return (
-    <div
-      ref={root}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      aria-label="스토리를 만들 폴더 목록"
-      tabIndex={0}
-    >
-      {query.isPending ? (
-        <div role="status" aria-label="폴더 불러오는 중" className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} className="aspect-[0.94] rounded-[18px]" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <ul className="grid grid-cols-2 gap-3">
-            {folders.slice(0, visibleCount).map((folder) => (
-              <li key={folder.id}>
-                <FolderChoice
-                  folder={folder}
-                  selected={selectedIds.has(folder.id)}
-                  onToggle={() => onToggle(folder.id)}
-                />
-              </li>
-            ))}
-          </ul>
-          {query.isError ? (
-            <div role="alert" className="py-8 text-center">
-              <p className="text-muted mb-3 text-xs">폴더를 불러오지 못했어요.</p>
-              <Button variant="secondary" onClick={() => void query.refetch()} className="text-sm">
-                다시 시도
-              </Button>
-            </div>
-          ) : folders.length === 0 ? (
-            <p className="text-muted py-16 text-center text-sm">
-              스토리를 만들 폴더가 없어요.
-              <br />
-              사진을 정리한 뒤 다시 방문해 주세요.
-            </p>
-          ) : null}
-          {hasMore && !query.isError && (
-            <div ref={sentinel} className="pt-4 text-center">
-              <Button
-                variant="ghost"
-                disabled={query.isFetchingNextPage}
-                onClick={() => {
-                  if (visibleCount < folders.length) setVisibleCount((count) => count + 6);
-                  else void query.fetchNextPage();
-                }}
-                className="text-xs"
-              >
-                {query.isFetchingNextPage ? '불러오는 중...' : '폴더 더 보기'}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-function FolderChoice({
-  folder,
-  selected,
-  onToggle,
-}: {
-  folder: StorySourceFolder;
-  selected: boolean;
-  onToggle: () => void;
-}) {
-  const [failed, setFailed] = useState(false);
-  const empty = folder.photoCount === 0;
-  const colors = {
-    coast: 'from-[#b5def4] to-[#306762]',
-    sunset: 'from-[#ffd299] via-[#f9a393] to-[#1b2c51]',
-    island: 'from-[#78cae8] via-[#a4e4ed] to-[#32495c]',
-    night: 'from-[#33476c] to-[#14233c]',
-    field: 'from-[#d6edda] to-[#71a48c]',
-    sky: 'from-[#dce6fa] to-[#668cab]',
-  };
-  return (
-    <label
-      className={`relative block aspect-[0.94] overflow-hidden rounded-[18px] bg-gradient-to-b ${colors[folder.accent]} ${empty ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
-    >
-      {folder.thumbnailUrl && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element -- API 썸네일은 임의의 presigned URL이므로 브라우저에서 직접 로드합니다.
-        <img
-          src={folder.thumbnailUrl}
-          alt=""
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="absolute inset-0 size-full object-cover"
-        />
-      ) : (
-        <span aria-hidden="true">
-          <span className="absolute top-[32%] right-[20%] size-10 rounded-full bg-[#fff3c7]" />
-          <span className="absolute -bottom-4 -left-5 h-[45%] w-[120%] rounded-[50%] bg-brand/25" />
-        </span>
-      )}
-      <span
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#021730]/85 to-transparent"
-      />
-      <input
-        type="checkbox"
-        aria-label={`${folder.name} 사진 ${folder.photoCount}장 선택`}
-        checked={selected}
-        disabled={empty}
-        onChange={onToggle}
-        className="peer focus-visible:outline-brand absolute top-3 left-3 z-10 size-6 cursor-pointer appearance-none rounded-lg border border-[#021730]/15 bg-white/85 checked:border-brand checked:bg-brand focus-visible:outline-2 focus-visible:outline-offset-2"
-      />
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        className="pointer-events-none absolute top-3 left-3 z-10 hidden size-6 p-1 peer-checked:block"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M5 12.5l4.5 4.5L19 7.5" />
-      </svg>
-      {selected && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-[18px] border-[3px] border-brand"
-        />
-      )}
-      <span className="absolute right-3 bottom-3 left-3 text-white">
-        <strong className="block truncate text-sm font-extrabold">{folder.name}</strong>
-        <span className="mt-1 block text-[11px]">{folder.photoCount}장</span>
-      </span>
-    </label>
   );
 }
