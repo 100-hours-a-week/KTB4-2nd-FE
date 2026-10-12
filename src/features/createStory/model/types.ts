@@ -7,18 +7,22 @@ export const STORY_MOODS = [
   { value: 'LITERARY', label: '문학적으로', description: '비유와 묘사를 살려 풍성하게' },
 ] as const;
 export type StoryMood = (typeof STORY_MOODS)[number]['value'];
-export type StoryGenerationInput = { tripId: number; mood: StoryMood; folderIds: number[] };
 
-export type StoryProgressEvent = { progressPercent: number; message: string };
+export const STORY_CREATE_STEPS = ['mood', 'folder'] as const;
+export type StoryCreateStep = (typeof STORY_CREATE_STEPS)[number];
 
-export type StoryGenerationRequest = (
-  input: StoryGenerationInput,
-  signal: AbortSignal,
-  onProgress: (event: StoryProgressEvent) => void,
-) => Promise<void>;
+export type StoryCreateFormValues = {
+  mood: StoryMood | null;
+  tripPlaceIds: number[];
+};
 
-export type StoryCreateStep = 'mood' | 'folder';
+export const STORY_CREATE_DEFAULT_VALUES: StoryCreateFormValues = {
+  mood: null,
+  tripPlaceIds: [],
+};
+
 export type StoryFolderAccent = 'coast' | 'sunset' | 'island' | 'night' | 'field' | 'sky';
+
 export type StorySourceFolder = {
   id: number;
   name: string;
@@ -26,7 +30,16 @@ export type StorySourceFolder = {
   thumbnailUrl: string | null;
   accent: StoryFolderAccent;
 };
+
 export type StoryGenerationStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
+
+export function isStoryCreateStep(value: string | null | undefined): value is StoryCreateStep {
+  return STORY_CREATE_STEPS.some((step) => step === value);
+}
+
+export function isStoryMood(value: unknown): value is StoryMood {
+  return STORY_MOODS.some((option) => option.value === value);
+}
 
 export function isStoryGenerationRunning(status: StoryGenerationStatus) {
   return status === 'QUEUED' || status === 'PROCESSING';

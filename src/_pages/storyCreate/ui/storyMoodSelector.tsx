@@ -1,4 +1,4 @@
-import { STORY_MOODS, type StoryMood } from '@/features/createStory/model/types';
+import { STORY_MOODS, type StoryMood } from '@/features/createStory';
 
 export function StoryMoodSelector({
   mood,
@@ -8,12 +8,12 @@ export function StoryMoodSelector({
   onChange: (mood: StoryMood) => void;
 }) {
   return (
-    <fieldset className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <fieldset className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pb-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
       <legend className="sr-only">스토리 분위기 선택</legend>
       {STORY_MOODS.map((option) => (
         <label
           key={option.value}
-          className={`relative flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border px-4 py-3 transition-colors ${mood === option.value ? 'border-brand bg-surface-subtle ring-brand ring-1 ring-inset' : 'border-border-subtle'}`}
+          className={`relative flex min-h-18 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-colors ${mood === option.value ? 'border-brand bg-surface-subtle ring-brand ring-1 ring-inset' : 'border-border-subtle'}`}
         >
           <span>
             <strong className="block text-sm font-extrabold">{option.label}</strong>
