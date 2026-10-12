@@ -1,143 +1,151 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { StoryGenerationRequest } from './types';
-const request = vi.fn<StoryGenerationRequest>();
+import { cancelStoryGeneration } from '../api/cancelStoryGeneration';
+import { createStoryGeneration } from '../api/createStoryGeneration';
+import { getStoryGenerationStatus } from '../api/getStoryGenerationStatus';
 import { clearStoryGenerationJobs } from './storyGenerationStore';
 import { useStoryGeneration } from './useStoryGeneration';
-import { toast } from '@/shared/ui/toast';
 
-vi.mock('@/shared/ui/toast', () => ({ toast: { error: vi.fn(), warning: vi.fn() } }));
-const input = { tripId: 7, mood: 'EMOTIONAL' as const, folderIds: [1, 2] };
-
-describe('useStoryGeneration', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.clearAllMocks();
+vi.mock('@/shared/api/browser', () => ({ fetchCsrfToken: vi.fn().mockResolvedValue('csrf') }));
+vi.mock('../api/createStoryGeneration', () => ({ createStoryGeneration: vi.fn() }));
+vi.mock('../api/cancelStoryGeneration', () => ({ cancelStoryGeneration: vi.fn() }));
+vi.mock('../api/getStoryGenerationStatus', () => ({ getStoryGenerationStatus: vi.fn() }));
+const input = { tripId: 7, mood: 'EMOTIONAL' as const, folderIds: [3, 1] };
+const progress = {
+  generationId: 31,
+  status: 'PROCESSING' as const,
+  progress: 40,
+  storyId: null,
+  error: null,
+};
+const clients: QueryClient[] = [];
+function setup() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
   });
-  afterEach(() => {
-    clearStoryGenerationJobs();
-    vi.useRealTimers();
+  clients.push(client);
+  return renderHook(() => useStoryGeneration(7), {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    ),
   });
-
-  it('완료 상태를 유지하고 중복 요청을 막는다', async () => {
-    let complete!: () => void;
-    vi.mocked(request).mockImplementation(
+}
+const advance = (ms = 20) =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.clearAllMocks();
+  clearStoryGenerationJobs();
+  vi.mocked(createStoryGeneration).mockResolvedValue({
+    generationId: 31,
+    tripId: 7,
+    status: 'QUEUED',
+  });
+  vi.mocked(getStoryGenerationStatus).mockResolvedValue(progress);
+  vi.mocked(cancelStoryGeneration).mockResolvedValue(undefined);
+});
+afterEach(() => {
+  clients.splice(0).forEach((client) => client.clear());
+  clearStoryGenerationJobs();
+  vi.useRealTimers();
+});
+describe('useStoryGeneration API', () => {
+  it('선택 순서를 전달하고 중복 생성 요청을 막는다', async () => {
+    const { result } = setup();
+    act(() => {
+      result.current.start(input);
+      result.current.start(input);
+    });
+    await advance();
+    expect(createStoryGeneration).toHaveBeenCalledExactlyOnceWith(
+      7,
+      { mood: 'EMOTIONAL', tripPlaceIds: [3, 1] },
+      'csrf',
+    );
+    expect(result.current.progressPercent).toBe(40);
+  });
+  it('2초마다 상태를 조회하고 완료 후에는 조회를 중단한다', async () => {
+    const { result } = setup();
+    act(() => result.current.start(input));
+    await advance();
+    expect(getStoryGenerationStatus).toHaveBeenCalledTimes(1);
+    vi.mocked(getStoryGenerationStatus).mockResolvedValue({
+      ...progress,
+      status: 'COMPLETED',
+      progress: 100,
+    });
+    await advance(2000);
+    expect(result.current.status).toBe('completed');
+    expect(result.current.progressPercent).toBe(100);
+    await advance(4000);
+    expect(getStoryGenerationStatus).toHaveBeenCalledTimes(2);
+  });
+  it('서버의 취소 성공을 기다리고 중복 취소를 막는다', async () => {
+    let finish!: () => void;
+    vi.mocked(cancelStoryGeneration).mockImplementation(
       () =>
         new Promise<void>((resolve) => {
-          complete = resolve;
+          finish = resolve;
         }),
     );
-    const { result } = renderHook(() => useStoryGeneration(7, request));
-    act(() => {
-      void result.current.start(input);
-      void result.current.start(input);
-    });
-    expect(result.current.status).toBe('processing');
-    expect(request).toHaveBeenCalledTimes(1);
-    await act(async () => complete());
-    expect(result.current.status).toBe('completed');
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('60초 경과를 알리고 180초에 작업을 중단한다', async () => {
-    vi.mocked(request).mockImplementation(
-      (_input, signal) =>
-        new Promise<void>((_resolve, reject) =>
-          signal.addEventListener('abort', () => reject(new Error('aborted'))),
-        ),
-    );
-    const { result } = renderHook(() => useStoryGeneration(7, request));
-    act(() => {
-      void result.current.start(input);
-    });
-    await act(async () => {
-      vi.advanceTimersByTime(60000);
-    });
-    expect(result.current.elapsed).toBe(60);
-    expect(result.current.status).toBe('processing');
-    await act(async () => {
-      vi.advanceTimersByTime(120000);
-    });
-    expect(result.current.status).toBe('failed');
-    expect(toast.error).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('취소한 작업의 늦은 완료를 무시하고 새 작업을 시작한다', async () => {
-    const complete: (() => void)[] = [];
-    vi.mocked(request).mockImplementation(
-      () => new Promise<void>((resolve) => complete.push(resolve)),
-    );
-    const { result } = renderHook(() => useStoryGeneration(7, request));
-    act(() => {
-      void result.current.start(input);
-    });
-    act(() => result.current.cancel());
-    expect(result.current.status).toBe('idle');
-    act(() => {
-      void result.current.start(input);
-    });
-    await act(async () => complete[0]());
-    expect(result.current.status).toBe('processing');
-    await act(async () => complete[1]());
-    expect(result.current.status).toBe('completed');
-  });
-
-  it('실패 후 같은 입력으로 재시도하고 화면을 나가도 진행을 유지한다', async () => {
-    vi.mocked(request)
-      .mockRejectedValueOnce(new Error('failed'))
-      .mockImplementation(
-        (_input, signal) =>
-          new Promise<void>((_resolve, reject) =>
-            signal.addEventListener('abort', () => reject(new Error('aborted'))),
-          ),
-      );
-    const { result, unmount } = renderHook(() => useStoryGeneration(7, request));
-    await act(async () => result.current.start(input));
-    expect(result.current.status).toBe('failed');
-    act(() => {
-      void result.current.start(input);
-    });
-    expect(request).toHaveBeenLastCalledWith(input, expect.any(AbortSignal), expect.any(Function));
-    await act(async () => unmount());
-    expect(vi.getTimerCount()).toBeGreaterThan(0);
-    const resumed = renderHook(() => useStoryGeneration(7, request));
-    expect(resumed.result.current.status).toBe('processing');
-    expect(resumed.result.current.input).toEqual(input);
-    act(() => resumed.result.current.cancel());
-    expect(vi.getTimerCount()).toBe(0);
-  });
-  it('수신 이벤트로 진행률을 갱신하고 이전 작업 이벤트는 무시한다', async () => {
-    const sinks: ((event: { progressPercent: number; message: string }) => void)[] = [];
-    vi.mocked(request).mockImplementation((_input, _signal, sink) => {
-      sinks.push(sink);
-      return new Promise<void>(() => {});
-    });
-    const { result } = renderHook(() => useStoryGeneration(7, request));
-    act(() => {
-      void result.current.start(input);
-    });
-    act(() => sinks[0]({ progressPercent: 55, message: '장면을 정리하고 있어요' }));
-    expect(result.current.progressPercent).toBe(55);
-    expect(result.current.message).toBe('장면을 정리하고 있어요');
-    act(() => sinks[0]({ progressPercent: 20, message: '뒤늦게 도착한 이벤트' }));
-    expect(result.current.progressPercent).toBe(55);
+    const { result } = setup();
+    act(() => result.current.start(input));
+    await advance();
     act(() => {
       result.current.cancel();
-      void result.current.start(input);
+      result.current.cancel();
     });
-    act(() => sinks[0]({ progressPercent: 90, message: '이전 작업 이벤트' }));
-    expect(result.current.progressPercent).toBe(0);
-    act(() => sinks[1]({ progressPercent: 100, message: '마무리 중' }));
-    expect(result.current.progressPercent).toBe(99);
+    await advance();
+    expect(cancelStoryGeneration).toHaveBeenCalledExactlyOnceWith(31, 'csrf');
+    expect(result.current.status).toBe('processing');
+    await act(async () => finish());
+    await advance();
+    expect(result.current.status).toBe('idle');
+  });
+  it('취소가 거절되면 생성 상태를 유지한다', async () => {
+    vi.mocked(cancelStoryGeneration).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409 },
+    });
+    const { result } = setup();
+    act(() => result.current.start(input));
+    await advance();
+    act(() => result.current.cancel());
+    await advance();
     expect(result.current.status).toBe('processing');
   });
-  it('API가 연결되지 않으면 작업이나 가짜 진행률을 생성하지 않는다', async () => {
-    const { result } = renderHook(() => useStoryGeneration(7));
-    await act(async () => result.current.start(input));
+  it('화면을 나간 뒤 도착한 생성 응답도 메모리에 기록한다', async () => {
+    let finish!: (value: { generationId: number; tripId: number; status: 'QUEUED' }) => void;
+    vi.mocked(createStoryGeneration).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const view = setup();
+    act(() => view.result.current.start(input));
+    await advance();
+    view.unmount();
+    await act(async () => finish({ generationId: 31, tripId: 7, status: 'QUEUED' }));
+    const resumed = setup();
+    await advance();
+    expect(resumed.result.current.status).toBe('processing');
+    expect(resumed.result.current.progressPercent).toBe(40);
+  });
+  it('서버에 작업이 없으면 폴링을 중단한다', async () => {
+    vi.mocked(getStoryGenerationStatus).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 404 },
+    });
+    const { result } = setup();
+    act(() => result.current.start(input));
+    await advance();
     expect(result.current.status).toBe('idle');
-    expect(result.current.progressPercent).toBe(0);
-    expect(vi.getTimerCount()).toBe(0);
-    expect(toast.warning).toHaveBeenCalledWith('스토리 생성 기능을 준비하고 있어요.');
+    await advance(4000);
+    expect(getStoryGenerationStatus).toHaveBeenCalledTimes(1);
   });
 });
