@@ -16,3 +16,18 @@ export type StoryGenerationRequest = (
   signal: AbortSignal,
   onProgress: (event: StoryProgressEvent) => void,
 ) => Promise<void>;
+
+export type StoryCreateStep = 'mood' | 'folder';
+export type StoryFolderAccent = 'coast' | 'sunset' | 'island' | 'night' | 'field' | 'sky';
+export type StorySourceFolder = {
+  id: number;
+  name: string;
+  photoCount: number;
+  thumbnailUrl: string | null;
+  accent: StoryFolderAccent;
+};
+export type StoryGenerationStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
+
+export function isStoryGenerationRunning(status: StoryGenerationStatus) {
+  return status === 'QUEUED' || status === 'PROCESSING';
+}

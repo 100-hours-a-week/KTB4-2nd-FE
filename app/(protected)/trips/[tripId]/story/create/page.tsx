@@ -15,6 +15,7 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]/story/
     redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}/story/create`)}`);
   if (result.status === 'notReady') redirect('/trips');
   if (result.status !== 'ok') notFound();
+  if (result.trip.hasStory) redirect(`/trips/${tripId}/story`);
   const user = await getCurrentUser();
   if (user.status === 'unauthorized')
     redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}/story/create`)}`);

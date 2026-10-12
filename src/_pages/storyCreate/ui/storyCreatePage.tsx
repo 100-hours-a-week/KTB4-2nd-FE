@@ -3,15 +3,15 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import type { TripDetail, TripPlaceFolder } from '@/features/tripDetail';
+import type { TripDetail } from '@/features/tripDetail';
 import {
   STORY_FOLDER_LIMIT,
   STORY_MOODS,
   type StoryMood,
-  type StoryGenerationRequest,
+  type StorySourceFolder,
 } from '@/features/createStory/model/types';
 import { useStoryGeneration } from '@/features/createStory/model/useStoryGeneration';
-import { tripDetailQueries } from '@/queryFactory';
+import { storyCreateQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { PageHeader } from '@/shared/ui/pageHeader';
@@ -22,14 +22,12 @@ import { StoryGenerationView } from './storyGenerationView';
 export function StoryCreatePage({
   trip,
   nickname = '회원',
-  runGeneration,
 }: {
   trip: TripDetail;
   nickname?: string;
-  runGeneration?: StoryGenerationRequest;
 }) {
   const router = useRouter();
-  const generation = useStoryGeneration(trip.id, runGeneration);
+  const generation = useStoryGeneration(trip.id);
   const [step, setStep] = useState<'mood' | 'folder'>('mood');
   const [mood, setMood] = useState<StoryMood | null>(generation.input?.mood ?? null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(
@@ -41,12 +39,20 @@ export function StoryCreatePage({
   function start() {
     setCancelOpen(false);
     if (!mood || selectedIds.size === 0) return;
-    void generation.start({ tripId: trip.id, mood, folderIds: [...selectedIds] });
+    generation.start(
+      { tripId: trip.id, mood, folderIds: [...selectedIds] },
+      {
+        onError: (error) => {
+          if (error.kind === 'alreadyExists') router.replace(`/trips/${trip.id}/story`);
+          else if (error.kind === 'retry' && error.step) setStep(error.step);
+        },
+      },
+    );
   }
   function back() {
     if (generation.status === 'processing') setCancelOpen(true);
     else if (processing) {
-      generation.cancel();
+      generation.reset();
       setStep('folder');
     } else if (step === 'folder') {
       setSelectedIds(new Set());
@@ -196,11 +202,15 @@ export function StoryCreatePage({
         <DialogActions>
           <Button
             variant="secondary"
-            onClick={() => {
-              generation.cancel();
-              setCancelOpen(false);
-              setStep('folder');
-            }}
+            disabled={!generation.canCancel || generation.isCanceling}
+            onClick={() =>
+              generation.cancel({
+                onSuccess: () => {
+                  setCancelOpen(false);
+                  setStep('folder');
+                },
+              })
+            }
             className="w-full min-h-11 px-0 text-sm"
           >
             취소하기
@@ -223,7 +233,7 @@ function StoryFolderGrid({
   selectedIds: Set<number>;
   onToggle: (id: number) => void;
 }) {
-  const query = useInfiniteQuery(tripDetailQueries.placeFolders(tripId));
+  const query = useInfiniteQuery(storyCreateQueries.sourceFolders(tripId));
   const [visibleCount, setVisibleCount] = useState(6);
   const root = useRef<HTMLDivElement>(null);
   const sentinel = useRef<HTMLDivElement>(null);
@@ -318,11 +328,12 @@ function FolderChoice({
   selected,
   onToggle,
 }: {
-  folder: TripPlaceFolder;
+  folder: StorySourceFolder;
   selected: boolean;
   onToggle: () => void;
 }) {
   const [failed, setFailed] = useState(false);
+  const empty = folder.photoCount === 0;
   const colors = {
     coast: 'from-[#b5def4] to-[#306762]',
     sunset: 'from-[#ffd299] via-[#f9a393] to-[#1b2c51]',
@@ -333,7 +344,7 @@ function FolderChoice({
   };
   return (
     <label
-      className={`relative block aspect-[0.94] cursor-pointer overflow-hidden rounded-[18px] bg-gradient-to-b ${colors[folder.accent]}`}
+      className={`relative block aspect-[0.94] overflow-hidden rounded-[18px] bg-gradient-to-b ${colors[folder.accent]} ${empty ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
     >
       {folder.thumbnailUrl && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element -- API 썸네일은 임의의 presigned URL이므로 브라우저에서 직접 로드합니다.
@@ -358,6 +369,7 @@ function FolderChoice({
         type="checkbox"
         aria-label={`${folder.name} 사진 ${folder.photoCount}장 선택`}
         checked={selected}
+        disabled={empty}
         onChange={onToggle}
         className="peer focus-visible:outline-brand absolute top-3 left-3 z-10 size-6 cursor-pointer appearance-none rounded-lg border border-[#021730]/15 bg-white/85 checked:border-brand checked:bg-brand focus-visible:outline-2 focus-visible:outline-offset-2"
       />
