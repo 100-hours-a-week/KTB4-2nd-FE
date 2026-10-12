@@ -15,6 +15,7 @@ import {
 import { uploadInitialAttachmentBatch } from '../api/uploadInitialAttachments';
 import { saveTripCreateDraft } from '../model/tripCreateDraft';
 import type { TripCreateFormValues } from '../model/types';
+import { hasAnyPhotoLocation } from '../model/hasAnyPhotoLocation';
 import { TripCreateForm } from './tripCreateForm';
 
 const replace = vi.fn();
@@ -30,6 +31,7 @@ vi.mock('@/shared/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 vi.mock('../api/createTrip', () => ({ createTrip: vi.fn() }));
+vi.mock('../model/hasAnyPhotoLocation', () => ({ hasAnyPhotoLocation: vi.fn() }));
 vi.mock('../api/getTripProcessingStatus', () => ({ getTripProcessingStatus: vi.fn() }));
 vi.mock('../api/uploadInitialAttachments', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/uploadInitialAttachments')>()),
@@ -86,6 +88,7 @@ async function submitForm() {
 describe('TripCreateForm 생성 완료 이벤트', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(hasAnyPhotoLocation).mockReset().mockResolvedValue(true);
     window.localStorage.clear();
     window.history.replaceState(null, '', '/trips/create?step=images');
     saveTripCreateDraft({
@@ -97,6 +100,49 @@ describe('TripCreateForm 생성 완료 이벤트', () => {
     });
     vi.mocked(createTrip).mockResolvedValue({ tripId: 7, status: 'PROCESSING' });
     vi.mocked(getTripProcessingStatus).mockResolvedValue(processing);
+  });
+
+  it('모든 사진에 위치 정보가 없으면 모달을 띄우고 생성과 업로드를 막는다', async () => {
+    vi.mocked(hasAnyPhotoLocation).mockResolvedValue(false);
+    await submitForm();
+
+    expect(
+      await screen.findByRole('dialog', { name: '모든 사진에 위치 정보가 없어요' }),
+    ).toBeInTheDocument();
+    expect(createTrip).not.toHaveBeenCalled();
+    expect(uploadInitialAttachmentBatch).not.toHaveBeenCalled();
+    await userEvent.setup().click(screen.getByRole('button', { name: '확인' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('trip-create-draft-v1')).toContain('제주 여행');
+  });
+
+  it('검사가 끝나기 전에 다시 제출해도 검사를 중복 실행하지 않는다', async () => {
+    let resolveCheck!: (value: boolean) => void;
+    vi.mocked(hasAnyPhotoLocation).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveCheck = resolve;
+        }),
+    );
+    await submitForm();
+    expect(screen.getByRole('button', { name: '여행 만들기' })).toBeDisabled();
+    await userEvent.setup().click(screen.getByRole('button', { name: '여행 만들기' }));
+    expect(hasAnyPhotoLocation).toHaveBeenCalledTimes(1);
+    await act(async () => resolveCheck(false));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('읽기 실패 시 위치 정보 없음 모달 대신 검사 오류를 안내한다', async () => {
+    vi.mocked(hasAnyPhotoLocation).mockRejectedValue(new Error('read failure'));
+    await submitForm();
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        '사진의 위치 정보를 확인하지 못했어요. 다시 시도해주세요.',
+      ),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(createTrip).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '여행 만들기' })).toBeEnabled();
   });
 
   it('Batch에서 완료되면 이벤트를 보내고 한 번만 완료 안내·이동한다', async () => {
