@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { TripDetail } from '@/features/tripDetail';
 import {
   STORY_FOLDER_LIMIT,
-  STORY_MOODS,
   type StoryMood,
   type StorySourceFolder,
 } from '@/features/createStory/model/types';
@@ -17,6 +16,8 @@ import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
+import { StoryCreateIntro } from './storyCreateIntro';
+import { StoryMoodSelector } from './storyMoodSelector';
 import { StoryGenerationView } from './storyGenerationView';
 
 export function StoryCreatePage({
@@ -94,83 +95,9 @@ export function StoryCreatePage({
             backLabel={step === 'mood' ? '여행 상세로 돌아가기' : '분위기 선택으로 돌아가기'}
             className="shrink-0"
           />
-          <div className="mt-3 shrink-0">
-            <p
-              aria-label="여행 요약"
-              className="text-muted inline-flex max-w-full items-center gap-2 rounded-full bg-[#eef3f9] px-3 py-1.5 text-[11px] font-semibold"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="size-3.5 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="5" width="18" height="16" rx="3" />
-                <path d="M3 10h18M8 3v4M16 3v4" strokeLinecap="round" />
-              </svg>
-              <span className="truncate">
-                {trip.name} · {trip.startDate.slice(5).replace('-', '.')} –{' '}
-                {trip.endDate.slice(5).replace('-', '.')} · {trip.photoCount}장
-              </span>
-            </p>
-            <h2 className="mt-6 text-[23px] leading-[1.35] font-extrabold tracking-[-0.04em]">
-              이번 여행, 어떤{' '}
-              {step === 'mood' ? (
-                <>
-                  분위기로
-                  <br />
-                  기록할까요?
-                </>
-              ) : (
-                <>
-                  폴더를
-                  <br />
-                  스토리로 만들까요?
-                </>
-              )}
-            </h2>
-            <div className="mt-3 mb-5 flex items-center justify-between gap-2">
-              <p className="text-muted text-[12px]">
-                {step === 'mood'
-                  ? '선택한 분위기에 맞춰 사진을 고르고 스토리를 써드려요.'
-                  : '폴더를 선택하면 스토리를 써드려요.'}
-              </p>
-              {step === 'folder' && (
-                <p
-                  aria-label="선택한 폴더 수"
-                  className="text-muted shrink-0 rounded-full bg-[#eef3f9] px-2.5 py-1 text-xs"
-                >
-                  <strong className="text-brand">{selectedIds.size}</strong> / 10
-                </p>
-              )}
-            </div>
-          </div>
+          <StoryCreateIntro trip={trip} step={step} selectedCount={selectedIds.size} />
           {step === 'mood' ? (
-            <fieldset className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <legend className="sr-only">스토리 분위기 선택</legend>
-              {STORY_MOODS.map((option) => (
-                <label
-                  key={option.value}
-                  className={`relative flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border px-4 py-3 transition-colors ${mood === option.value ? 'border-brand bg-surface-subtle ring-brand ring-1 ring-inset' : 'border-border-subtle'}`}
-                >
-                  <span>
-                    <strong className="block text-sm font-extrabold">{option.label}</strong>
-                    <span className="text-muted mt-1 block text-[11px]">{option.description}</span>
-                  </span>
-                  <input
-                    type="radio"
-                    name="story-mood"
-                    value={option.value}
-                    checked={mood === option.value}
-                    onChange={() => setMood(option.value)}
-                    className="focus-visible:outline-brand size-5 shrink-0 appearance-none rounded-full border-2 border-slate-300 bg-white checked:border-[6px] checked:border-brand focus-visible:outline-2 focus-visible:outline-offset-2"
-                  />
-                </label>
-              ))}
-            </fieldset>
+            <StoryMoodSelector mood={mood} onChange={setMood} />
           ) : (
             <StoryFolderGrid tripId={trip.id} selectedIds={selectedIds} onToggle={toggleFolder} />
           )}
