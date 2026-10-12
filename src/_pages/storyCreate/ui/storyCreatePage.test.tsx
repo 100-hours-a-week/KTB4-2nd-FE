@@ -1,12 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cancelStoryGeneration } from '@/features/createStory/api/cancelStoryGeneration';
 import { createStoryGeneration } from '@/features/createStory/api/createStoryGeneration';
 import { getStoryGenerationStatus } from '@/features/createStory/api/getStoryGenerationStatus';
 import { getStorySourceFolders } from '@/features/createStory/api/getStorySourceFolders';
-import { clearStoryGenerationJobs } from '@/features/createStory/model/storyGenerationStore';
 import type { TripDetail } from '@/features/tripDetail';
 import { StoryCreatePage } from './storyCreatePage';
 
@@ -39,6 +38,7 @@ const trip: TripDetail = {
   reviewCount: 0,
   hasStory: false,
 };
+const DRAFT_KEY = 'story-create-draft-v1:7';
 
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -59,7 +59,7 @@ async function chooseMoodAndFolders(user: ReturnType<typeof userEvent.setup>, fo
 
 beforeEach(() => {
   vi.clearAllMocks();
-  clearStoryGenerationJobs();
+  window.localStorage.clear();
   window.history.replaceState(null, '', '/trips/7/story/create');
   vi.mocked(getStorySourceFolders).mockResolvedValue({
     folders: Array.from({ length: 12 }, (_, i) => ({
@@ -87,8 +87,6 @@ beforeEach(() => {
   vi.mocked(cancelStoryGeneration).mockResolvedValue(undefined);
 });
 
-afterEach(() => clearStoryGenerationJobs());
-
 describe('StoryCreatePage', () => {
   it('기본 선택 없이 시작하고 분위기를 하나만 선택한다', async () => {
     const { user } = setup();
@@ -102,6 +100,7 @@ describe('StoryCreatePage', () => {
     await user.click(screen.getByRole('button', { name: '생성' }));
     expect(await screen.findAllByRole('checkbox')).toHaveLength(6);
     expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
+    expect(window.location.search).toBe('?step=folder');
   });
 
   it('최대 10개만 선택하고 선택 해제 후 다른 폴더를 선택한다', async () => {
@@ -115,6 +114,23 @@ describe('StoryCreatePage', () => {
     await user.click(boxes[0]);
     await user.click(boxes[10]);
     expect(boxes[10]).toBeChecked();
+  });
+
+  it('고른 분위기와 폴더를 저장해 새로고침 후에도 그대로 복원한다', async () => {
+    const { user, unmount } = setup();
+    await chooseMoodAndFolders(user, [2, 0]);
+
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      mood: 'PLAIN',
+      tripPlaceIds: [3, 1],
+    });
+
+    unmount();
+    setup();
+
+    expect(await screen.findByRole('checkbox', { name: '장소 3 사진 3장 선택' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: '장소 1 사진 3장 선택' })).toBeChecked();
+    expect(screen.getByLabelText('선택한 폴더 수')).toHaveTextContent('2 / 10');
   });
 
   it('고른 순서대로 생성 요청을 보내고 진행 상태를 보여준다', async () => {
@@ -134,9 +150,28 @@ describe('StoryCreatePage', () => {
       '40',
     );
     expect(getStoryGenerationStatus).toHaveBeenCalledWith(31);
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      generationId: 31,
+    });
   });
 
-  it('생성이 완료되면 스토리 보기로 이동한다', async () => {
+  it('새로고침해도 저장된 생성 작업의 진행 상태를 이어서 보여준다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ mood: 'CALM', tripPlaceIds: [1], generationId: 31, startedAt: Date.now() }),
+    );
+    setup();
+
+    await waitFor(() =>
+      expect(screen.getByRole('progressbar', { name: '스토리 생성 진행률' })).toHaveAttribute(
+        'aria-valuenow',
+        '40',
+      ),
+    );
+    expect(createStoryGeneration).not.toHaveBeenCalled();
+  });
+
+  it('생성이 완료되면 임시 저장을 지우고 스토리 보기로 이동한다', async () => {
     vi.mocked(getStoryGenerationStatus).mockResolvedValue({
       generationId: 31,
       status: 'COMPLETED',
@@ -150,6 +185,7 @@ describe('StoryCreatePage', () => {
 
     await user.click(await screen.findByRole('button', { name: '스토리 보기' }));
     expect(push).toHaveBeenCalledWith('/trips/7/story');
+    expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 
   it('생성에 실패하면 같은 선택으로 다시 시도할 수 있다', async () => {
@@ -190,6 +226,9 @@ describe('StoryCreatePage', () => {
 
     await waitFor(() => expect(cancelStoryGeneration).toHaveBeenCalledWith(31, 'csrf-token'));
     expect(await screen.findByRole('checkbox', { name: '장소 1 사진 3장 선택' })).toBeChecked();
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      generationId: null,
+    });
   });
 
   it('다른 작업 이어하기는 취소 없이 여행 상세로 이동한다', async () => {

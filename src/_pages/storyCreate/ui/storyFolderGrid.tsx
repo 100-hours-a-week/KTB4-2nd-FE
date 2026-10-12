@@ -1,3 +1,5 @@
+'use client';
+
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { storyCreateQueries } from '@/queryFactory';
@@ -11,7 +13,7 @@ export function StoryFolderGrid({
   onToggle,
 }: {
   tripId: number;
-  selectedIds: Set<number>;
+  selectedIds: number[];
   onToggle: (id: number) => void;
 }) {
   const query = useInfiniteQuery(storyCreateQueries.sourceFolders(tripId));
@@ -63,7 +65,7 @@ export function StoryFolderGrid({
               <li key={folder.id}>
                 <StoryFolderChoice
                   folder={folder}
-                  selected={selectedIds.has(folder.id)}
+                  selected={selectedIds.includes(folder.id)}
                   onToggle={() => onToggle(folder.id)}
                 />
               </li>

@@ -4,9 +4,8 @@ export { kakaoLoginQueries } from './kakaoLoginQueries';
 export { mainMapQueries } from './mainMapQueries';
 export { photoListQueries } from './photoListQueries';
 export { searchQueries } from './searchQueries';
+export { storyCreateQueries } from './storyCreateQueries';
 export { tripDetailQueries } from './tripDetailQueries';
 export { tripListQueries } from './tripListQueries';
 export { tripStoryQueries } from './tripStoryQueries';
 export { unclassifiedPhotosQueries } from './unclassifiedPhotosQueries';
-
-export { storyCreateQueries } from './storyCreateQueries';

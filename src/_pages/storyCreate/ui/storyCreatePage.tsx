@@ -1,45 +1,72 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  clearStoryCreateDraft,
+  useStoryCreateForm,
+  useStoryCreateFunnel,
+  useStoryGeneration,
+  type StoryCreateStep,
+} from '@/features/createStory';
 import type { TripDetail } from '@/features/tripDetail';
-import { STORY_FOLDER_LIMIT, type StoryMood } from '@/features/createStory/model/types';
-import { useStoryGeneration } from '@/features/createStory/model/useStoryGeneration';
 import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/pageHeader';
-import { toast } from '@/shared/ui/toast';
 import { StoryCancelDialog } from './storyCancelDialog';
-import { StoryFolderGrid } from './storyFolderGrid';
 import { StoryCreateIntro } from './storyCreateIntro';
-import { StoryMoodSelector } from './storyMoodSelector';
+import { StoryFolderGrid } from './storyFolderGrid';
 import { StoryGenerationView } from './storyGenerationView';
+import { StoryMoodSelector } from './storyMoodSelector';
 
-export function StoryCreatePage({
-  trip,
-  nickname = '회원',
-}: {
+const subscribeNothing = () => () => {};
+
+type StoryCreatePageProps = {
   trip: TripDetail;
   nickname?: string;
-}) {
+  initialStep?: StoryCreateStep;
+};
+
+export function StoryCreatePage(props: StoryCreatePageProps) {
+  const isClient = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  );
+
+  return isClient ? <StoryCreateContent {...props} /> : null;
+}
+
+function StoryCreateContent({
+  trip,
+  nickname = '회원',
+  initialStep = 'mood',
+}: StoryCreatePageProps) {
   const router = useRouter();
   const generation = useStoryGeneration(trip.id);
-  const [step, setStep] = useState<'mood' | 'folder'>('mood');
-  const [mood, setMood] = useState<StoryMood | null>(generation.input?.mood ?? null);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(
-    new Set(generation.input?.folderIds ?? []),
-  );
+  const { step, goToStep, replaceStep } = useStoryCreateFunnel(initialStep);
+  const form = useStoryCreateForm(trip.id);
+  const { getValues } = form;
   const [cancelOpen, setCancelOpen] = useState(false);
   const processing = generation.status !== 'idle';
 
+  useEffect(() => {
+    if (step === 'folder' && !getValues('mood')) replaceStep('mood');
+  }, [getValues, replaceStep, step]);
+
   function start() {
     setCancelOpen(false);
-    if (!mood || selectedIds.size === 0) return;
+    const values = getValues();
+    if (!values.mood || values.tripPlaceIds.length === 0) return;
     generation.start(
-      { tripId: trip.id, mood, folderIds: [...selectedIds] },
+      { mood: values.mood, tripPlaceIds: values.tripPlaceIds },
       {
         onError: (error) => {
-          if (error.kind === 'alreadyExists') router.replace(`/trips/${trip.id}/story`);
-          else if (error.kind === 'retry' && error.step) setStep(error.step);
+          if (error.kind === 'alreadyExists') {
+            clearStoryCreateDraft(trip.id);
+            router.replace(`/trips/${trip.id}/story`);
+          } else if (error.kind === 'retry' && error.step && error.step !== step) {
+            goToStep(error.step);
+          }
         },
       },
     );
@@ -48,22 +75,21 @@ export function StoryCreatePage({
     if (generation.status === 'processing') setCancelOpen(true);
     else if (processing) {
       generation.reset();
-      setStep('folder');
+      replaceStep('folder');
     } else if (step === 'folder') {
-      setSelectedIds(new Set());
-      setStep('mood');
-    } else router.push(`/trips/${trip.id}`);
-  }
-  function toggleFolder(id: number) {
-    if (!selectedIds.has(id) && selectedIds.size >= STORY_FOLDER_LIMIT) {
-      toast.warning('폴더는 최대 10개까지 선택할 수 있어요.');
-      return;
+      form.clearFolders();
+      replaceStep('mood');
+    } else {
+      clearStoryCreateDraft(trip.id);
+      router.push(`/trips/${trip.id}`);
     }
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  }
+  function cancelGeneration() {
+    generation.cancel({
+      onSuccess: () => {
+        setCancelOpen(false);
+        replaceStep('folder');
+      },
     });
   }
 
@@ -89,25 +115,29 @@ export function StoryCreatePage({
             backLabel={step === 'mood' ? '여행 상세로 돌아가기' : '분위기 선택으로 돌아가기'}
             className="shrink-0"
           />
-          <StoryCreateIntro trip={trip} step={step} selectedCount={selectedIds.size} />
+          <StoryCreateIntro trip={trip} step={step} selectedCount={form.selectedIds.length} />
           {step === 'mood' ? (
-            <StoryMoodSelector mood={mood} onChange={setMood} />
+            <StoryMoodSelector mood={form.mood} onChange={form.setMood} />
           ) : (
-            <StoryFolderGrid tripId={trip.id} selectedIds={selectedIds} onToggle={toggleFolder} />
+            <StoryFolderGrid
+              tripId={trip.id}
+              selectedIds={form.selectedIds}
+              onToggle={form.toggleFolder}
+            />
           )}
           <footer className="bg-surface before:from-surface relative shrink-0 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent">
             <Button
-              disabled={step === 'mood' ? !mood : selectedIds.size === 0}
-              onClick={step === 'mood' ? () => setStep('folder') : start}
+              disabled={step === 'mood' ? !form.mood : form.selectedIds.length === 0}
+              onClick={step === 'mood' ? () => goToStep('folder') : start}
               className="w-full gap-2 rounded-[16px] text-sm disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
             >
               생성{' '}
-              {step === 'folder' && selectedIds.size > 0 && (
+              {step === 'folder' && form.selectedIds.length > 0 && (
                 <span
                   aria-hidden="true"
                   className="grid size-5 place-items-center rounded-full bg-white/20 text-[11px]"
                 >
-                  {selectedIds.size}
+                  {form.selectedIds.length}
                 </span>
               )}
             </Button>
@@ -118,15 +148,8 @@ export function StoryCreatePage({
         open={cancelOpen && generation.status === 'processing'}
         canCancel={generation.canCancel}
         isCanceling={generation.isCanceling}
+        onConfirm={cancelGeneration}
         onClose={() => setCancelOpen(false)}
-        onConfirm={() =>
-          generation.cancel({
-            onSuccess: () => {
-              setCancelOpen(false);
-              setStep('folder');
-            },
-          })
-        }
       />
     </main>
   );

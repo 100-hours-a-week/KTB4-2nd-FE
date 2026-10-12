@@ -5,14 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cancelStoryGeneration } from '../api/cancelStoryGeneration';
 import { createStoryGeneration } from '../api/createStoryGeneration';
 import { getStoryGenerationStatus } from '../api/getStoryGenerationStatus';
-import { clearStoryGenerationJobs } from './storyGenerationStore';
+import { clearAllStoryCreateDrafts, readStoryCreateDraft } from './storyCreateDraft';
 import { useStoryGeneration } from './useStoryGeneration';
 
 vi.mock('@/shared/api/browser', () => ({ fetchCsrfToken: vi.fn().mockResolvedValue('csrf') }));
 vi.mock('../api/createStoryGeneration', () => ({ createStoryGeneration: vi.fn() }));
 vi.mock('../api/cancelStoryGeneration', () => ({ cancelStoryGeneration: vi.fn() }));
 vi.mock('../api/getStoryGenerationStatus', () => ({ getStoryGenerationStatus: vi.fn() }));
-const input = { tripId: 7, mood: 'EMOTIONAL' as const, folderIds: [3, 1] };
+const input = { mood: 'EMOTIONAL' as const, tripPlaceIds: [3, 1] };
 const progress = {
   generationId: 31,
   status: 'PROCESSING' as const,
@@ -39,7 +39,7 @@ const advance = (ms = 20) =>
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
-  clearStoryGenerationJobs();
+  clearAllStoryCreateDrafts();
   vi.mocked(createStoryGeneration).mockResolvedValue({
     generationId: 31,
     tripId: 7,
@@ -50,7 +50,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   clients.splice(0).forEach((client) => client.clear());
-  clearStoryGenerationJobs();
+  clearAllStoryCreateDrafts();
   vi.useRealTimers();
 });
 describe('useStoryGeneration API', () => {
@@ -118,7 +118,7 @@ describe('useStoryGeneration API', () => {
     await advance();
     expect(result.current.status).toBe('processing');
   });
-  it('화면을 나간 뒤 도착한 생성 응답도 메모리에 기록한다', async () => {
+  it('화면을 나간 뒤 도착한 생성 응답도 저장해 복원한다', async () => {
     let finish!: (value: { generationId: number; tripId: number; status: 'QUEUED' }) => void;
     vi.mocked(createStoryGeneration).mockImplementation(
       () =>
@@ -131,6 +131,7 @@ describe('useStoryGeneration API', () => {
     await advance();
     view.unmount();
     await act(async () => finish({ generationId: 31, tripId: 7, status: 'QUEUED' }));
+    expect(readStoryCreateDraft(7).generationId).toBe(31);
     const resumed = setup();
     await advance();
     expect(resumed.result.current.status).toBe('processing');

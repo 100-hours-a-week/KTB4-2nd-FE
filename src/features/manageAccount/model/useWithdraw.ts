@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 
-import { clearStoryGenerationJobs } from '@/features/createStory/model/storyGenerationStore';
+import { clearAllStoryCreateDrafts } from '@/features/createStory';
 import { clearTripCreateDraft } from '@/features/createTrip/model/tripCreateDraft';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { clearIdentity } from '@/shared/lib/analytics';
@@ -21,7 +21,7 @@ export function useWithdraw() {
       await withdraw(csrfToken);
     },
     onSuccess: () => {
-      clearStoryGenerationJobs();
+      clearAllStoryCreateDrafts();
       clearTripCreateDraft();
       clearIdentity();
       queryClient.clear();
@@ -29,7 +29,7 @@ export function useWithdraw() {
     },
     onError: (error) => {
       if (isAxiosError(error) && error.response?.status === 404) {
-        clearStoryGenerationJobs();
+        clearAllStoryCreateDrafts();
         clearTripCreateDraft();
         clearIdentity();
         queryClient.clear();

@@ -1,4 +1,4 @@
-import { STORY_FOLDER_LIMIT, type StoryCreateStep } from '@/features/createStory/model/types';
+import { STORY_FOLDER_LIMIT, type StoryCreateStep } from '@/features/createStory';
 import type { TripDetail } from '@/features/tripDetail';
 
 export function StoryCreateIntro({

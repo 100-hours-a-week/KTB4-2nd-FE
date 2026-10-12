@@ -1,5 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import type { StorySourceFolder } from '@/features/createStory/model/types';
+import type { StorySourceFolder } from '@/features/createStory';
 
 export function StoryFolderChoice({
   folder,
@@ -25,7 +27,7 @@ export function StoryFolderChoice({
       className={`relative block aspect-[0.94] overflow-hidden rounded-[18px] bg-gradient-to-b ${colors[folder.accent]} ${empty ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
     >
       {folder.thumbnailUrl && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element -- API 썸네일은 임의의 presigned URL이므로 브라우저에서 직접 로드합니다.
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={folder.thumbnailUrl}
           alt=""
@@ -63,12 +65,6 @@ export function StoryFolderChoice({
       >
         <path d="M5 12.5l4.5 4.5L19 7.5" />
       </svg>
-      {selected && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-[18px] border-[3px] border-brand"
-        />
-      )}
       <span className="absolute right-3 bottom-3 left-3 text-white">
         <strong className="block truncate text-sm font-extrabold">{folder.name}</strong>
         <span className="mt-1 block text-[11px]">{folder.photoCount}장</span>
