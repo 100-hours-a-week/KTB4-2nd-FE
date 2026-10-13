@@ -1,15 +1,22 @@
-import type { UnclassifiedIssue } from '../model/types';
-import {
-  clearMockUnclassifiedIssue,
-  removeMockUnclassifiedPhotos,
-  waitMockDelay,
-} from './unclassifiedMock';
+import { apiClient } from '@/shared/api/browser';
 
-export type RestoreUnclassifiedTarget = { issue: UnclassifiedIssue } | { photoIds: number[] };
+export type RestoreAttachmentItem = {
+  tripAttachmentId: number;
+  tripPlaceId: number;
+};
 
-export async function restoreUnclassifiedPhotos(tripId: number, target: RestoreUnclassifiedTarget) {
-  await waitMockDelay();
+export async function restoreAttachment(item: RestoreAttachmentItem, csrfToken: string) {
+  await apiClient.post(
+    `/attachments/${item.tripAttachmentId}/restore`,
+    { tripPlaceId: item.tripPlaceId },
+    { headers: { 'X-CSRF-TOKEN': csrfToken } },
+  );
+}
 
-  if ('issue' in target) clearMockUnclassifiedIssue(tripId, target.issue);
-  else removeMockUnclassifiedPhotos(tripId, target.photoIds);
+export async function restoreAttachments(items: RestoreAttachmentItem[], csrfToken: string) {
+  await apiClient.post(
+    '/attachments/bulk-restore',
+    { items },
+    { headers: { 'X-CSRF-TOKEN': csrfToken } },
+  );
 }

@@ -8,8 +8,11 @@ import type { PhotoAccent } from '@/features/photoList';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
   toUnclassifiedIssueSlug,
+  RestorePlaceDialog,
+  RestorePlaceRequiredError,
   useRestoreUnclassifiedPhotos,
   useUnclassifiedFolders,
+  type UnclassifiedIssue,
   type UnclassifiedFolder,
 } from '@/features/unclassifiedPhotos';
 import { Button } from '@/shared/ui/button';
@@ -27,6 +30,10 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
   const { folders, viewState, refetch } = useUnclassifiedFolders(tripId);
   const { mutate: requestRestore, isPending: isRestoring } = useRestoreUnclassifiedPhotos(tripId);
   const [pendingRestoreFolder, setPendingRestoreFolder] = useState<UnclassifiedFolder | null>(null);
+  const [placeRequest, setPlaceRequest] = useState<{
+    issue: UnclassifiedIssue;
+    photoCount: number;
+  } | null>(null);
 
   const visibleFolders = folders.filter((folder) => folder.photoCount > 0);
   const totalCount = folders.reduce((sum, folder) => sum + folder.photoCount, 0);
@@ -43,9 +50,26 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
   function confirmRestore() {
     if (!pendingRestoreFolder) return;
 
+    const { issue } = pendingRestoreFolder;
     requestRestore(
-      { issue: pendingRestoreFolder.issue },
-      { onSettled: () => setPendingRestoreFolder(null) },
+      { issue },
+      {
+        onError: (error) => {
+          if (error instanceof RestorePlaceRequiredError) {
+            setPlaceRequest({ issue, photoCount: error.photoCount });
+          }
+        },
+        onSettled: () => setPendingRestoreFolder(null),
+      },
+    );
+  }
+
+  function restoreWithPlace(tripPlaceId: number) {
+    if (!placeRequest) return;
+
+    requestRestore(
+      { issue: placeRequest.issue, fallbackPlaceId: tripPlaceId },
+      { onSuccess: () => setPlaceRequest(null) },
     );
   }
 
@@ -119,6 +143,14 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
           </Button>
         </DialogActions>
       </Dialog>
+      <RestorePlaceDialog
+        open={placeRequest !== null}
+        tripId={tripId}
+        photoCount={placeRequest?.photoCount ?? 0}
+        isRestoring={isRestoring}
+        onClose={() => setPlaceRequest(null)}
+        onConfirm={restoreWithPlace}
+      />
     </main>
   );
 }

@@ -7,10 +7,13 @@ import { createPortal } from 'react-dom';
 import { PhotoArtwork, PhotoViewer } from '@/features/photoList';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
+  RestorePlaceDialog,
+  RestorePlaceRequiredError,
   useDeleteUnclassifiedPhotos,
   useRestoreUnclassifiedPhotos,
   useUnclassifiedPhotos,
   type UnclassifiedIssue,
+  type UnclassifiedPhoto,
 } from '@/features/unclassifiedPhotos';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
@@ -35,6 +38,10 @@ export function UnclassifiedPhotoListPage({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([]);
   const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
+  const [placeRequest, setPlaceRequest] = useState<{
+    photos: UnclassifiedPhoto[];
+    photoCount: number;
+  } | null>(null);
   const activeIndex = photos.findIndex((photo) => photo.id === activePhotoId);
   const activePhoto = photos[activeIndex];
 
@@ -68,8 +75,22 @@ export function UnclassifiedPhotoListPage({
     router.replace(`/trips/${tripId}/unclassified?trip=${encodeURIComponent(tripName)}`);
   }
 
-  function restoreSelected() {
-    requestRestore({ photoIds: visibleSelectedIds }, { onSuccess: leaveSelectionMode });
+  function restorePhotos(targets: UnclassifiedPhoto[], fallbackPlaceId?: number) {
+    requestRestore(
+      { photos: targets, fallbackPlaceId },
+      {
+        onSuccess: () => {
+          setPlaceRequest(null);
+          setActivePhotoId(null);
+          leaveSelectionMode();
+        },
+        onError: (error) => {
+          if (error instanceof RestorePlaceRequiredError) {
+            setPlaceRequest({ photos: targets, photoCount: error.photoCount });
+          }
+        },
+      },
+    );
   }
 
   function confirmDelete() {
@@ -176,7 +197,7 @@ export function UnclassifiedPhotoListPage({
         <SelectionActions
           disabled={selectedCount === 0 || isRestoring || isDeleting}
           isRestoring={isRestoring}
-          onRestore={restoreSelected}
+          onRestore={() => restorePhotos(photos.filter((photo) => selectedIds.has(photo.id)))}
           onDelete={() => setPendingDeleteIds(visibleSelectedIds)}
         />
       )}
@@ -194,12 +215,7 @@ export function UnclassifiedPhotoListPage({
           }
           onNext={() => setActivePhotoId(photos[(activeIndex + 1) % photos.length].id)}
           actionsDisabled={isRestoring || isDeleting}
-          onRestore={() =>
-            requestRestore(
-              { photoIds: [activePhoto.id] },
-              { onSuccess: () => setActivePhotoId(null) },
-            )
-          }
+          onRestore={() => restorePhotos([activePhoto])}
           onDelete={() => setPendingDeleteIds([activePhoto.id])}
         />
       )}
@@ -234,6 +250,14 @@ export function UnclassifiedPhotoListPage({
           </Button>
         </DialogActions>
       </Dialog>
+      <RestorePlaceDialog
+        open={placeRequest !== null}
+        tripId={tripId}
+        photoCount={placeRequest?.photoCount ?? 0}
+        isRestoring={isRestoring}
+        onClose={() => setPlaceRequest(null)}
+        onConfirm={(tripPlaceId) => placeRequest && restorePhotos(placeRequest.photos, tripPlaceId)}
+      />
     </main>
   );
 }

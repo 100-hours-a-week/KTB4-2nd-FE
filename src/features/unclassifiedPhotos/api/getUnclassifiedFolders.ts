@@ -1,11 +1,8 @@
 import type { PhotoAccent } from '@/features/photoList';
+import type { ApiResponse } from '@/shared/api';
+import { apiClient } from '@/shared/api/browser';
 
-import {
-  UNCLASSIFIED_ISSUES,
-  type UnclassifiedFolder,
-  type UnclassifiedIssue,
-} from '../model/types';
-import { getMockUnclassifiedPhotos, waitMockDelay } from './unclassifiedMock';
+import type { UnclassifiedFolder, UnclassifiedIssue } from '../model/types';
 
 export type UnclassifiedFolderListResponse = {
   folders: {
@@ -23,23 +20,11 @@ const FOLDER_ACCENTS: Record<UnclassifiedIssue, PhotoAccent> = {
 };
 
 export async function getUnclassifiedFolders(tripId: number): Promise<UnclassifiedFolder[]> {
-  await waitMockDelay();
-  const photos = getMockUnclassifiedPhotos(tripId);
+  const { data } = await apiClient.get<ApiResponse<UnclassifiedFolderListResponse>>(
+    `/trips/${tripId}/unclassified-folders`,
+  );
 
-  return toUnclassifiedFolders({
-    folders: UNCLASSIFIED_ISSUES.map((issue) => ({
-      issue,
-      name: issue,
-      attachmentCount: photos[issue].length,
-      representativeAttachment: photos[issue][0]
-        ? { tripAttachmentId: photos[issue][0].id, thumbnailUrl: null }
-        : null,
-    })),
-  });
-}
-
-function toUnclassifiedFolders(response: UnclassifiedFolderListResponse): UnclassifiedFolder[] {
-  return response.folders.map((folder) => ({
+  return data.data.folders.map((folder) => ({
     issue: folder.issue,
     photoCount: folder.attachmentCount,
     thumbnailUrl: folder.representativeAttachment?.thumbnailUrl ?? null,
