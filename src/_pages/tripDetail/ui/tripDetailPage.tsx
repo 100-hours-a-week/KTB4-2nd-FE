@@ -13,6 +13,18 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
+import {
+  CalendarIcon,
+  ChevronRightIcon,
+  DocumentIcon,
+  EditIcon,
+  FolderWarningIcon,
+  ImageIcon,
+  LinkIcon,
+  PinIcon,
+  TrashIcon,
+  WarningIcon,
+} from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
@@ -52,14 +64,14 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
     {
       id: 'edit',
       label: '여행 수정',
-      icon: <EditIcon />,
+      icon: <EditIcon size="20" />,
       badge: '준비 중',
       onSelect: showUnsupportedToast,
     },
     {
       id: 'share-link',
       label: '링크로 공유하기',
-      icon: <LinkIcon />,
+      icon: <LinkIcon size="20" />,
       badge: '준비 중',
       disabled: true,
       onSelect: showUnsupportedToast,
@@ -67,7 +79,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
     {
       id: 'delete',
       label: '여행 삭제',
-      icon: <TrashIcon />,
+      icon: <TrashIcon size="20" />,
       destructive: true,
       dividerBefore: true,
       onSelect: () => setDeleteOpen(true),
@@ -92,7 +104,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
           className="bg-brand hover:bg-brand-hover focus-visible:outline-brand flex min-h-[66px] cursor-pointer items-center gap-3 rounded-[14px] px-4 text-left text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white/10">
-            <StoryIcon />
+            <DocumentIcon size="19" variant="story" />
           </span>
           <span className="min-w-0 flex-1">
             <strong className="block text-sm">스토리 보기</strong>
@@ -100,14 +112,14 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
               자동 생성된 여행일기
             </span>
           </span>
-          <ChevronIcon />
+          <ChevronRightIcon strokeWidth="2" size="16" />
         </button>
 
         <Link
           href={`/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`}
           className="focus-visible:outline-warning relative flex min-h-[66px] cursor-pointer flex-col justify-center rounded-[14px] bg-[#fff4d8] px-3 text-left text-[#71511b] transition-colors hover:bg-[#ffedc0] focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <ReviewIcon />
+          <FolderWarningIcon size="21" />
           <strong className="mt-1 text-[11px]">확인 필요</strong>
         </Link>
       </section>
@@ -138,7 +150,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
         ) : folders.length === 0 ? (
           <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
             <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100 [&>svg]:size-7">
-              <PhotoIcon />
+              <ImageIcon size="13" />
             </span>
             <h2 className="mt-4 text-[15px] font-extrabold">
               장소별 사진이 아직 정리되지 않았어요
@@ -159,7 +171,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       <Dialog
         open={storyEmptyOpen}
         onClose={() => setStoryEmptyOpen(false)}
-        icon={<StoryIcon />}
+        icon={<DocumentIcon size="19" variant="story" />}
         title="아직 스토리가 없어요"
         description={
           <>
@@ -235,15 +247,15 @@ function TripMeta({ trip }: { trip: TripDetail }) {
     <section aria-label="여행 정보" className="text-muted mt-2 space-y-1 text-[12px] font-medium">
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="inline-flex items-center gap-1">
-          <PinIcon /> {location}
+          <PinIcon size="13" /> {location}
         </span>
         <span className="inline-flex items-center gap-1">
-          <CalendarIcon /> {formatShortDate(trip.startDate)} - {formatShortDate(trip.endDate)} ·{' '}
-          {trip.nights}박
+          <CalendarIcon size="13" /> {formatShortDate(trip.startDate)} -{' '}
+          {formatShortDate(trip.endDate)} · {trip.nights}박
         </span>
       </p>
       <p className="inline-flex items-center gap-1">
-        <PhotoIcon /> 사진 {trip.photoCount}장
+        <ImageIcon size="13" /> 사진 {trip.photoCount}장
       </p>
     </section>
   );
@@ -314,7 +326,7 @@ function PlaceFolderSkeleton({ showError, onRetry }: { showError: boolean; onRet
           role="alert"
           className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
-          <WarningIcon />
+          <WarningIcon stroke="#ffb1a9" size="17" />
           <span className="flex-1">사진 로드에 실패했어요.</span>
           {onRetry && (
             <button
@@ -333,164 +345,4 @@ function PlaceFolderSkeleton({ showError, onRetry }: { showError: boolean; onRet
 
 function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
-}
-
-function PinIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-      <circle cx="12" cy="10" r="2.5" />
-    </svg>
-  );
-}
-function CalendarIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M8 3v4m8-4v4M3 10h18" />
-    </svg>
-  );
-}
-function PhotoIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.5" />
-      <path d="m4 17 5-5 4 4 2-2 5 5" />
-    </svg>
-  );
-}
-function StoryIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="19"
-      height="19"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <rect x="5" y="3" width="14" height="18" rx="2" />
-      <path d="M9 8h6M9 12h6M9 16h4" />
-    </svg>
-  );
-}
-function ReviewIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="21"
-      height="21"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 5a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v12H4Z" />
-      <path d="M12 9v4m0 3v.01" />
-    </svg>
-  );
-}
-function ChevronIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-function EditIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-    </svg>
-  );
-}
-function LinkIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
-      <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" />
-    </svg>
-  );
-}
-function TrashIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6" />
-    </svg>
-  );
-}
-function WarningIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ffb1a9"
-      strokeWidth="1.8"
-    >
-      <path d="M10.3 3.7 2.5 18a2 2 0 0 0 1.8 3h15.4a2 2 0 0 0 1.8-3L13.7 3.7a2 2 0 0 0-3.4 0Z" />
-      <path d="M12 9v4m0 4h.01" />
-    </svg>
-  );
 }

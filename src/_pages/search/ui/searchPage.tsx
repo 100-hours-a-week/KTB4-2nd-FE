@@ -15,6 +15,14 @@ import {
   type SearchResult,
 } from '@/features/search';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
+import {
+  AlertCircleIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  ImageIcon,
+  SearchIcon,
+  SparkleIcon,
+} from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 
 const navigationItems: BottomNavigationItem[] = [
@@ -118,7 +126,7 @@ function SearchForm({
         className={`bg-surface flex min-h-[52px] items-center gap-2.5 rounded-[16px] border px-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-colors focus-within:border-brand ${showLengthError ? 'border-danger' : 'border-border-subtle'}`}
       >
         <span className="text-muted shrink-0">
-          <SearchIcon />
+          <SearchIcon strokeWidth="2" strokeLinecap="round" size={19} />
         </span>
         <input
           id={inputId}
@@ -143,7 +151,7 @@ function SearchForm({
             onClick={() => setValue('')}
             className="text-muted hover:text-brand focus-visible:outline-brand grid size-7 shrink-0 cursor-pointer place-items-center rounded-full bg-slate-100 transition-colors focus-visible:outline-2"
           >
-            <ClearIcon />
+            <CloseIcon strokeWidth="2.6" strokeLinecap="round" size="12" />
           </button>
         )}
       </div>
@@ -171,11 +179,11 @@ function SearchExamples({ onSelect }: { onSelect: (query: string) => void }) {
               className="border-border-subtle bg-surface hover:bg-surface-subtle focus-visible:outline-brand flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-[14px] border px-4 text-left text-[13px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <span className="text-muted shrink-0">
-                <SearchIcon size={15} />
+                <SearchIcon strokeWidth="2" strokeLinecap="round" size={15} />
               </span>
               <span className="min-w-0 flex-1 truncate">{example}</span>
               <span className="text-muted shrink-0">
-                <ChevronIcon />
+                <ChevronRightIcon strokeWidth="2" size="16" />
               </span>
             </button>
           </li>
@@ -259,7 +267,7 @@ function AnswerCard({
     >
       <h2 className="flex items-center gap-1.5 text-[13px] font-extrabold">
         <span className="text-[#3973b9]">
-          <SparkleIcon />
+          <SparkleIcon fill="currentColor" size="15" />
         </span>
         AI의 한 줄 답변
       </h2>
@@ -334,11 +342,11 @@ function FolderResults({ folders }: { folders: SearchFolder[] }) {
                 {formatShortDate(folder.startDate)} - {formatShortDate(folder.endDate)}
               </span>
               <span className="text-muted mt-1 flex items-center gap-1 text-[11px]">
-                <PhotoIcon /> 사진 {folder.photoCount}장
+                <ImageIcon size="12" /> 사진 {folder.photoCount}장
               </span>
             </span>
             <span className="text-muted shrink-0 pl-2">
-              <ChevronIcon />
+              <ChevronRightIcon strokeWidth="2" size="16" />
             </span>
           </Link>
         </li>
@@ -431,7 +439,7 @@ function EmptySearchResult() {
   return (
     <section className="flex min-h-[46vh] flex-col items-center justify-center text-center">
       <span className="grid size-16 place-items-center rounded-full bg-slate-200/55 text-slate-500">
-        <SearchIcon size={28} />
+        <SearchIcon strokeWidth="2" strokeLinecap="round" size={28} />
       </span>
       <h2 className="mt-5 text-[15px] font-extrabold">검색 결과가 없어요.</h2>
       <p className="text-muted mt-1 text-xs">장소나 상황을 다른 말로 검색해보세요.</p>
@@ -486,7 +494,13 @@ function SearchSkeleton({
           role="alert"
           className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
-          <ErrorIcon />
+          <AlertCircleIcon
+            stroke="#ffb3a8"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            size="18"
+          />
           <span className="flex-1">{errorMessage}</span>
           <button
             type="button"
@@ -503,96 +517,4 @@ function SearchSkeleton({
 
 function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
-}
-
-function SearchIcon({ size = 19 }: { size?: number }) {
-  return (
-    <svg
-      aria-hidden="true"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
-    </svg>
-  );
-}
-function ClearIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-    >
-      <path d="M6 6l12 12M18 6 6 18" />
-    </svg>
-  );
-}
-function SparkleIcon() {
-  return (
-    <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.5c.5 4.6 2.4 6.5 7 7-4.6.5-6.5 2.4-7 7-.5-4.6-2.4-6.5-7-7 4.6-.5 6.5-2.4 7-7Z" />
-      <path d="M19 15c.2 1.8.9 2.6 2.7 2.8-1.8.2-2.5.9-2.7 2.7-.2-1.8-.9-2.5-2.7-2.7 1.8-.2 2.5-1 2.7-2.8Z" />
-    </svg>
-  );
-}
-function ChevronIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-function PhotoIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.5" />
-      <path d="m4 17 5-5 4 4 2-2 5 5" />
-    </svg>
-  );
-}
-function ErrorIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ffb3a8"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v5M12 16.5h.01" />
-    </svg>
-  );
 }

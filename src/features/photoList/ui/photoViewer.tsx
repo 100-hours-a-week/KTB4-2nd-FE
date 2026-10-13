@@ -7,6 +7,16 @@ import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
 import { usePhotoOriginal } from '../model/usePhotoOriginal';
 import type { PhotoAccent, PhotoListItem } from '../model/types';
 
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  DownloadIcon,
+  ImageIcon,
+  RestoreIcon,
+  TrashIcon,
+} from '@/shared/ui/icons';
+
 export function PhotoViewer({
   photo,
   current,
@@ -92,7 +102,7 @@ export function PhotoViewer({
             {
               id: 'restore',
               label: '복구',
-              icon: <RestoreIcon />,
+              icon: <RestoreIcon size="17" />,
               onSelect: onRestore,
               disabled: actionsDisabled,
             },
@@ -102,7 +112,7 @@ export function PhotoViewer({
               {
                 id: 'download',
                 label: '원본 다운로드',
-                icon: <DownloadIcon />,
+                icon: <DownloadIcon size="17" />,
                 onSelect: onDownload,
                 disabled: actionsDisabled,
               },
@@ -112,7 +122,7 @@ export function PhotoViewer({
         id: 'delete',
         disabled: actionsDisabled,
         label: '삭제',
-        icon: <TrashIcon />,
+        icon: <TrashIcon size="17" />,
         destructive: true,
         dividerBefore: true,
         onSelect: onDelete,
@@ -136,7 +146,7 @@ export function PhotoViewer({
           onClick={onClose}
           className="grid size-10 cursor-pointer place-items-center rounded-full hover:bg-white/10"
         >
-          <CloseIcon />
+          <CloseIcon strokeWidth="2" size="22" />
         </button>
         <p aria-label="사진 순서" className="text-center text-sm font-bold">
           {current} <span className="text-white/50">/ {total}</span>
@@ -155,7 +165,7 @@ export function PhotoViewer({
           onClick={onPrevious}
           className="absolute left-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
         >
-          <PreviousIcon />
+          <ChevronLeftIcon strokeWidth="2" size="20" />
         </button>
         <div className="aspect-square w-full overflow-hidden">
           <PhotoArtwork
@@ -169,7 +179,7 @@ export function PhotoViewer({
           onClick={onNext}
           className="absolute right-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
         >
-          <NextIcon />
+          <ChevronRightIcon strokeWidth="2" size="20" />
         </button>
       </div>
 
@@ -188,7 +198,7 @@ export function PhotoArtwork({ photo, large = false }: { photo: PhotoListItem; l
   if (photo.loadFailed) {
     return (
       <span className="text-muted flex size-full flex-col items-center justify-center bg-slate-100 text-[9px]">
-        <EmptyImageIcon />
+        <ImageIcon strokeWidth="1.7" size="32" />
         <span className="mt-2">불러오지 못함</span>
       </span>
     );
@@ -230,119 +240,4 @@ export function PhotoArtwork({ photo, large = false }: { photo: PhotoListItem; l
 function formatCapturedDate(date: string) {
   const [year, month, day] = date.split('-');
   return `${year}년 ${Number(month)}월 ${Number(day)}일`;
-}
-
-function CloseIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M6 6l12 12M18 6 6 18" />
-    </svg>
-  );
-}
-
-function PreviousIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-
-function NextIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6" />
-    </svg>
-  );
-}
-
-function EmptyImageIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="32"
-      height="32"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-    >
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.5" />
-      <path d="m4 17 5-5 4 4 2-2 5 5" />
-    </svg>
-  );
-}
-
-function RestoreIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-      <path d="M3 3v5h5" />
-    </svg>
-  );
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
+import { MoreIcon } from '@/shared/ui/icons';
+
 export type DropdownMenuItem = {
   id: string;
   label: string;
@@ -101,7 +103,7 @@ export function DropdownMenu({
         onKeyDown={handleTriggerKeyDown}
         className="hover:bg-brand/5 focus-visible:outline-brand inline-flex size-10 cursor-pointer items-center justify-center rounded-full text-brand transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        {trigger ?? <MoreIcon />}
+        {trigger ?? <MoreIcon fill="currentColor" size="24" />}
       </button>
 
       {isOpen && (
@@ -146,15 +148,5 @@ export function DropdownMenu({
         </div>
       )}
     </div>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="5" cy="12" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="19" cy="12" r="1.8" />
-    </svg>
   );
 }

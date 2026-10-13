@@ -12,6 +12,7 @@ import {
   type TripSortOrder,
 } from '@/features/tripList';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
+import { AlertCircleIcon, ImageIcon, MapIcon, StarIcon } from '@/shared/ui/icons';
 import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 
@@ -225,7 +226,7 @@ function TripCard({
           </p>
         ) : (
           <p className="text-muted mt-1 flex items-center gap-1 text-[11px]">
-            <PhotoIcon /> 사진 {trip.photoCount}장
+            <ImageIcon size="12" /> 사진 {trip.photoCount}장
           </p>
         )}
       </div>
@@ -236,7 +237,14 @@ function TripCard({
         onClick={() => onFavoriteChange(trip.id)}
         className="focus-visible:outline-brand absolute top-3 right-3 z-20 grid size-7 cursor-pointer place-items-center rounded-full focus-visible:outline-2"
       >
-        <StarIcon filled={trip.favorite} />
+        <StarIcon
+          fill={trip.favorite ? '#f7b51d' : 'none'}
+          stroke={trip.favorite ? '#f7b51d' : '#a5b0be'}
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          size="20"
+        />
       </button>
     </article>
   );
@@ -283,7 +291,7 @@ function EmptyTripList({ favoriteOnly }: { favoriteOnly: boolean }) {
   return (
     <section className="flex min-h-[58vh] flex-col items-center justify-center text-center">
       <span className="grid size-16 place-items-center rounded-full bg-slate-200/55 text-slate-500">
-        <MapIcon />
+        <MapIcon strokeLinecap="round" strokeLinejoin="round" size="30" />
       </span>
       <h2 className="mt-5 text-[15px] font-extrabold">
         {favoriteOnly ? '즐겨찾기한 여행이 없어요.' : '아직 기록된 여행이 없어요.'}
@@ -330,7 +338,13 @@ function TripListSkeleton({ showError, onRetry }: { showError: boolean; onRetry?
           role="alert"
           className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
-          <ErrorIcon />
+          <AlertCircleIcon
+            stroke="#ffb3a8"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            size="18"
+          />
           <span className="flex-1">여행을 가져오지 못했어요.</span>
           <button
             type="button"
@@ -347,78 +361,4 @@ function TripListSkeleton({ showError, onRetry }: { showError: boolean; onRetry?
 
 function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
-}
-
-function PhotoIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.5" />
-      <path d="m4 17 5-5 4 4 2-2 5 5" />
-    </svg>
-  );
-}
-
-function StarIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill={filled ? '#f7b51d' : 'none'}
-      stroke={filled ? '#f7b51d' : '#a5b0be'}
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.32l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.5Z" />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="30"
-      height="30"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" />
-      <path d="M9 3v15M15 6v15" />
-    </svg>
-  );
-}
-
-function ErrorIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ffb3a8"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v5M12 16.5h.01" />
-    </svg>
-  );
 }
