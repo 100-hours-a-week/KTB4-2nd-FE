@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { KakaoLoginButton } from '@/features/kakaoLogin';
+import { PinIcon } from '@/shared/ui/icons';
 
 const CONTACT_EMAIL = 'leo@yeodam-2gether.com';
 
@@ -73,17 +74,7 @@ function BrandMark() {
       aria-hidden="true"
       className="bg-brand grid size-8 place-items-center rounded-[10px] text-white"
     >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" strokeLinejoin="round" />
-        <circle cx="12" cy="10" r="2.6" fill="currentColor" stroke="none" />
-      </svg>
+      <PinIcon strokeWidth="2" size="18" variant="brand" />
     </span>
   );
 }

@@ -17,6 +17,7 @@ import {
 } from '@/features/unclassifiedPhotos';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
+import { CheckIcon, RestoreIcon, TrashIcon, WarningIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Skeleton } from '@/shared/ui/skeleton';
 
@@ -86,7 +87,7 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
 
       <p className="bg-surface-subtle text-muted mt-4 flex gap-2.5 rounded-[14px] px-4 py-3.5 text-[12px] leading-relaxed">
         <span className="mt-0.5 shrink-0">
-          <TrashIcon />
+          <TrashIcon size="16" />
         </span>
         <span>
           흔들렸거나 기준에 맞지 않아 자동으로 분류된 사진이에요.
@@ -184,7 +185,7 @@ function UnclassifiedFolderCard({
         aria-label={`${label} 전체 해제`}
         className="absolute right-2.5 bottom-2.5 inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-full bg-black/45 px-3 text-[11px] font-bold text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
-        <RestoreIcon /> 해제
+        <RestoreIcon strokeWidth="2" size="13" /> 해제
       </button>
     </div>
   );
@@ -244,7 +245,7 @@ function FolderSkeleton({ showError, onRetry }: { showError: boolean; onRetry: (
           role="alert"
           className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
         >
-          <WarningIcon />
+          <WarningIcon stroke="#ffb1a9" size="17" />
           <span className="flex-1">사진 로드에 실패했어요.</span>
           <button
             type="button"
@@ -263,73 +264,10 @@ function EmptyUnclassified() {
   return (
     <div className="flex min-h-[320px] flex-col items-center justify-center px-3 py-10 text-center">
       <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100">
-        <CheckIcon />
+        <CheckIcon size="28" />
       </span>
       <h2 className="mt-4 text-[15px] font-extrabold">확인할 사진이 없어요</h2>
       <p className="text-muted mt-1.5 text-xs">모든 사진이 장소 폴더에 정리되어 있어요.</p>
     </div>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6" />
-    </svg>
-  );
-}
-function RestoreIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-      <path d="M3 3v5h5" />
-    </svg>
-  );
-}
-function CheckIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="m5 12 5 5 9-10" />
-    </svg>
-  );
-}
-function WarningIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ffb1a9"
-      strokeWidth="1.8"
-    >
-      <path d="M10.3 3.7 2.5 18a2 2 0 0 0 1.8 3h15.4a2 2 0 0 0 1.8-3L13.7 3.7a2 2 0 0 0-3.4 0Z" />
-      <path d="M12 9v4m0 4h.01" />
-    </svg>
   );
 }

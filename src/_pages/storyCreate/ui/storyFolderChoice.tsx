@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+
 import type { StorySourceFolder } from '@/features/createStory';
+import { CheckIcon } from '@/shared/ui/icons';
 
 export function StoryFolderChoice({
   folder,
@@ -53,18 +55,14 @@ export function StoryFolderChoice({
         onChange={onToggle}
         className="peer focus-visible:outline-brand absolute top-3 left-3 z-10 size-6 cursor-pointer appearance-none rounded-lg border border-[#021730]/15 bg-white/85 checked:border-brand checked:bg-brand focus-visible:outline-2 focus-visible:outline-offset-2"
       />
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
+      <CheckIcon
         className="pointer-events-none absolute top-3 left-3 z-10 hidden size-6 p-1 peer-checked:block"
-        fill="none"
         stroke="#fff"
         strokeWidth="3.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-      >
-        <path d="M5 12.5l4.5 4.5L19 7.5" />
-      </svg>
+        variant="selection"
+      />
       <span className="absolute right-3 bottom-3 left-3 text-white">
         <strong className="block truncate text-sm font-extrabold">{folder.name}</strong>
         <span className="mt-1 block text-[11px]">{folder.photoCount}장</span>

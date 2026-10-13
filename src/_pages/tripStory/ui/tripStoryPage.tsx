@@ -10,6 +10,7 @@ import {
   type StoryPhoto,
   type TripStory,
 } from '@/features/tripStory';
+import { CalendarIcon, EditIcon, ExpandIcon, ImageIcon, ImageOffIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Button } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -54,20 +55,7 @@ export function TripStoryPage({
               onClick={() => toast.warning('아직 지원하지 않는 기능이에요.')}
               className="group focus-visible:outline-brand relative grid size-11 cursor-pointer place-items-center rounded-full hover:bg-brand/5 focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <svg
-                aria-hidden="true"
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m16 3 5 5-12 12-6 1 1-6Z" />
-                <path d="m14 5 5 5" />
-              </svg>
+              <EditIcon strokeLinecap="round" strokeLinejoin="round" size="22" variant="story" />
             </button>
           }
         />
@@ -76,14 +64,26 @@ export function TripStoryPage({
         <h2 className="text-[23px] font-extrabold tracking-[-0.04em]">{story.tripName}</h2>
         <p className="text-muted mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium">
           <span className="inline-flex items-center gap-1.5">
-            <MetaIcon /> {story.startDate.replaceAll('-', '.')} –{' '}
-            {story.endDate.slice(5).replace('-', '.')}
+            <CalendarIcon
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              size="14"
+            />{' '}
+            {story.startDate.replaceAll('-', '.')} – {story.endDate.slice(5).replace('-', '.')}
           </span>
           <span aria-hidden="true" className="text-slate-300">
             ·
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <MetaIcon photo /> {story.photoCount}장
+            <ImageIcon
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              size="14"
+              variant="story"
+            />{' '}
+            {story.photoCount}장
           </span>
         </p>
       </section>
@@ -189,18 +189,7 @@ function StoryPhotoCard({ photo, onOpen }: { photo: StoryPhoto; onOpen: () => vo
     >
       {unavailable ? (
         <span className="text-muted flex h-full flex-col items-center justify-center gap-3 text-xs">
-          <svg
-            aria-hidden="true"
-            width="30"
-            height="30"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="3" />
-            <path d="m3 16 5-5 5 5 3-3 5 5M2 2l20 20" />
-          </svg>
+          <ImageOffIcon strokeWidth="1.5" size="30" />
           사진을 불러오지 못했어요
         </span>
       ) : (
@@ -224,49 +213,9 @@ function StoryPhotoCard({ photo, onOpen }: { photo: StoryPhoto; onOpen: () => vo
           aria-hidden="true"
           className="absolute right-2.5 bottom-2.5 grid size-8 place-items-center rounded-lg bg-brand/75 text-white"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M14 3h7v7M21 3l-8 8M10 21H3v-7M3 21l8-8" />
-          </svg>
+          <ExpandIcon strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" size="20" />
         </span>
       )}
     </button>
-  );
-}
-
-function MetaIcon({ photo = false }: { photo?: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {photo ? (
-        <>
-          <rect x="3" y="4" width="18" height="16" rx="2" />
-          <circle cx="8" cy="9" r="1.5" />
-          <path d="m3 17 6-6 4 4 3-3 5 5" />
-        </>
-      ) : (
-        <>
-          <rect x="3" y="5" width="18" height="16" rx="2" />
-          <path d="M8 3v4m8-4v4M3 10h18" />
-        </>
-      )}
-    </svg>
   );
 }

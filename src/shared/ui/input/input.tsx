@@ -2,6 +2,8 @@
 
 import { useId, type ComponentPropsWithRef } from 'react';
 
+import { WarningIcon } from '@/shared/ui/icons';
+
 export type InputProps = ComponentPropsWithRef<'input'> & {
   label?: string;
   helperText?: string;
@@ -93,21 +95,14 @@ export function Input({
           className={`flex items-start gap-2 text-sm ${error ? 'text-danger' : 'text-field-border'}`}
         >
           {error && (
-            <svg
-              aria-hidden="true"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
+            <WarningIcon
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
               className="shrink-0"
-            >
-              <path d="M10.3 3.9 2.5 17.4A2 2 0 0 0 4.2 20.4h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-              <path d="M12 9v4m0 3h.01" />
-            </svg>
+              size="20"
+              variant="input"
+            />
           )}
           <span>{message}</span>
         </p>

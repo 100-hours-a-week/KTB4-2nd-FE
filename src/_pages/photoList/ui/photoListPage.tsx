@@ -15,6 +15,7 @@ import {
 } from '@/features/photoList';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
+import { ChevronLeftIcon, DownloadIcon, ImageIcon, TrashIcon } from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
 
@@ -304,7 +305,7 @@ function PhotoListHeader({
           aria-label="여행 상세로 돌아가기"
           className="hover:bg-brand/5 focus-visible:outline-brand grid size-10 place-items-center rounded-full transition-colors focus-visible:outline-2"
         >
-          <BackIcon />
+          <ChevronLeftIcon strokeWidth="2" size="22" />
         </button>
       )}
 
@@ -352,7 +353,7 @@ function SelectionActions({
         onClick={onDownload}
         className="min-h-11 gap-2 px-2 text-sm"
       >
-        <DownloadIcon /> 다운로드
+        <DownloadIcon size="17" /> 다운로드
       </Button>
       <Button
         variant="destructive"
@@ -360,7 +361,7 @@ function SelectionActions({
         onClick={onDelete}
         className="min-h-11 gap-2 px-2 text-sm"
       >
-        <TrashIcon /> 삭제
+        <TrashIcon size="17" /> 삭제
       </Button>
       {downloadLimitExceeded && (
         <p
@@ -416,7 +417,7 @@ function EmptyPhotoList({ onAdd }: { onAdd: () => void }) {
   return (
     <section className="flex min-h-[68vh] flex-col items-center justify-center text-center">
       <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100">
-        <EmptyImageIcon />
+        <ImageIcon strokeWidth="1.7" size="32" />
       </span>
       <h2 className="mt-4 text-base font-extrabold">폴더에 사진이 없어요</h2>
       <p className="text-muted mt-1 text-xs">사진을 추가해보세요!</p>
@@ -435,68 +436,5 @@ function SelectionMark({ selected }: { selected: boolean }) {
     >
       ✓
     </span>
-  );
-}
-
-function BackIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-function DownloadIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" />
-    </svg>
-  );
-}
-function TrashIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6" />
-    </svg>
-  );
-}
-function EmptyImageIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="32"
-      height="32"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-    >
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9" r="1.5" />
-      <path d="m4 17 5-5 4 4 2-2 5 5" />
-    </svg>
   );
 }

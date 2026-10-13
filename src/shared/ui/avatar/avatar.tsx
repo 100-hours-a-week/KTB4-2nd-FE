@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { useState, type ReactNode } from 'react';
 
+import { PersonIcon } from '@/shared/ui/icons';
+
 export type AvatarSize = 'sm' | 'md';
 
 export type AvatarProps = {
@@ -27,7 +29,9 @@ export function Avatar({ src, alt = '', size = 'md', fallback, className = '' }:
     <span
       className={`border-border-subtle bg-surface text-muted relative grid shrink-0 place-items-center overflow-hidden rounded-full border ${sizeClassName[size]} ${className}`}
     >
-      {fallback ?? <PersonIcon size={size === 'md' ? 24 : 18} />}
+      {fallback ?? (
+        <PersonIcon strokeWidth="1.7" strokeLinecap="round" size={size === 'md' ? 24 : 18} />
+      )}
       {showImage && (
         <Image
           src={src!}
@@ -43,23 +47,5 @@ export function Avatar({ src, alt = '', size = 'md', fallback, className = '' }:
         />
       )}
     </span>
-  );
-}
-
-function PersonIcon({ size }: { size: number }) {
-  return (
-    <svg
-      aria-hidden="true"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-    >
-      <circle cx="12" cy="9" r="3.6" />
-      <path d="M5 20a7 7 0 0 1 14 0" />
-    </svg>
   );
 }

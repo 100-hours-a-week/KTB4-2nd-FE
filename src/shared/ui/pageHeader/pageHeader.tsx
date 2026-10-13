@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { ChevronLeftIcon } from '@/shared/ui/icons';
+
 type PageHeaderBaseProps = {
   title?: ReactNode;
   backLabel: string;
@@ -35,7 +37,7 @@ export function PageHeader({
   const backControl =
     navigation.backHref !== undefined ? (
       <Link href={navigation.backHref} aria-label={backLabel} className={navigationClassName}>
-        <BackIcon />
+        <ChevronLeftIcon strokeLinecap="round" strokeLinejoin="round" size="25" />
       </Link>
     ) : (
       <button
@@ -45,7 +47,7 @@ export function PageHeader({
         onClick={navigation.onBack}
         className={navigationClassName}
       >
-        <BackIcon />
+        <ChevronLeftIcon strokeLinecap="round" strokeLinejoin="round" size="25" />
       </button>
     );
 
@@ -63,23 +65,5 @@ export function PageHeader({
       )}
       <div className="flex min-w-11 justify-end">{action}</div>
     </header>
-  );
-}
-
-function BackIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="25"
-      height="25"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
   );
 }

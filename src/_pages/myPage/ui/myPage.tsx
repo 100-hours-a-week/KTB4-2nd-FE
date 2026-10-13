@@ -8,6 +8,7 @@ import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomN
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
+import { DocumentIcon, KakaoIcon, ShieldIcon } from '@/shared/ui/icons';
 import { ListRow } from '@/shared/ui/listRow';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
@@ -62,9 +63,17 @@ export function MyPage({ user }: MyPageProps) {
       <section aria-label="계정 정보" className="mt-7 flex flex-col gap-2.5">
         {user ? <ProfileCard user={user} /> : <ProfileCardSkeleton />}
 
-        <ListRow href="/terms/service" icon={<DocumentIcon />} label="이용약관" />
+        <ListRow
+          href="/terms/service"
+          icon={<DocumentIcon strokeLinecap="round" strokeLinejoin="round" size="20" />}
+          label="이용약관"
+        />
 
-        <ListRow href="/terms/privacy" icon={<ShieldIcon />} label="개인정보처리방침" />
+        <ListRow
+          href="/terms/privacy"
+          icon={<ShieldIcon strokeLinecap="round" strokeLinejoin="round" size="20" />}
+          label="개인정보처리방침"
+        />
 
         <Button
           variant="secondary"
@@ -134,7 +143,7 @@ function ProfileCard({ user }: { user: MyPageUser }) {
           {user.nickname}
         </p>
         <p className="text-muted mt-1 flex items-center gap-1.5 text-xs font-medium">
-          <KakaoIcon />
+          <KakaoAccountBadge />
           {user.oauthConnected ? '카카오 계정으로 연결됨' : '카카오 계정 연결 필요'}
         </p>
       </div>
@@ -158,50 +167,10 @@ function ProfileCardSkeleton() {
   );
 }
 
-function KakaoIcon() {
+function KakaoAccountBadge() {
   return (
     <span className="grid size-4 shrink-0 place-items-center rounded-full bg-[#FEE500] text-[#191919]">
-      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 4C6.48 4 2 7.36 2 11.5c0 2.68 1.88 5.03 4.7 6.36l-.95 3.5c-.08.31.27.56.54.38l4.13-2.73c.52.06 1.05.09 1.58.09 5.52 0 10-3.36 10-7.6S17.52 4 12 4Z" />
-      </svg>
+      <KakaoIcon fill="currentColor" size="10" variant="badge" />
     </span>
-  );
-}
-
-function DocumentIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="4" y="2.5" width="16" height="19" rx="3" />
-      <path d="M8 8h8M8 12h8M8 16h5" />
-    </svg>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 2.5 4.5 5.5v6c0 4.3 3 8.2 7.5 10 4.5-1.8 7.5-5.7 7.5-10v-6Z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }
