@@ -1,4 +1,4 @@
-import type { PhotoAccent } from '@/features/photoList';
+import type { PhotoAccent, PhotoListItem } from '@/features/photoList';
 
 export type UnclassifiedIssue = 'UNCLEAR_LOCATION' | 'BLURRY' | 'DUPLICATED';
 
@@ -9,7 +9,13 @@ export type UnclassifiedFolder = {
   accent: PhotoAccent;
 };
 
+export type UnclassifiedPhoto = PhotoListItem & {
+  restoreTripPlaceId: number | null;
+};
+
 export type UnclassifiedViewState = 'ready' | 'loading' | 'error';
+
+export const BULK_RESTORE_LIMIT = 200;
 
 export const UNCLASSIFIED_ISSUES: readonly UnclassifiedIssue[] = [
   'UNCLEAR_LOCATION',
