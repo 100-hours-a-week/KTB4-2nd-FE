@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
-export type BottomNavigationIcon = 'home' | 'list' | 'plus' | 'search' | 'profile';
+import { NavigationIcon, type NavigationIconName } from '@/shared/ui/icons';
+
+export type BottomNavigationIcon = NavigationIconName;
 
 export type BottomNavigationItem = {
   id: string;
@@ -87,48 +89,5 @@ export function BottomNavigation({
       </div>
     </nav>,
     document.body,
-  );
-}
-
-function NavigationIcon({ name }: { name: BottomNavigationIcon }) {
-  const paths = {
-    home: <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" />,
-    list: (
-      <>
-        <path d="M8 6h13M8 12h13M8 18h13" />
-        <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
-        <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
-        <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
-      </>
-    ),
-    plus: <path d="M12 5v14M5 12h14" />,
-    search: (
-      <>
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-4-4" />
-      </>
-    ),
-    profile: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
-      </>
-    ),
-  };
-
-  return (
-    <svg
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={name === 'plus' ? 2.4 : 1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {paths[name]}
-    </svg>
   );
 }

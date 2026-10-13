@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
+import { UploadIcon } from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 
 import { createPreviewBlob } from '../model/createPreviewBlob';
@@ -68,20 +69,7 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
         className="border-field-border focus-within:outline-brand flex min-h-28 shrink-0 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-5 text-center focus-within:outline-2 focus-within:outline-offset-2"
       >
         <span className="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 16V4m0 0L8 8m4-4 4 4" />
-            <path d="M5 14v5h14v-5" />
-          </svg>
+          <UploadIcon strokeLinecap="round" strokeLinejoin="round" size="20" />
         </span>
         <span className="text-brand mt-2 text-sm font-semibold">눌러서 사진 선택하기</span>
         <span className="text-muted mt-1 text-xs">JPG · PNG · HEIC</span>

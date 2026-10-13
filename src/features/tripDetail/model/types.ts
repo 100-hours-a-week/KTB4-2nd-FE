@@ -17,6 +17,7 @@ export type TripDetail = {
   nights: number;
   photoCount: number;
   reviewCount: number;
+  hasStory: boolean;
 };
 
 export type TripDetailViewState = 'ready' | 'loading' | 'error';

@@ -58,5 +58,6 @@ function toTripDetail(response: TripDetailApiResponse): TripDetail {
     nights: response.nightCount,
     photoCount: response.attachmentCount,
     reviewCount: 0,
+    hasStory: response.hasStory,
   };
 }

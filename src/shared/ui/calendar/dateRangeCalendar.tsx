@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 
+import { ChevronIcon } from '@/shared/ui/icons';
+
 import {
   addMonths,
   getCalendarDays,
@@ -170,19 +172,13 @@ function MonthButton({
       onClick={onClick}
       className="focus-visible:outline-brand inline-flex size-10 cursor-pointer items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-25"
     >
-      <svg
-        aria-hidden="true"
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
+      <ChevronIcon
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-      >
-        {direction === 'left' ? <path d="m15 18-6-6 6-6" /> : <path d="m9 18 6-6-6-6" />}
-      </svg>
+        size="22"
+        direction={direction}
+      />
     </button>
   );
 }

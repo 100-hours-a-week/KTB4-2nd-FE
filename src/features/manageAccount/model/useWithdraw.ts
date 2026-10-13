@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 
+import { clearAllStoryCreateDrafts } from '@/features/createStory';
 import { clearTripCreateDraft } from '@/features/createTrip/model/tripCreateDraft';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { clearIdentity } from '@/shared/lib/analytics';
@@ -20,14 +21,15 @@ export function useWithdraw() {
       await withdraw(csrfToken);
     },
     onSuccess: () => {
+      clearAllStoryCreateDrafts();
       clearTripCreateDraft();
       clearIdentity();
       queryClient.clear();
       redirectToLogin();
     },
     onError: (error) => {
-      // 이미 탈퇴한 계정(404)이면 마이페이지에 머무를 이유가 없습니다.
       if (isAxiosError(error) && error.response?.status === 404) {
+        clearAllStoryCreateDrafts();
         clearTripCreateDraft();
         clearIdentity();
         queryClient.clear();
