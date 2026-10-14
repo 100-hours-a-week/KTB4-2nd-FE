@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 
-import { UploadIcon } from '@/shared/ui/icons';
+import { CloseIcon, PlusIcon } from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 
 import { createPreviewBlob } from '../model/createPreviewBlob';
@@ -64,24 +64,15 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <label
-        htmlFor="trip-images"
-        className="border-field-border focus-within:outline-brand flex min-h-28 shrink-0 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-5 text-center focus-within:outline-2 focus-within:outline-offset-2"
-      >
-        <span className="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-          <UploadIcon strokeLinecap="round" strokeLinejoin="round" size="20" />
+      <div className="flex shrink-0 items-end justify-between gap-3">
+        <div>
+          <p className="text-brand text-sm font-bold">선택한 사진</p>
+          <p className="text-muted mt-0.5 text-[11px]">JPG, PNG, HEIC 사진을 올릴 수 있어요</p>
+        </div>
+        <span className="text-muted inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-[#eef3f9] px-2.5 text-xs leading-none whitespace-nowrap tabular-nums">
+          <strong className="text-brand">{files.length}</strong> / {TRIP_IMAGE_MAX_COUNT}장
         </span>
-        <span className="text-brand mt-2 text-sm font-semibold">눌러서 사진 선택하기</span>
-        <span className="text-muted mt-1 text-xs">JPG · PNG · HEIC</span>
-        <input
-          id="trip-images"
-          type="file"
-          accept="image/jpeg,image/png,image/heic,.jpg,.jpeg,.png,.heic"
-          multiple
-          onChange={selectFiles}
-          className="sr-only"
-        />
-      </label>
+      </div>
 
       {error && (
         <p role="alert" className="text-danger mt-2 text-sm">
@@ -89,49 +80,71 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
         </p>
       )}
 
-      <div className="text-muted mt-6 flex shrink-0 items-center justify-between text-xs">
-        <span>선택된 사진</span>
-        <span>
-          {files.length}/{TRIP_IMAGE_MAX_COUNT}장
-        </span>
-      </div>
+      <div
+        ref={scrollRootRef}
+        role="region"
+        aria-label="선택한 사진 스크롤 영역"
+        className="mt-3 min-h-0 flex-1 overflow-y-auto pb-2"
+      >
+        <ul className="grid grid-cols-3 gap-1.5" aria-label="선택한 사진 목록">
+          <li role="presentation" className="aspect-square">
+            <label
+              htmlFor="trip-images"
+              className="text-brand has-[:focus-visible]:ring-brand flex size-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg bg-[#eef3f9] transition-colors hover:bg-[#e3eaf3] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-inset"
+            >
+              <PlusIcon strokeWidth="2" strokeLinecap="round" size="22" />
+              <span className="text-xs font-semibold">사진 추가</span>
+              <input
+                id="trip-images"
+                type="file"
+                accept="image/jpeg,image/png,image/heic,.jpg,.jpeg,.png,.heic"
+                multiple
+                onChange={selectFiles}
+                className="sr-only"
+              />
+            </label>
+          </li>
+          {files.map((file, index) => {
+            const fileId = getFileIdentity(file);
 
-      {files.length > 0 && (
-        <div
-          ref={scrollRootRef}
-          role="region"
-          aria-label="선택한 사진 스크롤 영역"
-          className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1"
-        >
-          <ul className="grid grid-cols-3 gap-1.5" aria-label="선택한 사진 목록">
-            {files.map((file, index) => {
-              const fileId = getFileIdentity(file);
-
-              return (
-                <li
-                  ref={(element) => registerCard(fileId, element)}
-                  key={fileId}
-                  className="relative aspect-square overflow-hidden rounded-md bg-slate-100"
+            return (
+              <li
+                ref={(element) => registerCard(fileId, element)}
+                key={fileId}
+                className="relative aspect-square overflow-hidden rounded-lg bg-slate-100"
+              >
+                <ImagePreview
+                  file={file}
+                  delayMs={(index % 3) * 120}
+                  getPreviewPriority={getPreviewPriority}
+                />
+                <button
+                  type="button"
+                  aria-label={`${file.name} 삭제`}
+                  onClick={() => onRemove(index)}
+                  className="focus-visible:outline-brand absolute top-1.5 right-1.5 grid size-6 cursor-pointer place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/65 focus-visible:outline-2"
                 >
-                  <ImagePreview
-                    file={file}
-                    delayMs={(index % 3) * 120}
-                    getPreviewPriority={getPreviewPriority}
-                  />
-                  <button
-                    type="button"
-                    aria-label={`${file.name} 삭제`}
-                    onClick={() => onRemove(index)}
-                    className="absolute top-1 right-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-slate-700/65 text-lg leading-none text-white"
-                  >
-                    ×
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+                  <CloseIcon strokeWidth="2.6" strokeLinecap="round" size="11" />
+                </button>
+              </li>
+            );
+          })}
+          {files.length === 0 &&
+            Array.from({ length: 5 }, (_, index) => (
+              <li
+                key={index}
+                role="presentation"
+                aria-hidden="true"
+                className="bg-surface-subtle aspect-square rounded-lg"
+              />
+            ))}
+        </ul>
+        {files.length === 0 && (
+          <p className="text-muted mt-4 text-center text-xs">
+            위치 정보가 담긴 사진이면 장소별 폴더로 나눠드려요.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

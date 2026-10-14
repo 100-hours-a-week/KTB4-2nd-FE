@@ -36,8 +36,8 @@ function renderTripCreateForm(initialStep: 'name' | 'location' = 'name') {
 
 async function moveToLocationStep() {
   const user = userEvent.setup();
-  await user.type(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.'), '제주 여행');
-  await user.click(screen.getByRole('button', { name: '확인' }));
+  await user.type(screen.getByPlaceholderText('예) 제주도 가을 여행'), '제주 여행');
+  await user.click(screen.getByRole('button', { name: '다음' }));
   await screen.findByRole('heading', { name: /어디로/ });
   return user;
 }
@@ -66,7 +66,7 @@ describe('TripCreateForm', () => {
     const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
     const firstRender = renderTripCreateForm();
 
-    await user.type(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.'), '제주 여행');
+    await user.type(screen.getByPlaceholderText('예) 제주도 가을 여행'), '제주 여행');
     expect(window.localStorage.getItem('trip-create-draft-v1')).toContain('제주 여행');
 
     await user.click(screen.getByRole('button', { name: '이전 단계로 이동' }));
@@ -75,7 +75,7 @@ describe('TripCreateForm', () => {
     window.history.replaceState(null, '', '/trips/create?step=name');
     renderTripCreateForm();
 
-    expect(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.')).toHaveValue('');
+    expect(screen.getByPlaceholderText('예) 제주도 가을 여행')).toHaveValue('');
     historyLength.mockRestore();
   });
 
@@ -95,8 +95,8 @@ describe('TripCreateForm', () => {
     const user = userEvent.setup();
     const firstRender = renderTripCreateForm();
 
-    await user.type(screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.'), '제주 여행');
-    await user.click(screen.getByRole('button', { name: '확인' }));
+    await user.type(screen.getByPlaceholderText('예) 제주도 가을 여행'), '제주 여행');
+    await user.click(screen.getByRole('button', { name: '다음' }));
     expect(await screen.findByRole('heading', { name: /어디로/ })).toBeInTheDocument();
     firstRender.unmount();
 
@@ -132,7 +132,7 @@ describe('TripCreateForm', () => {
     await moveToLocationStep();
 
     expect(screen.getByRole('button', { name: '경기도 용인시 삭제' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '확인' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
   });
 
   it('여행지 검색 결과를 선택하면 선택 목록에 추가한다', async () => {
@@ -199,10 +199,7 @@ describe('TripCreateForm', () => {
     const user = userEvent.setup();
     renderTripCreateForm();
 
-    await user.type(
-      screen.getByPlaceholderText('여행 폴더 이름을 입력해주세요.'),
-      '제주 여행{Enter}',
-    );
+    await user.type(screen.getByPlaceholderText('예) 제주도 가을 여행'), '제주 여행{Enter}');
 
     expect(await screen.findByRole('heading', { name: /어디로/ })).toBeInTheDocument();
     expect(createTrip).not.toHaveBeenCalled();

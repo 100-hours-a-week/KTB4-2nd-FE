@@ -616,7 +616,5 @@ it('선택한 사진 목록만 스크롤 영역으로 사용한다', () => {
     'overflow-y-auto',
     'flex-1',
   );
-  expect(screen.getByText('눌러서 사진 선택하기').closest('label')).not.toHaveClass(
-    'overflow-y-auto',
-  );
+  expect(screen.getByText('사진 추가').closest('label')).not.toHaveClass('overflow-y-auto');
 });
