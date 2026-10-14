@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
+import { getTripForEdit } from '@/features/createTrip/api/getTripForEdit';
 import { getTripProcessingStatus } from '@/features/createTrip/api/getTripProcessingStatus';
 import { searchPlaces } from '@/features/createTrip/api/searchPlaces';
 
@@ -26,5 +27,14 @@ export const createTripQueries = {
           ? PROCESSING_STATUS_POLLING_MS
           : false,
       retry: false,
+    }),
+  editKeys: (tripId: number) => [...createTripQueries.allKeys(), 'edit', tripId] as const,
+  edit: (tripId: number) =>
+    queryOptions({
+      queryKey: createTripQueries.editKeys(tripId),
+      queryFn: () => getTripForEdit(tripId),
+      // 수정 화면에 들어올 때마다 서버의 최신 값으로 시작합니다.
+      staleTime: 0,
+      gcTime: 0,
     }),
 };
