@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
+import { getTripForEdit } from '@/features/createTrip/api/getTripForEdit';
 import { getTripProcessingStatus } from '@/features/createTrip/api/getTripProcessingStatus';
 import { searchPlaces } from '@/features/createTrip/api/searchPlaces';
 
@@ -26,5 +27,13 @@ export const createTripQueries = {
           ? PROCESSING_STATUS_POLLING_MS
           : false,
       retry: false,
+    }),
+  editKeys: (tripId: number) => [...createTripQueries.allKeys(), 'edit', tripId] as const,
+  edit: (tripId: number) =>
+    queryOptions({
+      queryKey: createTripQueries.editKeys(tripId),
+      queryFn: () => getTripForEdit(tripId),
+      staleTime: 0,
+      gcTime: 0,
     }),
 };
