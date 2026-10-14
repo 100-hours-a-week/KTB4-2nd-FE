@@ -6,6 +6,7 @@ import { useController, useFormContext } from 'react-hook-form';
 
 import { createTripQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
+import { CloseIcon } from '@/shared/ui/icons';
 import { toast } from '@/shared/ui/toast';
 
 import type { PlaceCandidate, TripCreateFormValues } from '../model/types';
@@ -15,7 +16,7 @@ import {
   validateTripPlaces,
 } from '../model/validation';
 import { PlaceSearchField } from './placeSearchField';
-import { TripCreateStepLayout } from './tripCreateStepLayout';
+import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
 const PLACE_SEARCH_DEBOUNCE_MS = 300;
 
@@ -68,6 +69,7 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
 
   return (
     <TripCreateStepLayout
+      step="location"
       title={
         <>
           어디로
@@ -75,11 +77,15 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
           다녀오셨나요?
         </>
       }
-      description="여러 곳을 다녀오셨다면 해당 장소들을 모두 입력해주세요"
+      description="여러 곳을 다녀오셨다면 모두 추가해주세요."
       onBack={onBack}
       footer={
-        <Button className="w-full" disabled={places.length === 0} onClick={() => void moveNext()}>
-          확인
+        <Button
+          className={`w-full ${tripCreateButtonClassName}`}
+          disabled={places.length === 0}
+          onClick={() => void moveNext()}
+        >
+          다음
         </Button>
       }
     >
@@ -106,29 +112,40 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
         </p>
       )}
 
-      {places.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2" aria-label="선택한 여행지">
+      <div className="mt-6 flex items-center justify-between">
+        <p className="text-muted text-xs font-semibold">선택한 여행지</p>
+        <p
+          aria-label="선택한 여행지 수"
+          className="text-muted inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-[#eef3f9] px-2.5 text-xs leading-none whitespace-nowrap tabular-nums"
+        >
+          <strong className="text-brand">{places.length}</strong> / {TRIP_PLACE_MAX_COUNT}
+        </p>
+      </div>
+
+      {places.length > 0 ? (
+        <ul className="mt-3 flex flex-wrap gap-2" aria-label="선택한 여행지">
           {places.map((place) => (
-            <span
+            <li
               key={place.regionCode}
-              className="bg-brand inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-white"
+              className="bg-surface-subtle border-border-subtle text-brand inline-flex min-h-9 items-center gap-1 rounded-full border pr-1 pl-3.5 text-[13px] font-semibold"
             >
               {place.regionName}
               <button
                 type="button"
                 aria-label={`${place.regionName} 삭제`}
                 onClick={() => removePlace(place.regionCode)}
-                className="cursor-pointer text-xl leading-none"
+                className="text-muted hover:text-brand focus-visible:outline-brand grid size-7 cursor-pointer place-items-center rounded-full transition-colors hover:bg-slate-200 focus-visible:outline-2"
               >
-                ×
+                <CloseIcon strokeWidth="2.4" strokeLinecap="round" size="12" />
               </button>
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
+      ) : (
+        <p className="text-muted/80 border-border-subtle mt-3 rounded-2xl border border-dashed px-4 py-5 text-center text-[13px]">
+          검색해서 다녀온 곳을 추가해주세요.
+        </p>
       )}
-      <p className="text-muted mt-3 text-right text-xs">
-        {places.length}/{TRIP_PLACE_MAX_COUNT}
-      </p>
     </TripCreateStepLayout>
   );
 }

@@ -8,7 +8,7 @@ import { toast } from '@/shared/ui/toast';
 import { validateImageSelection } from '../model/imageValidation';
 import type { TripCreateFormValues } from '../model/types';
 import { ImageUploadField } from './imageUploadField';
-import { TripCreateStepLayout } from './tripCreateStepLayout';
+import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripImageStepProps = {
   onBack: () => void;
@@ -46,15 +46,16 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
 
   return (
     <TripCreateStepLayout
+      step="images"
       title="사진을 올려주세요"
-      description="무작위로 제출해주셔도 정리해드릴게요."
+      description="순서 상관없이 올려주시면 장소별로 정리해드릴게요."
       onBack={onBack}
       fixedFooter
       contentScrollable={false}
       footer={
         <Button
           type="submit"
-          className="w-full"
+          className={`w-full ${tripCreateButtonClassName}`}
           disabled={field.value.length === 0 || isCheckingLocation}
         >
           {isCheckingLocation ? '위치 정보 확인 중…' : '여행 만들기'}

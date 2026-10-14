@@ -118,20 +118,33 @@ export function DateRangeCalendar({
         aria-label={getMonthLabel(visibleMonth)}
         className="grid grid-cols-7 gap-y-1"
       >
-        {days.map((calendarDay) => {
+        {days.map((calendarDay, index) => {
           const isStart = calendarDay.date === value.startDate;
           const isEnd = calendarDay.date === value.endDate;
+          const hasRange = Boolean(value.startDate && value.endDate) && !(isStart && isEnd);
           const isInRange =
             Boolean(value.startDate && value.endDate) &&
             calendarDay.date > value.startDate &&
             calendarDay.date < value.endDate;
           const disabled = isDisabled(calendarDay.date);
+          const column = index % 7;
+          // 시작일·종료일 원과 사이 날짜를 하나의 띠로 잇고, 주가 바뀌는 지점은 둥글게 닫습니다.
+          const bandClassName = isInRange
+            ? `inset-x-0 ${column === 0 ? 'rounded-l-full' : ''} ${column === 6 ? 'rounded-r-full' : ''}`
+            : hasRange && isStart && column !== 6
+              ? 'left-1/2 right-0'
+              : hasRange && isEnd && column !== 0
+                ? 'left-0 right-1/2'
+                : null;
 
           return (
-            <div
-              key={calendarDay.date}
-              className={`flex h-10 items-center justify-center ${isInRange ? 'bg-brand/10' : ''}`}
-            >
+            <div key={calendarDay.date} className="relative flex h-10 items-center justify-center">
+              {bandClassName && (
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-y-0 bg-[#e8eef6] ${bandClassName}`}
+                />
+              )}
               <button
                 type="button"
                 role="gridcell"
@@ -139,9 +152,9 @@ export function DateRangeCalendar({
                 aria-selected={isStart || isEnd || isInRange}
                 disabled={disabled}
                 onClick={() => selectDate(calendarDay.date)}
-                className={`inline-flex size-10 items-center justify-center rounded-full text-sm font-medium transition-colors
+                className={`relative inline-flex size-10 items-center justify-center rounded-full text-sm font-medium transition-colors
                   ${calendarDay.isCurrentMonth ? 'text-brand' : 'text-slate-300'}
-                  ${isStart || isEnd ? 'bg-brand text-white' : 'hover:bg-brand/5'}
+                  ${isStart || isEnd ? 'bg-brand font-bold text-white' : 'hover:bg-brand/5'}
                   ${disabled ? 'cursor-not-allowed opacity-25 hover:bg-transparent' : 'cursor-pointer'}
                 `}
               >

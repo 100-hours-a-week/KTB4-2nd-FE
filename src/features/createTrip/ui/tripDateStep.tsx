@@ -8,7 +8,7 @@ import { toast } from '@/shared/ui/toast';
 
 import type { TripCreateFormValues } from '../model/types';
 import { TRIP_DATE_MAX_DAYS, validateTripDateRange } from '../model/validation';
-import { TripCreateStepLayout } from './tripCreateStepLayout';
+import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripDateStepProps = {
   onBack: () => void;
@@ -41,20 +41,26 @@ export function TripDateStep({ onBack, onNext }: TripDateStepProps) {
 
   return (
     <TripCreateStepLayout
-      title="여행은 언제 였나요?"
-      description="시작일과 종료일을 선택해주세요."
+      step="date"
+      title="여행은 언제였나요?"
+      description="시작일과 종료일을 차례로 선택해주세요."
       onBack={onBack}
       footer={
         <div className="grid grid-cols-[1fr_2fr] gap-2">
           <Button
-            className="border-brand bg-surface text-black! hover:bg-brand/5 hover:text-white! border-2"
+            variant="secondary"
+            className={tripCreateButtonClassName}
             disabled={!startDate && !endDate}
             onClick={() => setRange({ startDate: '', endDate: '' })}
           >
             재설정
           </Button>
-          <Button disabled={!startDate || !endDate} onClick={() => void moveNext()}>
-            확인
+          <Button
+            className={tripCreateButtonClassName}
+            disabled={!startDate || !endDate}
+            onClick={() => void moveNext()}
+          >
+            다음
           </Button>
         </div>
       }
@@ -72,10 +78,18 @@ export function TripDateStep({ onBack, onNext }: TripDateStepProps) {
         })}
       />
 
-      <div className="border-field-border mb-5 grid grid-cols-2 gap-7 rounded-lg border px-4 py-4">
-        <DateValue label="시작일" value={startDate} />
-        <DateValue label="종료일" value={endDate} />
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <DateValue label="시작일" value={startDate} active={!startDate} />
+        <DateValue label="종료일" value={endDate} active={Boolean(startDate) && !endDate} />
       </div>
+      {/* 기간 배지가 생기거나 사라져도 달력이 밀리지 않도록 자리를 유지합니다. */}
+      <p className="mb-3 flex h-6 items-center justify-center text-xs font-semibold">
+        {startDate && endDate && (
+          <span className="text-brand inline-flex h-6 items-center rounded-full bg-[#eef3f9] px-2.5 leading-none whitespace-nowrap">
+            {formatTripLength(startDate, endDate)}
+          </span>
+        )}
+      </p>
 
       <DateRangeCalendar
         value={{ startDate, endDate }}
@@ -96,11 +110,35 @@ export function TripDateStep({ onBack, onNext }: TripDateStepProps) {
   );
 }
 
-function DateValue({ label, value }: { label: string; value: string }) {
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function parseDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDate(value: string) {
+  const date = parseDate(value);
+  return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()} (${WEEKDAYS[date.getDay()]})`;
+}
+
+function formatTripLength(startDate: string, endDate: string) {
+  const days =
+    Math.round((parseDate(endDate).getTime() - parseDate(startDate).getTime()) / 86_400_000) + 1;
+  return days <= 1 ? '당일치기' : `${days - 1}박 ${days}일`;
+}
+
+function DateValue({ label, value, active }: { label: string; value: string; active: boolean }) {
   return (
-    <div className="border-field-border border-b pb-2">
-      <p className="text-muted text-xs">{label}</p>
-      <p className="text-brand mt-1 min-h-5 text-sm font-semibold">{value || '선택해주세요'}</p>
+    <div
+      className={`rounded-2xl border px-4 py-3 transition-colors ${active ? 'border-brand ring-brand ring-1 ring-inset' : 'border-border-subtle'}`}
+    >
+      <p className="text-muted text-[11px] font-semibold">{label}</p>
+      <p
+        className={`mt-1 min-h-5 text-sm ${value ? 'text-brand font-bold' : 'text-muted/70 font-medium'}`}
+      >
+        {value ? formatDate(value) : '선택해주세요'}
+      </p>
     </div>
   );
 }
