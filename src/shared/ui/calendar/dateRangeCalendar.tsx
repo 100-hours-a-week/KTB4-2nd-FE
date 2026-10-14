@@ -128,7 +128,6 @@ export function DateRangeCalendar({
             calendarDay.date < value.endDate;
           const disabled = isDisabled(calendarDay.date);
           const column = index % 7;
-          // 시작일·종료일 원과 사이 날짜를 하나의 띠로 잇고, 주가 바뀌는 지점은 둥글게 닫습니다.
           const bandClassName = isInRange
             ? `inset-x-0 ${column === 0 ? 'rounded-l-full' : ''} ${column === 6 ? 'rounded-r-full' : ''}`
             : hasRange && isStart && column !== 6
