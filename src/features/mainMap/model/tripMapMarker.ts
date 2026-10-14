@@ -23,6 +23,28 @@ export type TripMarkerGroup = {
   longitude: number;
 };
 
+export type TripMapApiMarker = {
+  tripId: number;
+  tripName: string;
+  latitude: number;
+  longitude: number;
+  thumbnailUrl: string | null;
+  attachmentCount: number;
+};
+
+export function toTripMapMarkers(markers: TripMapApiMarker[]): TripMapMarker[] {
+  return markers.map(
+    ({ tripId, tripName, latitude, longitude, thumbnailUrl, attachmentCount }) => ({
+      regionCode: String(tripId),
+      regionName: tripName,
+      latitude,
+      longitude,
+      tripCount: 1,
+      trips: [{ tripId, tripName, thumbnailUrl, attachmentCount }],
+    }),
+  );
+}
+
 export function getTripMarkerThumbnail(group: TripMarkerGroup): string | null {
   return group.trips.find((trip) => trip.thumbnailUrl)?.thumbnailUrl ?? null;
 }
