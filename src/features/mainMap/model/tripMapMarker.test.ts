@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getTripMarkerThumbnail,
   groupNearbyTripMarkers,
+  toTripMapMarkers,
   type TripMapMarker,
   type TripMarkerGroup,
 } from './tripMapMarker';
@@ -53,5 +54,38 @@ describe('getTripMarkerThumbnail', () => {
 
   it('모든 여행에 대표 이미지가 없으면 빈 마커를 위해 null을 반환한다', () => {
     expect(getTripMarkerThumbnail(group([null, null]))).toBeNull();
+  });
+});
+
+describe('toTripMapMarkers', () => {
+  it('여행별 대표 사진 좌표를 여행 하나짜리 지도 마커로 바꾼다', () => {
+    expect(
+      toTripMapMarkers([
+        {
+          tripId: 7,
+          tripName: '부산 여행',
+          latitude: 35.1,
+          longitude: 129.1,
+          thumbnailUrl: 'https://example.com/busan.png',
+          attachmentCount: 12,
+        },
+      ]),
+    ).toEqual([
+      {
+        regionCode: '7',
+        regionName: '부산 여행',
+        latitude: 35.1,
+        longitude: 129.1,
+        tripCount: 1,
+        trips: [
+          {
+            tripId: 7,
+            tripName: '부산 여행',
+            thumbnailUrl: 'https://example.com/busan.png',
+            attachmentCount: 12,
+          },
+        ],
+      },
+    ]);
   });
 });
