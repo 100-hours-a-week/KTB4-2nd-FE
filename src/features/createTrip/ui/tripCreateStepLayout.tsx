@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 
 import { PageHeader } from '@/shared/ui/pageHeader';
 
 import { TRIP_CREATE_STEPS, type TripCreateStep } from '../model/types';
+import { TripFormModeContext } from './tripFormMode';
 
 export const tripCreateButtonClassName =
   'rounded-[16px] disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100';
@@ -28,6 +29,7 @@ export function TripCreateStepLayout({
   fixedFooter = false,
   contentScrollable = true,
 }: TripCreateStepLayoutProps) {
+  const mode = useContext(TripFormModeContext);
   const stepNumber = TRIP_CREATE_STEPS.indexOf(step) + 1;
   const footerFade =
     'before:from-surface before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent';
@@ -37,7 +39,7 @@ export function TripCreateStepLayout({
       className={`bg-surface text-brand mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden px-6 pt-[max(8px,env(safe-area-inset-top))] ${fixedFooter ? 'pb-[calc(92px+env(safe-area-inset-bottom))]' : ''}`}
     >
       <PageHeader
-        title="여행 만들기"
+        title={mode === 'edit' ? '여행 수정' : '여행 만들기'}
         backLabel="이전 단계로 이동"
         onBack={onBack}
         className="shrink-0"

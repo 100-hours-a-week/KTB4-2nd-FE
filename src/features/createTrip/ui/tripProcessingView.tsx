@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
 import { Button } from '@/shared/ui/button';
 import { Dialog } from '@/shared/ui/dialog';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
 import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
+import { TripFormModeContext } from './tripFormMode';
 
 type TripProcessingViewProps = {
   uploadRatio: number;
   processingStatus?: TripProcessingStatusResponse;
+  /** 없으면 뒤로가기는 취소 확인 없이 다른 작업 이어하기와 같게 동작합니다. */
   onCancel?: () => void;
   onContinueElsewhere?: () => void;
 };
@@ -58,15 +60,16 @@ function getProgress({ uploadRatio, processingStatus }: TripProcessingViewProps)
 export function TripProcessingView(props: TripProcessingViewProps) {
   const { stage, detail, percent } = getProgress(props);
   const { onCancel, onContinueElsewhere } = props;
+  const mode = useContext(TripFormModeContext);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const canLeave = stage !== 'upload';
 
   return (
     <main className="bg-surface text-foreground mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden px-6 pt-[max(8px,env(safe-area-inset-top))] pb-[max(20px,env(safe-area-inset-bottom))]">
       <PageHeader
-        title="여행 만들기"
+        title={mode === 'edit' ? '여행 수정' : '여행 만들기'}
         backLabel="이전 단계로 이동"
-        onBack={() => setCancelDialogOpen(true)}
+        onBack={() => (onCancel ? setCancelDialogOpen(true) : onContinueElsewhere?.())}
         backDisabled={!canLeave}
       />
 
