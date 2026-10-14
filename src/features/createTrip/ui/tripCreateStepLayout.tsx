@@ -66,7 +66,7 @@ export function TripCreateStepLayout({
       </header>
 
       <section
-        className={`mt-7 min-h-0 flex-1 ${contentScrollable ? 'overflow-y-auto overscroll-contain pb-4' : 'overflow-hidden'}`}
+        className={`mt-7 min-h-0 flex-1 ${contentScrollable ? 'overflow-y-auto overscroll-contain pb-4' : 'overflow-clip'}`}
       >
         {children}
       </section>

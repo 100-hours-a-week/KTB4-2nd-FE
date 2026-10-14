@@ -52,6 +52,7 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
       <Input
         {...register('tripName', { validate: validateTripName })}
         autoFocus
+        autoComplete="off"
         placeholder="예) 제주도 가을 여행"
         maxLength={TRIP_NAME_MAX_LENGTH}
         characterCount={tripName.length}

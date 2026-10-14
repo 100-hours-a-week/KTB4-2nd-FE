@@ -24,11 +24,11 @@ export function PlaceSearchField({
   );
 
   return (
-    <div>
+    <div className="flex min-h-0 flex-col">
       <label htmlFor="place-search" className="sr-only">
         여행지 검색
       </label>
-      <div className="bg-surface border-border-subtle focus-within:border-brand flex min-h-[52px] items-center gap-2.5 rounded-[16px] border px-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-colors">
+      <div className="bg-surface border-border-subtle focus-within:border-brand flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-[16px] border px-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-colors">
         <span className="text-muted shrink-0">
           <SearchIcon strokeWidth="2" strokeLinecap="round" size={19} />
         </span>
@@ -55,7 +55,7 @@ export function PlaceSearchField({
 
       {query.trim() && (
         <div
-          className="border-border-subtle mt-2 overflow-hidden rounded-2xl border shadow-[0_8px_24px_rgba(2,23,48,0.06)]"
+          className="border-border-subtle mt-2 min-h-0 overflow-y-auto overscroll-contain rounded-2xl border shadow-[0_8px_24px_rgba(2,23,48,0.06)]"
           aria-live="polite"
         >
           {status === 'idle' ? (
