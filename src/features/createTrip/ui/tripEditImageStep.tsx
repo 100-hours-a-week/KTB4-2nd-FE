@@ -38,7 +38,6 @@ export function TripEditImageStep({
       toast.error(result.message);
       return;
     }
-    // 백엔드는 남겨둔 기존 사진과 새 사진을 합쳐 200장까지 받습니다.
     if (keptCount + result.files.length > TRIP_IMAGE_MAX_COUNT) {
       toast.error(`여행 하나에 사진은 최대 ${TRIP_IMAGE_MAX_COUNT}장까지 올릴 수 있어요.`);
       return;

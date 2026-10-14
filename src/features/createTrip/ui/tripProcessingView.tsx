@@ -12,7 +12,6 @@ import { TripFormModeContext } from './tripFormMode';
 type TripProcessingViewProps = {
   uploadRatio: number;
   processingStatus?: TripProcessingStatusResponse;
-  /** 없으면 뒤로가기는 취소 확인 없이 다른 작업 이어하기와 같게 동작합니다. */
   onCancel?: () => void;
   onContinueElsewhere?: () => void;
 };

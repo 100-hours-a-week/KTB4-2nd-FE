@@ -35,7 +35,6 @@ type TripEditFormProps = {
   initialStep: TripCreateStep;
 };
 
-/** 여행 만들기와 같은 단계 화면을 기존 값으로 채워 수정합니다. */
 export function TripEditForm({ tripId, initialStep }: TripEditFormProps) {
   const router = useRouter();
   const { data, isPending, isError, refetch } = useQuery(createTripQueries.edit(tripId));
