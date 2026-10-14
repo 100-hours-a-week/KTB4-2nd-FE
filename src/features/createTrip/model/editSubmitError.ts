@@ -7,7 +7,6 @@ import type { TripCreateStep } from './types';
 export type TripEditSubmitError = {
   message: string;
   step?: TripCreateStep;
-  /** 사진 추가를 처음부터 다시 시작해야 하는 오류입니다. */
   resetAddition?: boolean;
 };
 

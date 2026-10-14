@@ -33,7 +33,6 @@ export const createTripQueries = {
     queryOptions({
       queryKey: createTripQueries.editKeys(tripId),
       queryFn: () => getTripForEdit(tripId),
-      // 수정 화면에 들어올 때마다 서버의 최신 값으로 시작합니다.
       staleTime: 0,
       gcTime: 0,
     }),

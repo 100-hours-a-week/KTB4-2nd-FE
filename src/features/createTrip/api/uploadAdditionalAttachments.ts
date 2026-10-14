@@ -5,7 +5,6 @@ import { getContentType, putToStorage, type UploadTarget } from './uploadInitial
 
 export type AdditionalUploadBatchParams = {
   tripId: number;
-  /** 한 번의 사진 추가를 묶는 UUID입니다. 같은 추가의 모든 Batch와 재시도에 같은 값을 씁니다. */
   additionId: string;
   files: File[];
   batchNo: number;
@@ -21,7 +20,6 @@ type AdditionalAttachmentUploadUrls = {
   attachments: UploadTarget[];
 };
 
-/** 이미 만든 여행에 사진을 추가합니다. 여행 생성처럼 Batch마다 URL 발급 → S3 업로드 → 완료 순으로 보냅니다. */
 export async function uploadAdditionalAttachmentBatch({
   tripId,
   additionId,

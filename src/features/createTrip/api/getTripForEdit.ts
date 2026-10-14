@@ -39,7 +39,6 @@ async function getTripEditPage(tripId: number, cursor: string | null) {
   return data.data;
 }
 
-/** 수정 화면에서 기존 사진을 모두 보여주고 지울 수 있도록 사진 페이지를 끝까지 이어서 받습니다. */
 export async function getTripForEdit(tripId: number): Promise<TripEditData> {
   const first = await getTripEditPage(tripId, null);
   const photos = [...first.attachments.items];

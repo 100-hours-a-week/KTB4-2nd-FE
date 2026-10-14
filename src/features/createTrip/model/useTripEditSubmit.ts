@@ -30,7 +30,6 @@ type AdditionPoint = {
 
 const FINISHED_STATUSES = new Set(['COMPLETED', 'FAILED', 'CANCELED']);
 
-/** 처음 불러온 값과 달라진 항목만 PATCH 요청에 담습니다. 바뀐 게 없으면 null입니다. */
 export function getTripUpdateRequest(
   initial: TripEditData,
   values: TripCreateFormValues,
@@ -116,7 +115,6 @@ export function useTripEditSubmit(
     },
   });
 
-  // 추가한 사진의 장소 분류가 끝날 때까지 여행 생성과 같은 처리 상태 API로 확인합니다.
   const processingStatus = useQuery({
     queryKey: [...createTripQueries.processingStatusKeys(tripId), 'edit'],
     queryFn: async () => {
@@ -140,7 +138,6 @@ export function useTripEditSubmit(
         },
         onError: options?.onError,
       }),
-    /** 사진 추가 요청이 잘못돼 처음부터 다시 올려야 할 때 사용합니다. */
     resetAddition: () => {
       addition.current = null;
     },
