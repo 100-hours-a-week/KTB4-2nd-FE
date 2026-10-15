@@ -1,7 +1,6 @@
 import type { ApiResponse } from '@/shared/api';
 import { apiClient } from '@/shared/api/browser';
 
-/** FINALIZING은 AI 분석이 끝나고 백엔드가 결과를 저장하는 단계라 아직 진행 중입니다. */
 export type TripProcessingStatus =
   'PROCESSING' | 'FINALIZING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
 

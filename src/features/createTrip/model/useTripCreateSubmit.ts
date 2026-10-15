@@ -57,7 +57,6 @@ export function useTripCreateSubmit() {
     null,
   );
 
-  // Batch 응답과 상태 조회 응답이 같은 완료를 알려도 한 여행에는 한 번만 기록한다.
   const finishProcessing = useCallback((status: TripProcessingStatusResponse) => {
     const generation = generationAnalyticsPoint.current;
     if (status.tripId !== createdTripId.current || isTripProcessingRunning(status.status)) return;
