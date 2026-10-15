@@ -20,10 +20,9 @@ describe('searchTrips', () => {
           folders: [
             {
               tripId: 1,
+              tripPlaceId: 9,
               tripName: '제주도 가을 여행',
-              startDate: '2026-08-24',
-              endDate: '2026-08-27',
-              regionNames: ['제주시'],
+              placeName: '성산일출봉',
               attachmentCount: 128,
               thumbnailUrl: 'https://cdn.test/trip-1',
               score: 0.9,
@@ -49,10 +48,9 @@ describe('searchTrips', () => {
       folders: [
         {
           tripId: 1,
+          tripPlaceId: 9,
           tripName: '제주도 가을 여행',
-          startDate: '2026-08-24',
-          endDate: '2026-08-27',
-          regionNames: ['제주시'],
+          placeName: '성산일출봉',
           photoCount: 128,
           thumbnailUrl: 'https://cdn.test/trip-1',
         },

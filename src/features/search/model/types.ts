@@ -1,11 +1,11 @@
 import type { PhotoAccent } from '@/features/photoList';
 
+/** 검색 결과 폴더는 여행이 아니라 여행 안의 장소 폴더 단위입니다. */
 export type SearchFolder = {
   tripId: number;
+  tripPlaceId: number;
   tripName: string;
-  startDate: string;
-  endDate: string;
-  regionNames: string[];
+  placeName: string;
   photoCount: number;
   thumbnailUrl: string | null;
 };
