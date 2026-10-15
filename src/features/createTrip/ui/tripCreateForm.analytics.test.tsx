@@ -32,7 +32,10 @@ vi.mock('@/shared/ui/toast', () => ({
 }));
 vi.mock('../api/createTrip', () => ({ createTrip: vi.fn() }));
 vi.mock('../model/hasAnyPhotoLocation', () => ({ hasAnyPhotoLocation: vi.fn() }));
-vi.mock('../api/getTripProcessingStatus', () => ({ getTripProcessingStatus: vi.fn() }));
+vi.mock('../api/getTripProcessingStatus', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/getTripProcessingStatus')>()),
+  getTripProcessingStatus: vi.fn(),
+}));
 vi.mock('../api/uploadInitialAttachments', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/uploadInitialAttachments')>()),
   uploadInitialAttachmentBatch: vi.fn(),

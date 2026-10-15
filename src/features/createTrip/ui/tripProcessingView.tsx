@@ -29,6 +29,10 @@ function getProgress({ uploadRatio, processingStatus }: TripProcessingViewProps)
   detail: string;
   percent: number;
 } {
+  if (processingStatus?.status === 'FINALIZING') {
+    return { stage: 'analysis', detail: '사진 정리를 마무리하고 있어요', percent: 99 };
+  }
+
   const analysis = processingStatus?.progress;
 
   if (analysis && analysis.total > 0) {
