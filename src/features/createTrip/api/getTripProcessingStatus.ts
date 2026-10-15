@@ -1,7 +1,12 @@
 import type { ApiResponse } from '@/shared/api';
 import { apiClient } from '@/shared/api/browser';
 
-export type TripProcessingStatus = 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
+export type TripProcessingStatus =
+  'PROCESSING' | 'FINALIZING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
+
+export function isTripProcessingRunning(status: TripProcessingStatus) {
+  return status === 'PROCESSING' || status === 'FINALIZING';
+}
 
 export type TripProcessingStatusResponse = {
   tripId: number;
