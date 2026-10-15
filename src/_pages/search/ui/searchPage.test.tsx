@@ -20,10 +20,9 @@ const result: SearchResult = {
   folders: [
     {
       tripId: 1,
+      tripPlaceId: 9,
       tripName: '제주도 가을 여행',
-      startDate: '2026-08-24',
-      endDate: '2026-08-27',
-      regionNames: ['제주시'],
+      placeName: '성산일출봉',
       photoCount: 128,
       thumbnailUrl: null,
     },
@@ -73,15 +72,18 @@ describe('SearchPage', () => {
 
     expect(await screen.findByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '사진 1건' })).toHaveAttribute('aria-selected', 'true');
+    // 같은 장소 폴더 결과의 이름을 사진 목록 화면으로 함께 넘긴다.
     expect(screen.getByRole('link', { name: '1번째 사진이 있는 폴더 보기' })).toHaveAttribute(
       'href',
-      '/trips/1/places/9/photos',
+      `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
     );
 
     await user.click(screen.getByRole('tab', { name: '폴더 1건' }));
-    expect(screen.getByRole('link', { name: '제주도 가을 여행 여행 상세 보기' })).toHaveAttribute(
+    expect(
+      screen.getByRole('link', { name: '제주도 가을 여행 성산일출봉 사진 128장 보기' }),
+    ).toHaveAttribute(
       'href',
-      '/trips/1',
+      `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
     );
   });
 
