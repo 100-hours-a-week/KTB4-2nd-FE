@@ -65,8 +65,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       id: 'edit',
       label: '여행 수정',
       icon: <EditIcon size="20" />,
-      badge: '준비 중',
-      onSelect: showUnsupportedToast,
+      onSelect: () => router.push(`/trips/${trip.id}/edit?step=name`),
     },
     {
       id: 'share-link',

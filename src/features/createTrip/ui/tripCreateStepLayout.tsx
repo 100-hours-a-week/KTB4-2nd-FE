@@ -1,8 +1,15 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 
 import { PageHeader } from '@/shared/ui/pageHeader';
 
+import { TRIP_CREATE_STEPS, type TripCreateStep } from '../model/types';
+import { TripFormModeContext } from './tripFormMode';
+
+export const tripCreateButtonClassName =
+  'rounded-[16px] disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100';
+
 type TripCreateStepLayoutProps = {
+  step: TripCreateStep;
   title: ReactNode;
   description?: string;
   onBack: () => void;
@@ -13,6 +20,7 @@ type TripCreateStepLayoutProps = {
 };
 
 export function TripCreateStepLayout({
+  step,
   title,
   description,
   onBack,
@@ -21,27 +29,54 @@ export function TripCreateStepLayout({
   fixedFooter = false,
   contentScrollable = true,
 }: TripCreateStepLayoutProps) {
+  const mode = useContext(TripFormModeContext);
+  const stepNumber = TRIP_CREATE_STEPS.indexOf(step) + 1;
+  const footerFade =
+    'before:from-surface before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent';
+
   return (
     <main
-      className={`bg-surface mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden px-5 pt-[max(20px,env(safe-area-inset-top))] text-foreground ${fixedFooter ? 'pb-[calc(92px+env(safe-area-inset-bottom))]' : 'pb-[max(20px,env(safe-area-inset-bottom))]'}`}
+      className={`bg-surface text-brand mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden px-6 pt-[max(8px,env(safe-area-inset-top))] ${fixedFooter ? 'pb-[calc(92px+env(safe-area-inset-bottom))]' : ''}`}
     >
-      <PageHeader backLabel="이전 단계로 이동" onBack={onBack} />
+      <PageHeader
+        title={mode === 'edit' ? '여행 수정' : '여행 만들기'}
+        backLabel="이전 단계로 이동"
+        onBack={onBack}
+        className="shrink-0"
+      />
 
-      <header className="mt-8 shrink-0">
-        <h1 className="text-brand text-2xl leading-snug font-extrabold">{title}</h1>
-        {description && <p className="text-muted mt-2 text-sm">{description}</p>}
+      <div className="mt-2 flex shrink-0 items-center gap-3">
+        <div aria-hidden="true" className="flex flex-1 gap-1">
+          {TRIP_CREATE_STEPS.map((item, index) => (
+            <span
+              key={item}
+              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${index < stepNumber ? 'bg-brand' : 'bg-border-subtle'}`}
+            />
+          ))}
+        </div>
+        <p className="text-muted shrink-0 text-xs font-semibold tabular-nums">
+          <span className="sr-only">전체 {TRIP_CREATE_STEPS.length}단계 중 </span>
+          <strong className="text-brand">{stepNumber}</strong>
+          <span aria-hidden="true"> / {TRIP_CREATE_STEPS.length}</span>
+          <span className="sr-only">단계</span>
+        </p>
+      </div>
+
+      <header className="mt-7 shrink-0">
+        <h2 className="text-[23px] leading-[1.35] font-extrabold tracking-[-0.04em]">{title}</h2>
+        {description && <p className="text-muted mt-2 text-[13px]">{description}</p>}
       </header>
 
       <section
-        className={`mt-8 min-h-0 flex-1 ${contentScrollable ? 'overflow-y-auto' : 'overflow-hidden'}`}
+        className={`mt-7 min-h-0 flex-1 ${contentScrollable ? 'overflow-y-auto overscroll-contain pb-4' : 'overflow-clip'}`}
       >
         {children}
       </section>
       <footer
         className={
           fixedFooter
-            ? 'bg-surface border-border-subtle fixed right-0 bottom-[var(--app-vertical-offset)] left-0 z-30 mx-auto w-full max-w-[430px] border-t px-5 pt-3 pb-[max(20px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(2,23,48,0.08)]'
-            : 'mt-8 shrink-0'
+            ? `bg-surface fixed right-0 bottom-[var(--app-vertical-offset)] left-0 z-30 mx-auto w-full max-w-[430px] px-6 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] ${footerFade}`
+            : `bg-surface relative shrink-0 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] ${footerFade}`
         }
       >
         {footer}

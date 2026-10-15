@@ -9,22 +9,15 @@ vi.mock('@/shared/api/browser', () => ({ apiClient: { get: vi.fn() } }));
 describe('getTripMap', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('지도 API의 지역 마커를 반환한다', async () => {
+  it('지도 API의 여행별 마커를 반환한다', async () => {
     const markers = [
       {
-        regionCode: '50110',
-        regionName: '제주특별자치도 제주시',
+        tripId: 1,
+        tripName: '제주도 가을 여행',
         latitude: 33.4996,
         longitude: 126.5312,
-        tripCount: 2,
-        trips: [
-          {
-            tripId: 1,
-            tripName: '제주도 가을 여행',
-            thumbnailUrl: 'https://example.com/photo.jpg',
-            attachmentCount: 128,
-          },
-        ],
+        thumbnailUrl: 'https://example.com/photo.jpg',
+        attachmentCount: 128,
       },
     ];
     vi.mocked(apiClient.get).mockResolvedValue({

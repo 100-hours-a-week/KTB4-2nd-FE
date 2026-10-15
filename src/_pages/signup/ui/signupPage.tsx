@@ -3,7 +3,7 @@ import { PageHeader } from '@/shared/ui/pageHeader';
 
 export function SignupPage() {
   return (
-    <main className="page-enter flex min-h-dvh flex-col px-6 pt-[max(12px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
+    <main className="page-enter flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain px-6 pt-[max(12px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
       <PageHeader backHref="/login" backLabel="이전 페이지로 이동" />
 
       <section className="flex flex-1 flex-col pt-14">

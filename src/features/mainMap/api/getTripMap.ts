@@ -1,11 +1,11 @@
 import type { ApiResponse } from '@/shared/api';
 import { apiClient } from '@/shared/api/browser';
 
-import type { TripMapMarker } from '../model/tripMapMarker';
+import type { TripMapApiMarker } from '../model/tripMapMarker';
 
-type TripMapResponse = { markers: TripMapMarker[] };
+type TripMapResponse = { markers: TripMapApiMarker[] };
 
-export async function getTripMap(): Promise<TripMapMarker[]> {
+export async function getTripMap(): Promise<TripMapApiMarker[]> {
   const { data } = await apiClient.get<ApiResponse<TripMapResponse>>('/trips/map');
 
   return data.data.markers;

@@ -7,7 +7,7 @@ import { Input } from '@/shared/ui/input';
 
 import type { TripCreateFormValues } from '../model/types';
 import { TRIP_NAME_MAX_LENGTH, validateTripName } from '../model/validation';
-import { TripCreateStepLayout } from './tripCreateStepLayout';
+import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripNameStepProps = {
   onBack: () => void;
@@ -29,6 +29,7 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
 
   return (
     <TripCreateStepLayout
+      step="name"
       title={
         <>
           여행 폴더 이름을
@@ -39,15 +40,20 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
       description="나중에 언제든 수정할 수 있어요"
       onBack={onBack}
       footer={
-        <Button className="w-full" disabled={!tripName.trim()} onClick={() => void moveNext()}>
-          확인
+        <Button
+          className={`w-full ${tripCreateButtonClassName}`}
+          disabled={!tripName.trim()}
+          onClick={() => void moveNext()}
+        >
+          다음
         </Button>
       }
     >
       <Input
         {...register('tripName', { validate: validateTripName })}
         autoFocus
-        placeholder="여행 폴더 이름을 입력해주세요."
+        autoComplete="off"
+        placeholder="예) 제주도 가을 여행"
         maxLength={TRIP_NAME_MAX_LENGTH}
         characterCount={tripName.length}
         onKeyDown={(event) => {

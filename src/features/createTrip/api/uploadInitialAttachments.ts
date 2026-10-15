@@ -18,7 +18,7 @@ export type UploadBatchParams = {
   signal?: AbortSignal;
 };
 
-type UploadTarget = {
+export type UploadTarget = {
   fileName: string;
   uploadUrl: string;
   method: 'PUT';
@@ -38,12 +38,12 @@ const CONTENT_TYPES_BY_EXTENSION: Record<string, string> = {
   heic: 'image/heic',
 };
 
-function getContentType(file: File) {
+export function getContentType(file: File) {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   return CONTENT_TYPES_BY_EXTENSION[extension] ?? file.type;
 }
 
-async function putToStorage(
+export async function putToStorage(
   file: File,
   target: UploadTarget,
   onProgress: (loaded: number) => void,
