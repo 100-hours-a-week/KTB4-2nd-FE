@@ -16,6 +16,7 @@ import {
 } from '../api/uploadInitialAttachments';
 import {
   getTripProcessingStatus,
+  isTripProcessingRunning,
   type TripProcessingStatusResponse,
 } from '../api/getTripProcessingStatus';
 import { getTripRegion } from './getTripRegion';
@@ -56,10 +57,9 @@ export function useTripCreateSubmit() {
     null,
   );
 
-  // Batch 응답과 상태 조회 응답이 같은 완료를 알려도 한 여행에는 한 번만 기록한다.
   const finishProcessing = useCallback((status: TripProcessingStatusResponse) => {
     const generation = generationAnalyticsPoint.current;
-    if (status.tripId !== createdTripId.current || status.status === 'PROCESSING') return;
+    if (status.tripId !== createdTripId.current || isTripProcessingRunning(status.status)) return;
 
     if (
       status.status === 'COMPLETED' &&
@@ -188,7 +188,7 @@ export function useTripCreateSubmit() {
 
         if (!abortController.signal.aborted && createdTripId.current === currentTripId) {
           setUploadRatio(1);
-          if (lastStatus.status === 'PROCESSING') {
+          if (isTripProcessingRunning(lastStatus.status)) {
             awaitingProcessingRef.current = true;
             setAwaitingProcessing(true);
           } else {

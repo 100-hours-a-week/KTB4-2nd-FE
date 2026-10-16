@@ -33,7 +33,10 @@ vi.mock('../api/updateTrip', () => ({ updateTrip: vi.fn() }));
 vi.mock('../api/uploadAdditionalAttachments', () => ({
   uploadAdditionalAttachmentBatch: vi.fn(),
 }));
-vi.mock('../api/getTripProcessingStatus', () => ({ getTripProcessingStatus: vi.fn() }));
+vi.mock('../api/getTripProcessingStatus', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/getTripProcessingStatus')>()),
+  getTripProcessingStatus: vi.fn(),
+}));
 vi.mock('../api/searchPlaces', () => ({ searchPlaces: vi.fn() }));
 vi.mock('@/features/photoList/api/photoDelete', () => ({
   deletePhoto: vi.fn(),

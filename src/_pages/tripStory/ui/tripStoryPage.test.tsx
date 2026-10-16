@@ -184,11 +184,12 @@ describe('TripStoryPage', () => {
     expect(toast.warning).toHaveBeenCalledWith('아직 지원하지 않는 기능이에요.');
   });
 
-  it('방문 기록이 없으면 여행 상세로 돌아간다', async () => {
-    const history = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+  it.each([1, 4])('방문 기록이 %i개여도 헤더 뒤로가기는 여행 상세로 이동한다', async (length) => {
+    const history = vi.spyOn(window.history, 'length', 'get').mockReturnValue(length);
     renderStory();
     await userEvent.click(screen.getByRole('button', { name: '여행 상세로 돌아가기' }));
     expect(replace).toHaveBeenCalledWith('/trips/7');
+    expect(back).not.toHaveBeenCalled();
     history.mockRestore();
   });
 });

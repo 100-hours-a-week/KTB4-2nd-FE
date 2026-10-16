@@ -184,7 +184,7 @@ describe('StoryCreatePage', () => {
     await user.click(screen.getByRole('button', { name: '생성' }));
 
     await user.click(await screen.findByRole('button', { name: '스토리 보기' }));
-    expect(push).toHaveBeenCalledWith('/trips/7/story');
+    expect(replace).toHaveBeenCalledWith('/trips/7/story');
     expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 
@@ -238,7 +238,7 @@ describe('StoryCreatePage', () => {
     await screen.findByRole('progressbar', { name: '스토리 생성 진행률' });
 
     await user.click(screen.getByRole('button', { name: '다른 작업 이어하기' }));
-    expect(push).toHaveBeenCalledWith('/trips/7');
+    expect(replace).toHaveBeenCalledWith('/trips/7');
     expect(cancelStoryGeneration).not.toHaveBeenCalled();
     expect(screen.getByRole('status', { name: '스토리 생성 중' })).toBeInTheDocument();
   });

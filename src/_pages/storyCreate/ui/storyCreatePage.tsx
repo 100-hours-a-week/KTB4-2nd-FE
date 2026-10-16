@@ -81,7 +81,7 @@ function StoryCreateContent({
       replaceStep('mood');
     } else {
       clearStoryCreateDraft(trip.id);
-      router.push(`/trips/${trip.id}`);
+      router.replace(`/trips/${trip.id}`);
     }
   }
   function cancelGeneration() {
@@ -102,9 +102,9 @@ function StoryCreateContent({
           elapsed={generation.elapsed}
           progressPercent={generation.progressPercent}
           message={generation.message}
-          onContinueElsewhere={() => router.push(`/trips/${trip.id}`)}
+          onContinueElsewhere={() => router.replace(`/trips/${trip.id}`)}
           onBack={back}
-          onView={() => router.push(`/trips/${trip.id}/story`)}
+          onView={() => router.replace(`/trips/${trip.id}/story`)}
           onRetry={start}
         />
       ) : (

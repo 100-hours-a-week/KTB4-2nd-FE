@@ -10,12 +10,11 @@ export type SearchResponse = {
   answerError: string | null;
   folders: {
     tripId: number;
+    tripPlaceId: number;
     tripName: string;
-    startDate: string;
-    endDate: string;
-    regionNames: string[];
-    attachmentCount: number;
+    placeName: string;
     thumbnailUrl: string | null;
+    attachmentCount: number;
     score: number;
   }[];
   attachments: {
@@ -51,10 +50,9 @@ function toSearchResult(response: SearchResponse): SearchResult {
     answerError: response.answerError,
     folders: response.folders.map((folder) => ({
       tripId: folder.tripId,
+      tripPlaceId: folder.tripPlaceId,
       tripName: folder.tripName,
-      startDate: folder.startDate,
-      endDate: folder.endDate,
-      regionNames: folder.regionNames,
+      placeName: folder.placeName,
       photoCount: folder.attachmentCount,
       thumbnailUrl: folder.thumbnailUrl,
     })),

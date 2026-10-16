@@ -1,7 +1,10 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { getTripForEdit } from '@/features/createTrip/api/getTripForEdit';
-import { getTripProcessingStatus } from '@/features/createTrip/api/getTripProcessingStatus';
+import {
+  getTripProcessingStatus,
+  isTripProcessingRunning,
+} from '@/features/createTrip/api/getTripProcessingStatus';
 import { searchPlaces } from '@/features/createTrip/api/searchPlaces';
 
 const PROCESSING_STATUS_POLLING_MS = 2_000;
@@ -23,7 +26,7 @@ export const createTripQueries = {
       queryKey: createTripQueries.processingStatusKeys(tripId),
       queryFn: () => getTripProcessingStatus(tripId),
       refetchInterval: (query) =>
-        !query.state.data || query.state.data.status === 'PROCESSING'
+        !query.state.data || isTripProcessingRunning(query.state.data.status)
           ? PROCESSING_STATUS_POLLING_MS
           : false,
       retry: false,
