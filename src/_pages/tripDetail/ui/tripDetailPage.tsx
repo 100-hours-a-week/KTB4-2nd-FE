@@ -41,12 +41,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
   const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      router.back();
-      return;
-    }
-
-    router.push('/trips');
+    router.replace('/trips');
   };
 
   const showUnsupportedToast = () => toast.warning('아직 지원하지 않는 기능이에요.');
@@ -90,7 +85,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
       <PageHeader
         title={trip.name}
         onBack={handleBack}
-        backLabel="이전 페이지로 돌아가기"
+        backLabel="여행 목록으로 돌아가기"
         action={<DropdownMenu items={menuItems} label="여행 더보기 메뉴" />}
       />
 

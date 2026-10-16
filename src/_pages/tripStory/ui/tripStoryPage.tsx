@@ -37,8 +37,7 @@ export function TripStoryPage({
   const activeIndex = entries.findIndex(({ photo }) => photo.id === activeId);
   const active = entries[activeIndex];
   const handleBack = () => {
-    if (window.history.length > 1) router.back();
-    else router.replace(`/trips/${story.tripId}`);
+    router.replace(`/trips/${story.tripId}`);
   };
 
   return (
