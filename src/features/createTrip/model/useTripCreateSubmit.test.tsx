@@ -31,7 +31,10 @@ vi.mock('@/shared/lib/analytics', () => ({
 }));
 vi.mock('../api/createTrip', () => ({ createTrip: vi.fn() }));
 vi.mock('../api/cancelTripProcessing', () => ({ cancelTripProcessing: vi.fn() }));
-vi.mock('../api/getTripProcessingStatus', () => ({ getTripProcessingStatus: vi.fn() }));
+vi.mock('../api/getTripProcessingStatus', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/getTripProcessingStatus')>()),
+  getTripProcessingStatus: vi.fn(),
+}));
 vi.mock('../api/uploadInitialAttachments', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/uploadInitialAttachments')>()),
   uploadInitialAttachmentBatch: vi.fn(),
@@ -131,6 +134,28 @@ describe('useTripCreateSubmit', () => {
       restored_count: 1,
       failed_count: 0,
     });
+  });
+
+  it('FINALIZING은 실패가 아니라 마무리 중이므로 COMPLETED가 올 때까지 기다린다', async () => {
+    vi.mocked(uploadInitialAttachmentBatch).mockResolvedValue(uploaded('FINALIZING'));
+    vi.mocked(getTripProcessingStatus)
+      .mockResolvedValueOnce(uploaded('FINALIZING'))
+      .mockResolvedValue(completed());
+    const { result } = renderHook(() => useTripCreateSubmit(), { wrapper });
+
+    await act(() => result.current.mutateAsync(values));
+    expect(result.current.isPending).toBe(true);
+    expect(result.current.processingResult).toBeNull();
+
+    await waitFor(() => expect(result.current.processingStatus?.status).toBe('FINALIZING'));
+    expect(result.current.isPending).toBe(true);
+    expect(result.current.processingResult).toBeNull();
+
+    await waitFor(() => expect(result.current.processingResult?.status).toBe('COMPLETED'), {
+      timeout: 4_000,
+    });
+    expect(result.current.isPending).toBe(false);
+    expect(diaryCompletionCalls()).toHaveLength(1);
   });
 
   it('마지막 Batch 응답 전에 시작한 조회는 완료로 처리하지 않고 새 조회를 기다린다', async () => {

@@ -80,6 +80,18 @@ describe('TripProcessingView', () => {
     expect(screen.getAllByRole('progressbar')[1]).toHaveAttribute('aria-valuenow', '15');
   });
 
+  it('FINALIZING이면 실패가 아니라 정리를 마무리하는 중으로 표시한다', () => {
+    render(
+      <TripProcessingView
+        uploadRatio={1}
+        processingStatus={{ ...status(null), status: 'FINALIZING' }}
+      />,
+    );
+
+    expect(percent()).toBe('99');
+    expect(screen.getByText('사진 정리를 마무리하고 있어요')).toBeInTheDocument();
+  });
+
   it('분석 준비 구간은 업로드 구간 끝인 30%에 머문다', () => {
     render(<TripProcessingView uploadRatio={1} processingStatus={status(null)} />);
 

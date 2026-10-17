@@ -242,7 +242,7 @@ function SearchResults({ result }: { result: SearchResult }) {
             {tab === 'folder' ? (
               <FolderResults folders={result.folders} />
             ) : (
-              <PhotoResults photos={result.photos} />
+              <PhotoResults photos={result.photos} folders={result.folders} />
             )}
           </div>
         </>
@@ -324,23 +324,18 @@ function FolderResults({ folders }: { folders: SearchFolder[] }) {
   return (
     <ul className="mt-4 space-y-2.5">
       {folders.map((folder, index) => (
-        <li key={folder.tripId}>
+        <li key={folder.tripPlaceId}>
           <Link
-            href={`/trips/${folder.tripId}`}
-            aria-label={`${folder.tripName} 여행 상세 보기`}
+            href={placePhotosHref(folder)}
+            aria-label={`${folder.tripName} ${folder.placeName} 사진 ${folder.photoCount}장 보기`}
             className="border-border-subtle bg-surface focus-visible:outline-brand flex min-h-[106px] items-center rounded-[18px] border p-3 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-transform active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <FolderThumbnail folder={folder} colorIndex={index} />
             <span className="min-w-0 flex-1 py-0.5 pl-3">
               <strong className="block truncate text-sm font-extrabold tracking-[-0.01em]">
-                {folder.tripName}
+                {folder.placeName}
               </strong>
-              <span className="text-muted mt-1 block truncate text-[11px]">
-                {folder.regionNames.slice(0, 3).join(', ')}
-              </span>
-              <span className="text-muted mt-1 block truncate text-[11px]">
-                {formatShortDate(folder.startDate)} - {formatShortDate(folder.endDate)}
-              </span>
+              <span className="text-muted mt-1 block truncate text-[11px]">{folder.tripName}</span>
               <span className="text-muted mt-1 flex items-center gap-1 text-[11px]">
                 <ImageIcon size="12" /> 사진 {folder.photoCount}장
               </span>
@@ -383,15 +378,23 @@ function FolderThumbnail({ folder, colorIndex }: { folder: SearchFolder; colorIn
   );
 }
 
-function PhotoResults({ photos }: { photos: SearchPhoto[] }) {
+function PhotoResults({ photos, folders }: { photos: SearchPhoto[]; folders: SearchFolder[] }) {
   if (photos.length === 0) return <EmptyTabResult message="일치하는 사진이 없어요." />;
+
+  // 사진 응답에는 이름이 없어서, 같은 장소 폴더 결과가 있으면 그 이름을 사진 목록 화면에 넘깁니다.
+  const folderByPlaceId = new Map(folders.map((folder) => [folder.tripPlaceId, folder]));
 
   return (
     <ul aria-label="사진 검색 결과" className="mt-4 grid grid-cols-3 gap-1">
       {photos.map((photo, index) => (
         <li key={photo.id}>
           <Link
-            href={`/trips/${photo.tripId}/places/${photo.tripPlaceId}/photos`}
+            href={placePhotosHref(
+              folderByPlaceId.get(photo.tripPlaceId) ?? {
+                tripId: photo.tripId,
+                tripPlaceId: photo.tripPlaceId,
+              },
+            )}
             aria-label={`${index + 1}번째 사진이 있는 폴더 보기`}
             className="focus-visible:outline-brand relative block aspect-square w-full overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1"
           >
@@ -515,6 +518,11 @@ function SearchSkeleton({
   );
 }
 
-function formatShortDate(date: string) {
-  return date.slice(2).replaceAll('-', '.');
+/** 장소 폴더 사진 목록으로 이동합니다. 이름을 알면 사진 목록 화면 제목에 쓰도록 함께 넘깁니다. */
+function placePhotosHref(
+  folder: Pick<SearchFolder, 'tripId' | 'tripPlaceId'> & Partial<SearchFolder>,
+) {
+  const path = `/trips/${folder.tripId}/places/${folder.tripPlaceId}/photos`;
+  if (!folder.placeName || !folder.tripName) return path;
+  return `${path}?place=${encodeURIComponent(folder.placeName)}&trip=${encodeURIComponent(folder.tripName)}`;
 }

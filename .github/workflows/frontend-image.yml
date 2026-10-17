@@ -48,35 +48,40 @@ jobs:
           {
             echo "### Frontend image"
             echo ""
-            echo "\`deploy/image-versions.env\`에 넣을 값:"
+            echo "Cloud V2 Manifest 후보 정보 (deploy/v2/image-manifest.json):"
             echo ""
             echo '```'
             echo "SOURCE_SHA=${GITHUB_SHA}"
+            echo "BUILD_RUN_ID=${GITHUB_RUN_ID}"
             echo "FRONTEND_IMAGE=${IMAGE_NAME}:sha-${GITHUB_SHA}"
             echo "FRONTEND_DIGEST=${{ steps.build.outputs.digest }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Notify Cloud release manifest
+      - name: Notify Cloud V2 release manifest
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.CLOUD_RELEASE_TOKEN }}
           IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
+          set -Eeuo pipefail
           jq -n \
             --arg component frontend \
             --arg source_repository "${GITHUB_REPOSITORY}" \
             --arg source_sha "${GITHUB_SHA}" \
             --arg image "${IMAGE}" \
             --arg digest "${DIGEST}" \
+            --arg build_run_id "${GITHUB_RUN_ID}" \
             '{
-              event_type: "image-published",
+              event_type: "v2-image-published",
               client_payload: {
                 component: $component,
                 source_repository: $source_repository,
                 source_sha: $source_sha,
                 image: $image,
-                digest: $digest
+                digest: $digest,
+                build_run_id: $build_run_id
               }
             }' |
             gh api \
