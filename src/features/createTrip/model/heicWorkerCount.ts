@@ -1,9 +1,9 @@
 /**
- * HEIC 50장 선택 후 첫 12장 로드 완료 시간(3회 평균) 측정 결과
- * 2개 4.82초 → 3개 3.77초(-21.8%) → 4개 2.97초(-21.2%) → 6개 2.57초(-13.5%, 1개당 약 -7%).
- * 4개 이후로는 Worker를 늘려도 이득이 크게 줄고 Worker마다 Wasm 메모리를 따로 쓰므로 기본 상한을 4로 둡니다.
+ * HEIC 12장 선택 후 첫 화면 12장 로드 완료 시간과 메모리 최고값 측정 결과(동시 변환 6장 고정)
+ * 1개 16.32초 → 2개 8.35초 → 3개 5.89초 → 4개 6.15초 → 5개 6.27초 → 6개 4.39초.
+ * 3개 이후로는 4·5개가 오히려 느려지고 Worker마다 Wasm 메모리가 늘어나므로 기본 상한을 3으로 둡니다.
  */
-export const HEIC_WORKER_DEFAULT_MAX = 4;
+export const HEIC_WORKER_DEFAULT_MAX = 3;
 
 /** 측정용으로 개수를 고정하려면 개발자 도구에서 localStorage에 숫자를 넣고 새로고침합니다. */
 export const HEIC_WORKER_COUNT_OVERRIDE_KEY = 'heic-worker-count';
