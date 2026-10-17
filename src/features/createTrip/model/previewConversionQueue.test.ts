@@ -36,7 +36,7 @@ describe('previewConversionQueue', () => {
     expect(started).toEqual([0, 3, 1, 2]);
   });
 
-  it.each([1, 2, 4, Infinity])(
+  it.each([1, 2, 3, 4, 6, Infinity])(
     '동시 실행 수 %s를 넘지 않고 모든 작업을 처리한다',
     async (limit) => {
       const queue = createPreviewConversionQueue(limit);
