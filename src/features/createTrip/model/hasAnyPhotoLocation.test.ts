@@ -5,7 +5,7 @@ import { hasAnyPhotoLocation } from './hasAnyPhotoLocation';
 const gps = vi.hoisted(() =>
   vi.fn<(file: File) => Promise<{ latitude: number; longitude: number } | undefined>>(),
 );
-vi.mock('exifr', () => ({ gps }));
+vi.mock('exifr', () => ({ gps, fileParsers: new Map() }));
 const files = [new File(['a'], 'a.jpg'), new File(['b'], 'b.heic')];
 
 describe('hasAnyPhotoLocation', () => {

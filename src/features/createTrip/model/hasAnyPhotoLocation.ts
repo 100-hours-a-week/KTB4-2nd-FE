@@ -1,5 +1,8 @@
+import { registerHeicParser } from './registerHeicParser';
+
 export async function hasAnyPhotoLocation(files: File[]): Promise<boolean> {
-  const { gps } = await import('exifr');
+  const { gps, fileParsers } = await import('exifr');
+  registerHeicParser(fileParsers);
   let readFailed = false;
 
   for (const file of files) {

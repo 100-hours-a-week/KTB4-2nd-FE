@@ -2,10 +2,14 @@ import { createPreviewConversionQueue } from './previewConversionQueue';
 import { createThumbnailBlob } from './createThumbnailBlob';
 import { prepareHeicPreviewDecoder, resetHeicPreviewDecoder } from './heicPreviewDecoder';
 import { HeicPreviewResourceError } from './heicPreviewError';
+import { getHeicWorkerCount } from './heicWorkerCount';
 
-export const HEIC_PREVIEW_CONCURRENCY = 2;
+let heicPreviewQueue: ReturnType<typeof createPreviewConversionQueue> | null = null;
 
-const heicPreviewQueue = createPreviewConversionQueue(HEIC_PREVIEW_CONCURRENCY);
+function getHeicPreviewQueue() {
+  heicPreviewQueue ??= createPreviewConversionQueue(getHeicWorkerCount());
+  return heicPreviewQueue;
+}
 
 function isHeicFile(file: File) {
   const mimeType = file.type.toLowerCase();
@@ -29,7 +33,7 @@ export async function createPreviewBlob(
   await prepareHeicPreviewDecoder();
   signal.throwIfAborted();
 
-  return heicPreviewQueue.enqueue(
+  return getHeicPreviewQueue().enqueue(
     async () => {
       const decode = await prepareHeicPreviewDecoder();
       signal.throwIfAborted();
