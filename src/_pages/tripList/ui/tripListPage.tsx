@@ -57,7 +57,7 @@ export function TripListPage({ onTripSelect }: TripListPageProps) {
   }
 
   return (
-    <main className="text-brand bg-app-background relative mx-auto min-h-dvh w-full max-w-[430px] px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(100px+env(safe-area-inset-bottom))]">
+    <main className="text-brand bg-app-background relative mx-auto min-h-full w-full max-w-[430px] px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(100px+env(safe-area-inset-bottom))]">
       <header>
         <h1 className="text-[26px] leading-tight font-extrabold tracking-[-0.03em]">
           나의 여행 목록

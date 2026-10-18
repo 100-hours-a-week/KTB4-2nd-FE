@@ -83,7 +83,7 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
   }
 
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto min-h-dvh w-full max-w-[430px] px-4 pt-[max(20px,env(safe-area-inset-top))] pb-8">
+    <main className="page-enter text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-4 pb-8">
       <PhotoListHeader
         placeName={placeName}
         selectionMode={selectionMode}
@@ -289,7 +289,7 @@ function PhotoListHeader({
   onToggleAll: () => void;
 }) {
   return (
-    <header className="grid min-h-12 grid-cols-[64px_1fr_64px] items-center">
+    <header className="bg-surface/95 sticky top-0 z-20 -mx-4 grid min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] grid-cols-[64px_1fr_64px] items-center px-4 pt-[max(20px,env(safe-area-inset-top))] backdrop-blur-sm">
       {selectionMode ? (
         <button
           type="button"
