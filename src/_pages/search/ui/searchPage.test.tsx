@@ -71,7 +71,6 @@ describe('SearchPage', () => {
 
     expect(await screen.findByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '사진 1건' })).toHaveAttribute('aria-selected', 'true');
-    // 같은 장소 폴더 결과의 이름을 사진 목록 화면으로 함께 넘긴다.
     expect(screen.getByRole('link', { name: '1번째 사진이 있는 폴더 보기' })).toHaveAttribute(
       'href',
       `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
