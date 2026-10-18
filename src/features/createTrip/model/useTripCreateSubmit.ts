@@ -20,6 +20,7 @@ import {
   type TripProcessingStatusResponse,
 } from '../api/getTripProcessingStatus';
 import { getTripRegion } from './getTripRegion';
+import { addPendingTripProcessing, removePendingTripProcessing } from './pendingTripProcessing';
 import type { TripCreateFormValues } from './types';
 
 function clampRatio(ratio: number) {
@@ -81,6 +82,7 @@ export function useTripCreateSubmit() {
 
     awaitingProcessingRef.current = false;
     setAwaitingProcessing(false);
+    removePendingTripProcessing(status.tripId);
     setProcessingResult(status);
   }, []);
 
@@ -191,6 +193,7 @@ export function useTripCreateSubmit() {
           if (isTripProcessingRunning(lastStatus.status)) {
             awaitingProcessingRef.current = true;
             setAwaitingProcessing(true);
+            addPendingTripProcessing({ tripId: currentTripId, kind: 'create' });
           } else {
             finishProcessing(lastStatus);
           }
@@ -213,7 +216,6 @@ export function useTripCreateSubmit() {
   const processingStatus = useQuery({
     ...processingQuery,
     queryFn: async () => {
-      // 마지막 Batch 응답 이후에 시작한 조회만 최종 결과로 사용한다.
       const canFinalize = awaitingProcessingRef.current;
       const generation = generationAnalyticsPoint.current;
       const status = await getTripProcessingStatus(tripId ?? 0);
@@ -241,6 +243,7 @@ export function useTripCreateSubmit() {
 
       const csrfToken = await fetchCsrfToken();
       await cancelTripProcessing(currentTripId, csrfToken);
+      removePendingTripProcessing(currentTripId);
     },
     onSuccess: () => {
       createdTripId.current = null;
