@@ -111,4 +111,30 @@ describe('SearchPage', () => {
       '지금은 검색을 사용할 수 없어요. 잠시 후 다시 시도해주세요.',
     );
   });
+
+  it('검색어가 바뀌어도 입력창은 하나만 두고 값만 새 검색어로 맞춘다', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="" />
+      </QueryClientProvider>,
+    );
+
+    await user.type(screen.getByRole('searchbox', { name: '검색어' }), '판교에서 뭐먹었지?');
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="판교에서 뭐먹었지" />
+      </QueryClientProvider>,
+    );
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="판교에서 친구랑 찍은 사진 보여줘" />
+      </QueryClientProvider>,
+    );
+
+    const inputs = screen.getAllByRole('searchbox', { name: '검색어' });
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]).toHaveValue('판교에서 친구랑 찍은 사진 보여줘');
+  });
 });

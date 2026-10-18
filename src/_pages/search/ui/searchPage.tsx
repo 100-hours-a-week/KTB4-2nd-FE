@@ -68,8 +68,7 @@ export function SearchPage({ query }: SearchPageProps) {
         </p>
       </header>
 
-      {/* 뒤로가기로 검색어가 바뀌면 입력창도 그 검색어로 다시 맞춥니다. */}
-      <SearchForm key={query} initialValue={query} onSearch={search} />
+      <SearchForm query={query} onSearch={search} />
 
       {viewState === 'idle' ? (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -90,17 +89,20 @@ export function SearchPage({ query }: SearchPageProps) {
   );
 }
 
-function SearchForm({
-  initialValue,
-  onSearch,
-}: {
-  initialValue: string;
-  onSearch: (query: string) => void;
-}) {
+function SearchForm({ query, onSearch }: { query: string; onSearch: (query: string) => void }) {
   const inputId = useId();
   const messageId = `${inputId}-message`;
-  const [value, setValue] = useState(initialValue);
+  const [value, setValue] = useState(query);
+  const [syncedQuery, setSyncedQuery] = useState(query);
   const [showLengthError, setShowLengthError] = useState(false);
+
+  // 검색하거나 뒤로가기로 검색어가 바뀌면 입력값만 맞춥니다.
+  // key로 폼을 새로 만들면 한글 입력 중 제출한 입력창이 화면에서 지워지지 않고 쌓이는 문제가 있었습니다.
+  if (query !== syncedQuery) {
+    setSyncedQuery(query);
+    setValue(query);
+    setShowLengthError(false);
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
