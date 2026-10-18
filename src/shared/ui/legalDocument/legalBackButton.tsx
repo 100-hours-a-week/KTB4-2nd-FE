@@ -16,11 +16,5 @@ export function LegalBackButton() {
     router.push('/');
   };
 
-  return (
-    <PageHeader
-      backLabel="이전 페이지로 이동"
-      onBack={handleBack}
-      className="-mx-2 h-16"
-    />
-  );
+  return <PageHeader backLabel="이전 페이지로 이동" onBack={handleBack} className="-mx-2 h-16" />;
 }

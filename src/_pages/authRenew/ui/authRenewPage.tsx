@@ -26,7 +26,6 @@ export function AuthRenewPage({ returnTo = '/' }: { returnTo?: string }) {
       }
     }
 
-    // 서버·네트워크 오류일 때는 세션을 유지하고 사용자가 다시 시도할 수 있게 합니다.
     setFailed(true);
   }, [returnTo]);
 
@@ -37,7 +36,7 @@ export function AuthRenewPage({ returnTo = '/' }: { returnTo?: string }) {
   }, [renew]);
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-5 px-6 text-center">
+    <main className="flex min-h-full flex-col items-center justify-center gap-5 px-6 text-center">
       <h1 className="text-brand text-2xl font-bold">
         {failed ? '로그인 상태를 확인하지 못했어요' : '로그인 상태를 확인하고 있어요'}
       </h1>

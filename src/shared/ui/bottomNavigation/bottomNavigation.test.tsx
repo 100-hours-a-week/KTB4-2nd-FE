@@ -30,9 +30,7 @@ describe('BottomNavigation', () => {
       </div>,
     );
 
-    expect(screen.getByRole('navigation', { name: '하단 메뉴' }).parentElement).toBe(
-      document.body,
-    );
+    expect(screen.getByRole('navigation', { name: '하단 메뉴' }).parentElement).toBe(document.body);
   });
 
   it('비활성 탭은 선택할 수 없다', async () => {

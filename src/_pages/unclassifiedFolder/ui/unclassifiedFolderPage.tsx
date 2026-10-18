@@ -75,8 +75,13 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
   }
 
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto min-h-dvh w-full max-w-[430px] px-5 pt-[max(20px,env(safe-area-inset-top))] pb-10">
-      <PageHeader title="미분류 폴더" onBack={handleBack} backLabel="여행 상세로 돌아가기" />
+    <main className="page-enter text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-5 pb-10">
+      <PageHeader
+        className="-mx-5 min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] px-5 pt-[max(20px,env(safe-area-inset-top))]"
+        title="미분류 폴더"
+        onBack={handleBack}
+        backLabel="여행 상세로 돌아가기"
+      />
 
       <section aria-label="여행 정보" className="mt-2">
         <h2 className="truncate text-lg font-extrabold">{tripName}</h2>
