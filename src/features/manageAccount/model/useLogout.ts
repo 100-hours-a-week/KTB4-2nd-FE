@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { clearAllStoryCreateDrafts } from '@/features/createStory';
+import { clearPendingTripProcessing } from '@/features/createTrip';
 import { clearTripCreateDraft } from '@/features/createTrip/model/tripCreateDraft';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { clearIdentity } from '@/shared/lib/analytics';
@@ -21,6 +22,7 @@ export function useLogout() {
     },
     onSuccess: () => {
       clearAllStoryCreateDrafts();
+      clearPendingTripProcessing();
       clearTripCreateDraft();
       clearIdentity();
       queryClient.clear();
