@@ -107,7 +107,6 @@ export function useTripEditSubmit(
 
       setUploadRatio(1);
       setAwaitingProcessing(true);
-      // 수정 화면을 나가도 다른 화면에서 사진 정리 완료를 알릴 수 있도록 기록합니다.
       addPendingTripProcessing({ tripId, kind: 'edit' });
       return { processing: true };
     },

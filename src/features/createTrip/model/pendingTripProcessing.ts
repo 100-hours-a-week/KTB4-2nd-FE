@@ -45,7 +45,6 @@ function writePendingTrips(trips: PendingTrip[]) {
     if (trips.length === 0) window.localStorage.removeItem(PENDING_TRIP_PROCESSING_KEY);
     else window.localStorage.setItem(PENDING_TRIP_PROCESSING_KEY, JSON.stringify(trips));
   } catch {
-    // 저장소 접근이 막히면 백그라운드 알림만 생략되고 화면 안의 진행 표시는 그대로 동작합니다.
   }
   notifyChange();
 }
