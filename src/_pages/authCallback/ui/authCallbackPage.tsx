@@ -64,7 +64,7 @@ export function AuthCallbackPage({
   }, [errorCode, loginTicket]);
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-5 px-6 text-center">
+    <main className="flex min-h-full flex-col items-center justify-center gap-5 px-6 text-center">
       <h1 className="text-brand text-2xl font-bold">
         {failure ? '로그인하지 못했어요' : '로그인하고 있어요'}
       </h1>

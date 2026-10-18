@@ -15,6 +15,7 @@ import {
 import { updateTrip, type UpdateTripRequest } from '../api/updateTrip';
 import { uploadAdditionalAttachmentBatch } from '../api/uploadAdditionalAttachments';
 import { splitIntoUploadBatches } from '../api/uploadInitialAttachments';
+import { addPendingTripProcessing, removePendingTripProcessing } from './pendingTripProcessing';
 import type { TripCreateFormValues } from './types';
 
 export type TripEditSubmitInput = {
@@ -58,11 +59,6 @@ function isSameFiles(left: File[], right: File[]) {
   return left.length === right.length && left.every((file, index) => file === right[index]);
 }
 
-/**
- * 정보 수정(PATCH) → 사진 삭제 → 사진 추가 순서로 저장합니다.
- * 백엔드는 사진 추가가 끝나기 전까지 정보 수정을 막으므로 사진 추가를 마지막에 보냅니다.
- * 중간에 실패하면 이미 지운 사진과 이미 올린 Batch는 다시 보내지 않고 이어서 시도합니다.
- */
 export function useTripEditSubmit(
   initial: TripEditData,
   onFinished: (status: TripProcessingStatusResponse | null) => void,
@@ -111,6 +107,7 @@ export function useTripEditSubmit(
 
       setUploadRatio(1);
       setAwaitingProcessing(true);
+      addPendingTripProcessing({ tripId, kind: 'edit' });
       return { processing: true };
     },
   });
@@ -122,6 +119,7 @@ export function useTripEditSubmit(
       if (FINISHED_STATUSES.has(status.status)) {
         setAwaitingProcessing(false);
         addition.current = null;
+        removePendingTripProcessing(tripId);
         onFinished(status);
       }
       return status;
