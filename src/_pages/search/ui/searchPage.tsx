@@ -39,12 +39,6 @@ const navigationItems: BottomNavigationItem[] = [
   { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 
-const EXAMPLE_QUERIES = [
-  '제주도에서 빨간 옷 입었을 때가 언제야',
-  '바다 보면서 저녁 먹은 날',
-  '친구들이랑 단체 사진 찍은 곳',
-];
-
 type SearchTab = 'folder' | 'photo';
 
 export type SearchPageProps = {
@@ -70,11 +64,7 @@ export function SearchPage({ query }: SearchPageProps) {
 
       <SearchForm query={query} onSearch={search} />
 
-      {viewState === 'idle' ? (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <SearchExamples onSelect={search} />
-        </div>
-      ) : viewState === 'ready' && result ? (
+      {viewState === 'idle' ? null : viewState === 'ready' && result ? (
         <SearchResults key={result.query} result={result} />
       ) : (
         <SearchSkeleton
@@ -157,35 +147,6 @@ function SearchForm({ query, onSearch }: { query: string; onSearch: (query: stri
         </p>
       )}
     </form>
-  );
-}
-
-function SearchExamples({ onSelect }: { onSelect: (query: string) => void }) {
-  return (
-    <section aria-labelledby="search-examples-title" className="mt-7">
-      <h2 id="search-examples-title" className="text-muted px-1 text-xs font-bold">
-        이렇게 검색해보세요
-      </h2>
-      <ul className="mt-2.5 space-y-2">
-        {EXAMPLE_QUERIES.map((example) => (
-          <li key={example}>
-            <button
-              type="button"
-              onClick={() => onSelect(example)}
-              className="border-border-subtle bg-surface hover:bg-surface-subtle focus-visible:outline-brand flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-[14px] border px-4 text-left text-[13px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              <span className="text-muted shrink-0">
-                <SearchIcon strokeWidth="2" strokeLinecap="round" size={15} />
-              </span>
-              <span className="min-w-0 flex-1 truncate">{example}</span>
-              <span className="text-muted shrink-0">
-                <ChevronRightIcon strokeWidth="2" size="16" />
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 
@@ -376,8 +337,6 @@ function FolderThumbnail({ folder, colorIndex }: { folder: SearchFolder; colorIn
 
 function PhotoResults({ photos, folders }: { photos: SearchPhoto[]; folders: SearchFolder[] }) {
   if (photos.length === 0) return <EmptyTabResult message="일치하는 사진이 없어요." />;
-
-  // 사진 응답에는 이름이 없어서, 같은 장소 폴더 결과가 있으면 그 이름을 사진 목록 화면에 넘깁니다.
   const folderByPlaceId = new Map(folders.map((folder) => [folder.tripPlaceId, folder]));
 
   return (
@@ -514,7 +473,6 @@ function SearchSkeleton({
   );
 }
 
-/** 장소 폴더 사진 목록으로 이동합니다. 이름을 알면 사진 목록 화면 제목에 쓰도록 함께 넘깁니다. */
 function placePhotosHref(
   folder: Pick<SearchFolder, 'tripId' | 'tripPlaceId'> & Partial<SearchFolder>,
 ) {

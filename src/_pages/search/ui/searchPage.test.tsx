@@ -46,11 +46,10 @@ describe('SearchPage', () => {
     vi.mocked(searchTrips).mockResolvedValue(result);
   });
 
-  it('검색어가 없으면 예시를 보여주고 문장부호를 정리해 검색한다', async () => {
+  it('검색어가 없으면 검색하지 않고, 입력한 문장부호를 정리해 검색한다', async () => {
     const user = userEvent.setup();
     renderPage('');
 
-    expect(screen.getByText('이렇게 검색해보세요')).toBeInTheDocument();
     expect(searchTrips).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('searchbox', { name: '검색어' }), '빨간 옷 입은 날?{Enter}');
