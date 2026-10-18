@@ -127,9 +127,6 @@ function SearchForm({ query, onSearch }: { query: string; onSearch: (query: stri
       <div
         className={`bg-surface flex min-h-[52px] items-center gap-2.5 rounded-[16px] border px-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-colors focus-within:border-brand ${showLengthError ? 'border-danger' : 'border-border-subtle'}`}
       >
-        <span className="text-muted shrink-0">
-          <SearchIcon strokeWidth="2" strokeLinecap="round" size={19} />
-        </span>
         <input
           id={inputId}
           type="search"
