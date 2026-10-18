@@ -46,11 +46,10 @@ describe('SearchPage', () => {
     vi.mocked(searchTrips).mockResolvedValue(result);
   });
 
-  it('검색어가 없으면 예시를 보여주고 문장부호를 정리해 검색한다', async () => {
+  it('검색어가 없으면 검색하지 않고, 입력한 문장부호를 정리해 검색한다', async () => {
     const user = userEvent.setup();
     renderPage('');
 
-    expect(screen.getByText('이렇게 검색해보세요')).toBeInTheDocument();
     expect(searchTrips).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('searchbox', { name: '검색어' }), '빨간 옷 입은 날?{Enter}');
@@ -72,7 +71,6 @@ describe('SearchPage', () => {
 
     expect(await screen.findByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '사진 1건' })).toHaveAttribute('aria-selected', 'true');
-    // 같은 장소 폴더 결과의 이름을 사진 목록 화면으로 함께 넘긴다.
     expect(screen.getByRole('link', { name: '1번째 사진이 있는 폴더 보기' })).toHaveAttribute(
       'href',
       `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
@@ -110,5 +108,31 @@ describe('SearchPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '지금은 검색을 사용할 수 없어요. 잠시 후 다시 시도해주세요.',
     );
+  });
+
+  it('검색어가 바뀌어도 입력창은 하나만 두고 값만 새 검색어로 맞춘다', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="" />
+      </QueryClientProvider>,
+    );
+
+    await user.type(screen.getByRole('searchbox', { name: '검색어' }), '판교에서 뭐먹었지?');
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="판교에서 뭐먹었지" />
+      </QueryClientProvider>,
+    );
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="판교에서 친구랑 찍은 사진 보여줘" />
+      </QueryClientProvider>,
+    );
+
+    const inputs = screen.getAllByRole('searchbox', { name: '검색어' });
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]).toHaveValue('판교에서 친구랑 찍은 사진 보여줘');
   });
 });

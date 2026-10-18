@@ -12,11 +12,11 @@ import {
 import type { TripDetail } from '@/features/tripDetail';
 import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/pageHeader';
-import { StoryCancelDialog } from './storyCancelDialog';
-import { StoryCreateIntro } from './storyCreateIntro';
-import { StoryFolderGrid } from './storyFolderGrid';
-import { StoryGenerationView } from './storyGenerationView';
-import { StoryMoodSelector } from './storyMoodSelector';
+import { StoryCancelDialog } from './components/storyCancelDialog';
+import { StoryCreateIntro } from './components/storyCreateIntro';
+import { StoryFolderGrid } from './components/storyFolderGrid';
+import { StoryGenerationView } from './components/storyGenerationView';
+import { StoryMoodSelector } from './components/storyMoodSelector';
 
 const subscribeNothing = () => () => {};
 
