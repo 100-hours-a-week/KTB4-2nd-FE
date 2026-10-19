@@ -85,6 +85,36 @@ describe('getTrips', () => {
     expect(trips[0].processingStatus).toBe('processing');
   });
 
+  it('수정 중인 여행은 updating, 실패·취소된 여행은 ready 상태로 바꾼다', async () => {
+    const item = {
+      tripName: '수정 중인 여행',
+      startDate: '2026-09-01',
+      endDate: '2026-09-02',
+      placeSummary: '서울',
+      attachmentCount: 4,
+      isFavorite: false,
+      thumbnailUrl: null,
+    };
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        message: 'TRIP_LIST_FOUND',
+        data: {
+          items: [
+            { ...item, tripId: 1, status: 'UPDATING' },
+            { ...item, tripId: 2, status: 'FAILED' },
+            { ...item, tripId: 3, status: 'CANCELED' },
+          ],
+          hasNext: false,
+          nextCursor: null,
+        },
+      },
+    });
+
+    const { trips } = await getTrips({ sort: 'LATEST', favorite: false });
+
+    expect(trips.map((trip) => trip.processingStatus)).toEqual(['updating', 'ready', 'ready']);
+  });
+
   it('커서와 즐겨찾기 필터를 문자열 파라미터로 보낸다', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
       data: { message: 'TRIP_LIST_FOUND', data: { items: [], hasNext: false, nextCursor: null } },

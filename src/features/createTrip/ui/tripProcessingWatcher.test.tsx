@@ -111,4 +111,12 @@ describe('TripProcessingWatcher', () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1));
     expect(getTripProcessingStatus).toHaveBeenCalledWith(11);
   });
+  it('진행률 화면에 있으면 그 화면이 결과를 처리하므로 확인하지 않는다', async () => {
+    addPendingTripProcessing({ tripId: 7, kind: 'create' });
+    pathname.current = '/trips/7/processing';
+    renderWatcher();
+
+    await act(async () => {});
+    expect(getTripProcessingStatus).not.toHaveBeenCalled();
+  });
 });

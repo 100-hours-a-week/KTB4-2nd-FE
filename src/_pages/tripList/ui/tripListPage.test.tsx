@@ -95,6 +95,27 @@ describe('TripListPage', () => {
     expect(await screen.findByText('여담이 사진을 정리하고 있어요')).toBeInTheDocument();
     expect(screen.getByRole('status', { name: '사진 정리 중' })).toBeInTheDocument();
     expect(screen.queryByText(/사진 0장/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '정리 중인 여행 여행 상세 보기' })).toHaveAttribute(
+      'href',
+      '/trips/9/processing',
+    );
+  });
+
+  it('수정 중인 여행은 수정 중 안내를 보여주고 상세로 들어가지 못하게 막는다', async () => {
+    vi.mocked(getTrips).mockResolvedValue(
+      page([trip({ id: 5, name: '수정 중인 여행', processingStatus: 'updating' })]),
+    );
+    renderTripListPage();
+
+    expect(await screen.findByText('여담이 여행을 수정하고 있어요')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '여행 수정 중' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: '수정 중인 여행 여행 상세 보기' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '수정 중인 여행 여행 수정 중' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('즐겨찾기만 보기를 켜면 favorite=true로 요청하고 즐겨찾기한 여행만 표시한다', async () => {
