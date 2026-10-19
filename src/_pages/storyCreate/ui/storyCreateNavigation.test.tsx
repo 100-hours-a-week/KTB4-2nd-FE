@@ -28,6 +28,9 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
+vi.mock('@/features/aiStatus/api/getAiStatus', () => ({
+  getAiStatus: vi.fn().mockResolvedValue({ running: true, ready: true }),
+}));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn().mockResolvedValue({ folders: [], hasNext: false, nextCursor: null }),
 }));

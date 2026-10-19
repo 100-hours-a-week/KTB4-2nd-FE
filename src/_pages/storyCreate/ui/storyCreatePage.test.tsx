@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getAiStatus } from '@/features/aiStatus/api/getAiStatus';
 import { cancelStoryGeneration } from '@/features/createStory/api/cancelStoryGeneration';
 import { createStoryGeneration } from '@/features/createStory/api/createStoryGeneration';
 import { getStoryGenerationStatus } from '@/features/createStory/api/getStoryGenerationStatus';
@@ -14,6 +15,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace }) }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
+vi.mock('@/features/aiStatus/api/getAiStatus', () => ({ getAiStatus: vi.fn() }));
 vi.mock('@/features/createStory/api/getStorySourceFolders', () => ({
   getStorySourceFolders: vi.fn(),
 }));
@@ -85,6 +87,7 @@ beforeEach(() => {
     error: null,
   });
   vi.mocked(cancelStoryGeneration).mockResolvedValue(undefined);
+  vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
 });
 
 describe('StoryCreatePage', () => {
@@ -153,6 +156,33 @@ describe('StoryCreatePage', () => {
     expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
       generationId: 31,
     });
+  });
+
+  it('AI 서버가 켜지는 중이면 생성 요청 대신 준비 중 안내를 보여준다', async () => {
+    vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: false });
+    const { user } = setup();
+    await chooseMoodAndFolders(user, [0]);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'AI를 준비하고 있어요' });
+    expect(dialog).toHaveTextContent('보통 3분 정도 걸려요.');
+    expect(createStoryGeneration).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: '확인' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '생성' })).toBeEnabled();
+  });
+
+  it('AI 서버가 꺼져 있으면 사용할 수 없다고 안내한다', async () => {
+    vi.mocked(getAiStatus).mockResolvedValue({ running: false, ready: false });
+    const { user } = setup();
+    await chooseMoodAndFolders(user, [0]);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+
+    expect(
+      await screen.findByRole('dialog', { name: '지금은 AI 이용 시간이 아니에요' }),
+    ).toBeInTheDocument();
+    expect(createStoryGeneration).not.toHaveBeenCalled();
   });
 
   it('새로고침해도 저장된 생성 작업의 진행 상태를 이어서 보여준다', async () => {

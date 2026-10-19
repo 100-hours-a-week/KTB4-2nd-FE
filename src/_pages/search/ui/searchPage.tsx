@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
+import { AiUnavailableDialog, useAiReadyGuard } from '@/features/aiStatus';
 import { useSearch } from '@/features/search';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 
@@ -30,9 +31,10 @@ export type SearchPageProps = {
 export function SearchPage({ query }: SearchPageProps) {
   const router = useRouter();
   const { result, viewState, errorMessage, refetch } = useSearch(query);
+  const aiGuard = useAiReadyGuard();
 
   function search(value: string) {
-    router.push(`/search?q=${encodeURIComponent(value)}`);
+    void aiGuard.runWhenAiReady(() => router.push(`/search?q=${encodeURIComponent(value)}`));
   }
 
   return (
@@ -46,7 +48,9 @@ export function SearchPage({ query }: SearchPageProps) {
 
       <SearchForm query={query} onSearch={search} />
 
-      {viewState === 'idle' ? null : viewState === 'ready' && result ? (
+      {aiGuard.isChecking ? (
+        <SearchSkeleton showError={false} errorMessage="" onRetry={() => undefined} />
+      ) : viewState === 'idle' ? null : viewState === 'ready' && result ? (
         <SearchResults key={result.query} result={result} />
       ) : (
         <SearchSkeleton
@@ -57,6 +61,10 @@ export function SearchPage({ query }: SearchPageProps) {
       )}
 
       <BottomNavigation items={navigationItems} activeId="search" />
+      <AiUnavailableDialog
+        reason={aiGuard.unavailableReason}
+        onClose={aiGuard.closeUnavailableDialog}
+      />
     </main>
   );
 }
