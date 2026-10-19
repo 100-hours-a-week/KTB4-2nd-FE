@@ -38,7 +38,7 @@ export function TripProcessingProgress({ tripId }: TripProcessingProgressProps) 
     removePendingTripProcessing(tripId);
 
     if (data?.status === 'COMPLETED') {
-      toast.success('여행을 만들었어요. 장소별로 사진을 정리했어요.', { duration: 5000 });
+      toast.success('여행을 만들었어요. 장소별로 사진을 정리했어요.');
       void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
       void queryClient.invalidateQueries({ queryKey: mainMapQueries.markers().queryKey });
       void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
@@ -48,7 +48,7 @@ export function TripProcessingProgress({ tripId }: TripProcessingProgressProps) 
     }
 
     if (data?.status === 'FAILED') {
-      toast.error('사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.', { duration: 5000 });
+      toast.error('사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
     void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
     router.replace('/trips');

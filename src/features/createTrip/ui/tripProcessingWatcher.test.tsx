@@ -57,9 +57,7 @@ describe('TripProcessingWatcher', () => {
     renderWatcher();
 
     await waitFor(() =>
-      expect(toast.success).toHaveBeenCalledWith('여행을 만들었어요. 장소별로 사진을 정리했어요.', {
-        duration: 5000,
-      }),
+      expect(toast.success).toHaveBeenCalledWith('여행을 만들었어요. 장소별로 사진을 정리했어요.'),
     );
     expect(getPendingTripProcessingSnapshot()).toBe('');
     expect(refresh).toHaveBeenCalled();
@@ -84,7 +82,6 @@ describe('TripProcessingWatcher', () => {
     await waitFor(() =>
       expect(toast.error).toHaveBeenCalledWith(
         '추가한 사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.',
-        { duration: 5000 },
       ),
     );
     expect(getPendingTripProcessingSnapshot()).toBe('');
