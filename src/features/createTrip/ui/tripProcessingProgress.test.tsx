@@ -45,14 +45,15 @@ describe('TripProcessingProgress', () => {
     window.localStorage.clear();
   });
 
-  it('정리 중인 여행의 진행률을 보여주고, 다른 작업 이어하기로 목록에 돌아간다', async () => {
+  it('정리 중인 여행의 진행 단계를 보여주고, 다른 작업 이어하기로 목록에 돌아간다', async () => {
     vi.mocked(getTripProcessingStatus).mockResolvedValue(
       status('PROCESSING', { done: 5, total: 10 }),
     );
     renderProgress();
 
-    expect(await screen.findByText('65%')).toBeInTheDocument();
-    expect(screen.getByText('사진 5/10장을 분석하고 있어요')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('status', { name: '사진 5/10장을 살펴봤어요' }),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: '다른 작업 이어하기' }));
     expect(replace).toHaveBeenCalledWith('/trips');
