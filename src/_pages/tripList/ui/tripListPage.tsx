@@ -15,6 +15,7 @@ import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomN
 import { AlertCircleIcon, ImageIcon, MapIcon, StarIcon } from '@/shared/ui/icons';
 import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { toast } from '@/shared/ui/toast';
 
 export type TripListPageProps = {
   onTripSelect?: (tripId: number) => void;
@@ -194,9 +195,20 @@ function TripCard({
   onFavoriteChange: (tripId: number) => void;
   onTripSelect?: (tripId: number) => void;
 }) {
+  const updating = trip.processingStatus === 'updating';
+
   return (
     <article className="border-border-subtle bg-surface relative flex min-h-[106px] overflow-hidden rounded-[18px] border p-3 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-transform active:scale-[0.99]">
-      {onTripSelect ? (
+      {updating ? (
+        // 수정이 끝나기 전에는 사진·장소가 바뀌는 중이라 상세로 들어가지 않게 막습니다.
+        <button
+          type="button"
+          aria-label={`${trip.name} 여행 수정 중`}
+          aria-disabled="true"
+          onClick={() => toast.info('여행을 수정하고 있어요. 끝나면 다시 열어주세요.')}
+          className="absolute inset-0 cursor-not-allowed rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        />
+      ) : onTripSelect ? (
         <button
           type="button"
           aria-label={`${trip.name} 여행 상세 보기`}
@@ -205,7 +217,11 @@ function TripCard({
         />
       ) : (
         <Link
-          href={`/trips/${trip.id}`}
+          href={
+            trip.processingStatus === 'processing'
+              ? `/trips/${trip.id}/processing`
+              : `/trips/${trip.id}`
+          }
           aria-label={`${trip.name} 여행 상세 보기`}
           className="absolute inset-0 cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         />
@@ -223,6 +239,11 @@ function TripCard({
           <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-[#3973b9]">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-[#3973b9]" />
             여담이 사진을 정리하고 있어요
+          </p>
+        ) : updating ? (
+          <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-[#3973b9]">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-[#3973b9]" />
+            여담이 여행을 수정하고 있어요
           </p>
         ) : (
           <p className="text-muted mt-1 flex items-center gap-1 text-[11px]">
@@ -251,6 +272,25 @@ function TripCard({
 }
 
 function TripThumbnail({ trip, colorIndex }: { trip: TripListItem; colorIndex: number }) {
+  if (trip.processingStatus === 'updating') {
+    return (
+      <div
+        className="relative grid h-[82px] w-[82px] shrink-0 place-items-center overflow-hidden rounded-[13px] bg-slate-100 bg-cover bg-center"
+        style={
+          trip.thumbnailUrl
+            ? { backgroundImage: `url(${JSON.stringify(trip.thumbnailUrl)})` }
+            : undefined
+        }
+      >
+        {trip.thumbnailUrl && <span aria-hidden="true" className="absolute inset-0 bg-white/60" />}
+        <span
+          aria-label="여행 수정 중"
+          role="status"
+          className="relative size-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand"
+        />
+      </div>
+    );
+  }
   if (trip.thumbnailUrl) {
     return (
       <div

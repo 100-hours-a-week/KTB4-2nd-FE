@@ -3,6 +3,8 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 import { getTrips } from '@/features/tripList/api/getTrips';
 import type { TripListFilter } from '@/features/tripList/model/types';
 
+const PROCESSING_POLLING_MS = 5_000;
+
 export const tripListQueries = {
   allKeys: () => ['tripList'] as const,
   listKeys: (filter: TripListFilter) => [...tripListQueries.allKeys(), 'list', filter] as const,
@@ -12,5 +14,12 @@ export const tripListQueries = {
       queryFn: ({ pageParam }) => getTrips({ ...filter, cursor: pageParam }),
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
+      // 정리·수정 중인 여행이 있으면 끝났는지 다시 확인해 카드 상태를 풀어줍니다.
+      refetchInterval: (query) =>
+        query.state.data?.pages.some((page) =>
+          page.trips.some((trip) => trip.processingStatus !== 'ready'),
+        )
+          ? PROCESSING_POLLING_MS
+          : false,
     }),
 };

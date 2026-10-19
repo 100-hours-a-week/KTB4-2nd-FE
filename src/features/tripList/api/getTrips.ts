@@ -3,8 +3,8 @@ import { apiClient } from '@/shared/api/browser';
 
 import type { TripListFilter, TripListItem } from '../model/types';
 
-/** 목록에는 PROCESSING과 COMPLETED만 내려옵니다. */
-type TripListItemStatus = 'PROCESSING' | 'COMPLETED';
+/** UPDATING은 정리를 마친 여행에 사진을 추가·삭제하는 수정이 진행 중일 때 내려옵니다. */
+type TripListItemStatus = 'PROCESSING' | 'UPDATING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
 
 type TripListItemResponse = {
   tripId: number;
@@ -62,9 +62,15 @@ function toTripListItem(item: TripListItemResponse): TripListItem {
     nights: countNights(item.startDate, item.endDate),
     photoCount: item.attachmentCount,
     favorite: item.isFavorite,
-    processingStatus: item.status === 'PROCESSING' ? 'processing' : 'ready',
+    processingStatus: toProcessingStatus(item.status),
     thumbnailUrl: item.thumbnailUrl,
   };
+}
+
+function toProcessingStatus(status: TripListItemStatus): TripListItem['processingStatus'] {
+  if (status === 'PROCESSING') return 'processing';
+  if (status === 'UPDATING') return 'updating';
+  return 'ready';
 }
 
 function splitPlaceSummary(placeSummary: string) {

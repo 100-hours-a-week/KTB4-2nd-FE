@@ -25,7 +25,8 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
     redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}`)}`);
   }
 
-  if (result.status === 'notReady') redirect('/trips');
+  // 사진을 정리하는 중이면 진행률 화면으로 보냅니다.
+  if (result.status === 'notReady') redirect(`/trips/${tripId}/processing`);
 
   notFound();
 }
