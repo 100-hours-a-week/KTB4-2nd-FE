@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { AxiosError, AxiosHeaders } from 'axios';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getAiStatus } from '@/features/aiStatus/api/getAiStatus';
 import { searchTrips } from '@/features/search/api/searchTrips';
 import type { SearchResult } from '@/features/search/model/types';
 
@@ -12,6 +13,7 @@ import { SearchPage } from './searchPage';
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@/features/search/api/searchTrips', () => ({ searchTrips: vi.fn() }));
+vi.mock('@/features/aiStatus/api/getAiStatus', () => ({ getAiStatus: vi.fn() }));
 
 const result: SearchResult = {
   query: '제주 바다',
@@ -44,6 +46,7 @@ describe('SearchPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(searchTrips).mockResolvedValue(result);
+    vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
   });
 
   it('검색어가 없으면 검색하지 않고, 입력한 문장은 그대로 주소에 남긴다', async () => {
@@ -53,7 +56,9 @@ describe('SearchPage', () => {
     expect(searchTrips).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('searchbox', { name: '검색어' }), '빨간 옷 입은 날?{Enter}');
-    expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('빨간 옷 입은 날?')}`);
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('빨간 옷 입은 날?')}`),
+    );
   });
 
   it('검색 후에도 입력창의 문장부호를 지우지 않고, 그대로 API에 보낸다', async () => {
@@ -145,5 +150,31 @@ describe('SearchPage', () => {
     const inputs = screen.getAllByRole('searchbox', { name: '검색어' });
     expect(inputs).toHaveLength(1);
     expect(inputs[0]).toHaveValue('판교에서 친구랑 찍은 사진 보여줘');
+  });
+
+  it('AI 서버가 준비되지 않았으면 검색하지 않고 안내 모달을 띄운다', async () => {
+    vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: false });
+    const user = userEvent.setup();
+    renderPage('');
+
+    await user.type(screen.getByRole('searchbox', { name: '검색어' }), '제주 바다{Enter}');
+
+    const dialog = await screen.findByRole('dialog', { name: 'AI를 준비하고 있어요' });
+    expect(push).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: '확인' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('AI 상태 확인에 실패하면 막지 않고 그대로 검색한다', async () => {
+    vi.mocked(getAiStatus).mockRejectedValue(new Error('unavailable'));
+    const user = userEvent.setup();
+    renderPage('');
+
+    await user.type(screen.getByRole('searchbox', { name: '검색어' }), '제주 바다{Enter}');
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('제주 바다')}`),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

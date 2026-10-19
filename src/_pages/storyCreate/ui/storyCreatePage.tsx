@@ -2,12 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { AiUnavailableDialog, useAiReadyGuard } from '@/features/aiStatus';
 import {
   clearStoryCreateDraft,
   useStoryCreateForm,
   useStoryCreateFunnel,
   useStoryGeneration,
   type StoryCreateStep,
+  type StoryMood,
 } from '@/features/createStory';
 import type { TripDetail } from '@/features/tripDetail';
 import { Button } from '@/shared/ui/button';
@@ -47,6 +49,7 @@ function StoryCreateContent({
   const form = useStoryCreateForm(trip.id);
   const { getValues } = form;
   const [cancelOpen, setCancelOpen] = useState(false);
+  const aiGuard = useAiReadyGuard();
   const processing = generation.status !== 'idle';
 
   useEffect(() => {
@@ -55,10 +58,13 @@ function StoryCreateContent({
 
   function start() {
     setCancelOpen(false);
-    const values = getValues();
-    if (!values.mood || values.tripPlaceIds.length === 0) return;
+    const { mood, tripPlaceIds } = getValues();
+    if (!mood || tripPlaceIds.length === 0) return;
+    void aiGuard.runWhenAiReady(() => requestGeneration(mood, tripPlaceIds));
+  }
+  function requestGeneration(mood: StoryMood, tripPlaceIds: number[]) {
     generation.start(
-      { mood: values.mood, tripPlaceIds: values.tripPlaceIds },
+      { mood, tripPlaceIds },
       {
         onError: (error) => {
           if (error.kind === 'alreadyExists') {
@@ -127,7 +133,9 @@ function StoryCreateContent({
           )}
           <footer className="bg-surface before:from-surface relative shrink-0 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent">
             <Button
-              disabled={step === 'mood' ? !form.mood : form.selectedIds.length === 0}
+              disabled={
+                step === 'mood' ? !form.mood : form.selectedIds.length === 0 || aiGuard.isChecking
+              }
               onClick={step === 'mood' ? () => goToStep('folder') : start}
               className="w-full gap-2 rounded-[16px] text-sm disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
             >
@@ -144,6 +152,10 @@ function StoryCreateContent({
           </footer>
         </>
       )}
+      <AiUnavailableDialog
+        reason={aiGuard.unavailableReason}
+        onClose={aiGuard.closeUnavailableDialog}
+      />
       <StoryCancelDialog
         open={cancelOpen && generation.status === 'processing'}
         canCancel={generation.canCancel}
