@@ -48,16 +48,14 @@ export function StoryGenerationWatcher() {
         void queryClient.invalidateQueries({
           queryKey: tripStoryQueries.detail(job.tripId).queryKey,
         });
-        toast.success('여행 스토리가 완성됐어요. 여행 상세에서 확인해 보세요.', {
-          duration: 5000,
-        });
+        toast.success('여행 스토리가 완성됐어요. 여행 상세에서 확인해 보세요.');
         router.refresh();
         return;
       }
 
       updateStoryCreateDraft(job.tripId, { generationId: null, startedAt: null });
       if (status === 'FAILED') {
-        toast.error('여행 스토리를 만들지 못했어요. 다시 시도해 주세요.', { duration: 5000 });
+        toast.error('여행 스토리를 만들지 못했어요. 다시 시도해 주세요.');
       }
     });
   }, [jobs, pathname, queryClient, results, router]);

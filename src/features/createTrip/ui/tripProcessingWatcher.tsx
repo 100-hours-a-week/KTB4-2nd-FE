@@ -85,14 +85,14 @@ export function TripProcessingWatcher() {
       if (gone) return;
 
       if (data?.status === 'COMPLETED') {
-        toast.success(COMPLETED_MESSAGE[trip.kind], { duration: 5000 });
+        toast.success(COMPLETED_MESSAGE[trip.kind]);
         void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
         void queryClient.invalidateQueries({ queryKey: mainMapQueries.markers().queryKey });
         void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
         void queryClient.invalidateQueries({ queryKey: photoListQueries.allKeys() });
         router.refresh();
       } else if (data?.status === 'FAILED') {
-        toast.error(FAILED_MESSAGE[trip.kind], { duration: 5000 });
+        toast.error(FAILED_MESSAGE[trip.kind]);
       }
     });
   }, [queryClient, results, router, trips]);
