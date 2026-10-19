@@ -14,7 +14,6 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
 
   if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
 
-  // 상세 조회가 401을 돌려주므로 세션 확인을 따로 하지 않습니다.
   const result = await getTripDetail(tripId);
 
   if (result.status === 'ok') {
@@ -25,7 +24,6 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
     redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}`)}`);
   }
 
-  // 사진을 정리하는 중이면 진행률 화면으로 보냅니다.
   if (result.status === 'notReady') redirect(`/trips/${tripId}/processing`);
 
   notFound();

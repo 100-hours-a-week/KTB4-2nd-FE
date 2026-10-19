@@ -14,7 +14,6 @@ export const tripListQueries = {
       queryFn: ({ pageParam }) => getTrips({ ...filter, cursor: pageParam }),
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
-      // 정리·수정 중인 여행이 있으면 끝났는지 다시 확인해 카드 상태를 풀어줍니다.
       refetchInterval: (query) =>
         query.state.data?.pages.some((page) =>
           page.trips.some((trip) => trip.processingStatus !== 'ready'),

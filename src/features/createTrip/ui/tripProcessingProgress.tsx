@@ -22,10 +22,6 @@ type TripProcessingProgressProps = {
   tripId: number;
 };
 
-/**
- * 여행 만들기 화면을 나간 뒤 목록에서 정리 중인 여행을 다시 열었을 때 진행률을 이어서 보여줍니다.
- * 업로드는 이미 끝난 상태라 서버 처리 상태만 확인합니다.
- */
 export function TripProcessingProgress({ tripId }: TripProcessingProgressProps) {
   const router = useRouter();
   const queryClient = useQueryClient();

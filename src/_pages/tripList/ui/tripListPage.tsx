@@ -200,7 +200,6 @@ function TripCard({
   return (
     <article className="border-border-subtle bg-surface relative flex min-h-[106px] overflow-hidden rounded-[18px] border p-3 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-transform active:scale-[0.99]">
       {updating ? (
-        // 수정이 끝나기 전에는 사진·장소가 바뀌는 중이라 상세로 들어가지 않게 막습니다.
         <button
           type="button"
           aria-label={`${trip.name} 여행 수정 중`}

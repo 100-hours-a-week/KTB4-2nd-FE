@@ -3,7 +3,6 @@ import { apiClient } from '@/shared/api/browser';
 
 import type { TripListFilter, TripListItem } from '../model/types';
 
-/** UPDATING은 정리를 마친 여행에 사진을 추가·삭제하는 수정이 진행 중일 때 내려옵니다. */
 type TripListItemStatus = 'PROCESSING' | 'UPDATING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
 
 type TripListItemResponse = {
