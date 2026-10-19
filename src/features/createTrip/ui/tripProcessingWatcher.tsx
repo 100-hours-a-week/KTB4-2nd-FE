@@ -34,8 +34,9 @@ const FAILED_MESSAGE: Record<PendingTrip['kind'], string> = {
   edit: '추가한 사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.',
 };
 
-/** 만들기·수정 화면에 있으면 그 화면이 직접 결과를 보여주므로 여기서는 확인하지 않습니다. */
+/** 만들기·수정·진행률 화면에 있으면 그 화면이 직접 결과를 보여주므로 여기서는 확인하지 않습니다. */
 function isHandledByCurrentPage(trip: PendingTrip, pathname: string) {
+  if (pathname === `/trips/${trip.tripId}/processing`) return true;
   return trip.kind === 'create'
     ? pathname === '/trips/create'
     : pathname === `/trips/${trip.tripId}/edit`;
@@ -84,14 +85,14 @@ export function TripProcessingWatcher() {
       if (gone) return;
 
       if (data?.status === 'COMPLETED') {
-        toast.success(COMPLETED_MESSAGE[trip.kind], { duration: 5000 });
+        toast.success(COMPLETED_MESSAGE[trip.kind]);
         void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
         void queryClient.invalidateQueries({ queryKey: mainMapQueries.markers().queryKey });
         void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
         void queryClient.invalidateQueries({ queryKey: photoListQueries.allKeys() });
         router.refresh();
       } else if (data?.status === 'FAILED') {
-        toast.error(FAILED_MESSAGE[trip.kind], { duration: 5000 });
+        toast.error(FAILED_MESSAGE[trip.kind]);
       }
     });
   }, [queryClient, results, router, trips]);

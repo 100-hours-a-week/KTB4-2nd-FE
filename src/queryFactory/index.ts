@@ -1,3 +1,4 @@
+export { aiStatusQueries } from './aiStatusQueries';
 export { completeSignupQueries } from './completeSignupQueries';
 export { createTripQueries } from './createTripQueries';
 export { kakaoLoginQueries } from './kakaoLoginQueries';

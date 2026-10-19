@@ -1,4 +1,4 @@
-export type TripProcessingStatus = 'ready' | 'processing';
+export type TripProcessingStatus = 'ready' | 'processing' | 'updating';
 
 export type TripListItem = {
   id: number;

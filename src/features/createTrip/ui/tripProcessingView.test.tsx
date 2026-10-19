@@ -16,10 +16,6 @@ function status(progress: TripProcessingStatusResponse['progress']): TripProcess
   };
 }
 
-function percent() {
-  return screen.getByRole('progressbar').getAttribute('aria-valuenow');
-}
-
 describe('TripProcessingView', () => {
   it('여행 만들기 헤더를 표시하고 업로드 중에는 뒤로가기를 막는다', () => {
     render(<TripProcessingView uploadRatio={0.5} />);
@@ -71,16 +67,52 @@ describe('TripProcessingView', () => {
     expect(onContinueElsewhere).toHaveBeenCalledOnce();
   });
 
-  it('업로드 구간은 0%에서 30%까지 차오른다', () => {
-    render(<TripProcessingView uploadRatio={0} />);
-    expect(percent()).toBe('0');
+  it('퍼센트와 진행 바 없이 빙글 도는 상태 표시만 보여준다', () => {
+    render(
+      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 15, total: 30 })} />,
+    );
 
-    render(<TripProcessingView uploadRatio={0.5} />);
-    expect(screen.getAllByText('사진을 올리고 있어요')[1]).toBeInTheDocument();
-    expect(screen.getAllByRole('progressbar')[1]).toHaveAttribute('aria-valuenow', '15');
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('FINALIZING이면 실패가 아니라 정리를 마무리하는 중으로 표시한다', () => {
+  it('업로드 중에는 업로드 문구를 보여주고 다른 작업 이어하기는 비활성으로 둔다', () => {
+    render(<TripProcessingView uploadRatio={0.5} onContinueElsewhere={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: '다른 작업 이어하기' })).toBeDisabled();
+
+    expect(screen.getByRole('heading', { name: '사진을 올리고 있어요' })).toBeInTheDocument();
+    expect(screen.getByText('화면을 닫지 말고 잠시만 기다려주세요.')).toBeInTheDocument();
+  });
+
+  it('업로드가 끝나고 분석 전이면 준비 문구를 보여준다', () => {
+    render(<TripProcessingView uploadRatio={1} processingStatus={status(null)} />);
+
+    expect(
+      screen.getByRole('heading', { name: '사진을 살펴볼 준비를 하고 있어요' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '사진 분석을 준비하고 있어요' })).toBeInTheDocument();
+  });
+
+  it('분석 중에는 장소 찾기 문구와 살펴본 사진 수를 보여준다', () => {
+    render(
+      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 15, total: 30 })} />,
+    );
+
+    expect(screen.getByRole('heading', { name: '사진 속 장소를 찾고 있어요' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '사진 15/30장을 살펴봤어요' })).toBeInTheDocument();
+  });
+
+  it('done이 total을 넘어도 전체 장수를 넘기지 않는다', () => {
+    render(
+      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 33, total: 30 })} />,
+    );
+
+    expect(screen.getByRole('status', { name: '사진 30/30장을 살펴봤어요' })).toBeInTheDocument();
+  });
+
+  it('FINALIZING이면 실패가 아니라 폴더를 만드는 마무리 단계로 표시한다', () => {
     render(
       <TripProcessingView
         uploadRatio={1}
@@ -88,60 +120,11 @@ describe('TripProcessingView', () => {
       />,
     );
 
-    expect(percent()).toBe('99');
-    expect(screen.getByText('사진 정리를 마무리하고 있어요')).toBeInTheDocument();
-  });
-
-  it('분석 준비 구간은 업로드 구간 끝인 30%에 머문다', () => {
-    render(<TripProcessingView uploadRatio={1} processingStatus={status(null)} />);
-
-    expect(screen.getByText('사진 분석을 준비하고 있어요')).toBeInTheDocument();
-    expect(percent()).toBe('30');
-  });
-
-  it('분석 구간은 30%에서 100%까지 이어진다', () => {
-    render(
-      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 0, total: 30 })} />,
-    );
-    expect(percent()).toBe('30');
-  });
-
-  it('분석이 절반이면 65%를 표시한다', () => {
-    render(
-      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 15, total: 30 })} />,
-    );
-
-    expect(screen.getByText('65%')).toBeInTheDocument();
-    expect(screen.getByText('사진 15/30장을 분석하고 있어요')).toBeInTheDocument();
-    expect(percent()).toBe('65');
-  });
-
-  it('분석이 끝나면 100%를 표시한다', () => {
-    render(
-      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 30, total: 30 })} />,
-    );
-
-    expect(screen.getByText('100%')).toBeInTheDocument();
-    expect(percent()).toBe('100');
-  });
-
-  it('done이 total을 넘어도 100%를 넘기지 않는다', () => {
-    render(
-      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 33, total: 30 })} />,
-    );
-
-    expect(percent()).toBe('100');
-  });
-
-  it('업로드에서 분석으로 넘어가도 퍼센트가 뒤로 가지 않는다', () => {
-    const { unmount } = render(<TripProcessingView uploadRatio={0.99} />);
-    const beforeSwitch = Number(percent());
-    unmount();
-
-    render(
-      <TripProcessingView uploadRatio={1} processingStatus={status({ done: 0, total: 30 })} />,
-    );
-
-    expect(Number(percent())).toBeGreaterThanOrEqual(beforeSwitch);
+    expect(
+      screen.getByRole('heading', { name: '장소별로 폴더를 만들고 있어요' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: '사진 정리를 마무리하고 있어요' }),
+    ).toBeInTheDocument();
   });
 });
