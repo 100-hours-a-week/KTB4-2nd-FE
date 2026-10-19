@@ -52,7 +52,6 @@ describe('Toast', () => {
     act(() => vi.advanceTimersByTime(2999));
     expect(screen.getByText('잠시 후 사라져요.')).toBeInTheDocument();
 
-    // 시간이 끝나면 살짝 흐려지며 올라간 뒤 지워집니다.
     act(() => vi.advanceTimersByTime(1));
     act(() => vi.advanceTimersByTime(200));
     expect(screen.queryByText('잠시 후 사라져요.')).not.toBeInTheDocument();

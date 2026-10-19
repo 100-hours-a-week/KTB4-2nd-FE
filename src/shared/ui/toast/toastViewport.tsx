@@ -12,10 +12,8 @@ const progressStyle: Record<ToastItem['variant'], string> = {
 };
 
 const LEAVE_MS = 200;
-/** 뒤에 쌓인 토스트가 앞 토스트 아래로 살짝 보이는 간격과 축소 비율입니다. */
 const STACK_OFFSET_PX = 8;
 const STACK_SCALE_STEP = 0.05;
-/** 이만큼 위로 끌어올리거나, 짧고 빠르게 튕겨 올리면 닫습니다. */
 const SWIPE_DISMISS_PX = 32;
 const FLICK_DISMISS_PX = 10;
 const FLICK_MAX_MS = 200;
@@ -30,7 +28,6 @@ function ToastMessage({ toast }: { toast: ToastItem }) {
   const remaining = useRef(toast.duration);
   const dragging = dragOffset !== null;
 
-  // 손가락으로 잡고 있는 동안에는 남은 시간을 멈췄다가, 놓으면 남은 만큼만 이어서 셉니다.
   useEffect(() => {
     if (toast.duration <= 0 || dragging || exit) return;
 
@@ -62,7 +59,6 @@ function ToastMessage({ toast }: { toast: ToastItem }) {
     if (drag.current?.pointerId !== event.pointerId) return;
 
     const offset = event.clientY - drag.current.startY;
-    // 아래로 끌면 닫히지 않는다는 느낌이 들도록 조금만 따라오게 합니다.
     setDragOffset(offset < 0 ? offset : offset * 0.2);
   };
 
@@ -137,7 +133,6 @@ export function ToastViewport() {
       className="pointer-events-none fixed top-[calc(var(--app-vertical-offset)+1.5rem)] left-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2"
     >
       {toasts.map((toast, index) => {
-        // 가장 최근 토스트가 맨 앞에 오고, 이전 토스트는 그 뒤로 작게 겹쳐 쌓입니다.
         const depth = toasts.length - 1 - index;
         return (
           <div
