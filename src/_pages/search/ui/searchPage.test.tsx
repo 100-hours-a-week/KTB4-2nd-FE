@@ -46,21 +46,32 @@ describe('SearchPage', () => {
     vi.mocked(searchTrips).mockResolvedValue(result);
   });
 
-  it('검색어가 없으면 검색하지 않고, 입력한 문장부호를 정리해 검색한다', async () => {
+  it('검색어가 없으면 검색하지 않고, 입력한 문장은 그대로 주소에 남긴다', async () => {
     const user = userEvent.setup();
     renderPage('');
 
     expect(searchTrips).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('searchbox', { name: '검색어' }), '빨간 옷 입은 날?{Enter}');
-    expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('빨간 옷 입은 날')}`);
+    expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('빨간 옷 입은 날?')}`);
+  });
+
+  it('검색 후에도 입력창의 문장부호를 지우지 않고, 그대로 API에 보낸다', async () => {
+    renderPage('9월 10-11일에 다녀온 여행에서 우리가 뭘했지?');
+
+    expect(screen.getByRole('searchbox', { name: '검색어' })).toHaveValue(
+      '9월 10-11일에 다녀온 여행에서 우리가 뭘했지?',
+    );
+    expect(await screen.findByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
+    expect(searchTrips).toHaveBeenCalledWith('9월 10-11일에 다녀온 여행에서 우리가 뭘했지?');
+    expect(screen.getAllByRole('searchbox', { name: '검색어' })).toHaveLength(1);
   });
 
   it('두 글자 미만이면 검색하지 않고 안내한다', async () => {
     const user = userEvent.setup();
     renderPage('');
 
-    await user.type(screen.getByRole('searchbox', { name: '검색어' }), '?!a{Enter}');
+    await user.type(screen.getByRole('searchbox', { name: '검색어' }), ' a {Enter}');
     expect(screen.getByRole('alert')).toHaveTextContent('검색어를 2글자 이상 입력해주세요.');
     expect(push).not.toHaveBeenCalled();
   });

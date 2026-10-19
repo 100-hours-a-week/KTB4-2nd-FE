@@ -32,9 +32,5 @@ export const SEARCH_QUERY_MIN_LENGTH = 2;
 export const SEARCH_QUERY_MAX_LENGTH = 100;
 
 export function normalizeSearchQuery(value: string) {
-  return value
-    .replace(/[^가-힣A-Za-z0-9 ]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, SEARCH_QUERY_MAX_LENGTH);
+  return value.replace(/\s+/g, ' ').trim().slice(0, SEARCH_QUERY_MAX_LENGTH);
 }
