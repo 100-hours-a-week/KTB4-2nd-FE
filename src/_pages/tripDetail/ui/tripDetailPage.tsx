@@ -334,7 +334,6 @@ function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
 }
 
-/** 정리가 끝났는데 장소 폴더가 없으면, 사진이 모두 미분류로 갔는지 사진 자체가 없는지에 따라 안내를 나눕니다. */
 function EmptyPlaceFolders({ trip }: { trip: TripDetail }) {
   const hasPhotos = trip.photoCount > 0;
 
