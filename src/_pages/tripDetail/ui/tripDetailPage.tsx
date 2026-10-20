@@ -143,15 +143,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
         {viewState !== 'ready' ? (
           <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
         ) : folders.length === 0 ? (
-          <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
-            <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100 [&>svg]:size-7">
-              <ImageIcon size="13" />
-            </span>
-            <h2 className="mt-4 text-[15px] font-extrabold">
-              장소별 사진이 아직 정리되지 않았어요
-            </h2>
-            <p className="text-muted mt-1.5 text-xs">장소별 사진 정리 기능은 준비 중이에요.</p>
-          </div>
+          <EmptyPlaceFolders trip={trip} />
         ) : (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
             {folders.map((folder) => (
@@ -340,4 +332,41 @@ function PlaceFolderSkeleton({ showError, onRetry }: { showError: boolean; onRet
 
 function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
+}
+
+/** 정리가 끝났는데 장소 폴더가 없으면, 사진이 모두 미분류로 갔는지 사진 자체가 없는지에 따라 안내를 나눕니다. */
+function EmptyPlaceFolders({ trip }: { trip: TripDetail }) {
+  const hasPhotos = trip.photoCount > 0;
+
+  return (
+    <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
+      <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100 [&>svg]:size-7">
+        <ImageIcon size="13" />
+      </span>
+      <h2 className="mt-4 text-[15px] font-extrabold">
+        {hasPhotos ? '장소를 찾은 사진이 없어요' : '아직 사진이 없어요'}
+      </h2>
+      <p className="text-muted mt-1.5 text-xs leading-5">
+        {hasPhotos ? (
+          <>
+            위치 정보가 없는 사진은 미분류에 모아뒀어요.
+            <br />
+            미분류에서 원하는 장소로 옮길 수 있어요.
+          </>
+        ) : (
+          '여행 수정에서 사진을 추가해 보세요.'
+        )}
+      </p>
+      <Link
+        href={
+          hasPhotos
+            ? `/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`
+            : `/trips/${trip.id}/edit?step=images`
+        }
+        className="bg-brand hover:bg-brand-hover focus-visible:outline-brand mt-5 inline-flex min-h-10 items-center rounded-full px-4 text-xs font-bold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        {hasPhotos ? '미분류 사진 보기' : '사진 추가하기'}
+      </Link>
+    </div>
+  );
 }

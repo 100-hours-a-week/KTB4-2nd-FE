@@ -129,6 +129,39 @@ describe('TripDetailPage', () => {
     expect(getTripPlaceFolders).toHaveBeenLastCalledWith(7, 'cursor-2');
   });
 
+  it('장소 폴더가 없고 사진이 있으면 미분류로 안내한다', async () => {
+    vi.mocked(getTripPlaceFolders).mockResolvedValue({
+      folders: [],
+      hasNext: false,
+      nextCursor: null,
+    });
+    renderTripDetailPage();
+
+    expect(
+      await screen.findByRole('heading', { name: '장소를 찾은 사진이 없어요' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/위치 정보가 없는 사진은 미분류에 모아뒀어요/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '미분류 사진 보기' })).toHaveAttribute(
+      'href',
+      `/trips/7/unclassified?trip=${encodeURIComponent('제주도 가을 여행')}`,
+    );
+  });
+
+  it('장소 폴더도 사진도 없으면 사진 추가를 안내한다', async () => {
+    vi.mocked(getTripPlaceFolders).mockResolvedValue({
+      folders: [],
+      hasNext: false,
+      nextCursor: null,
+    });
+    renderTripDetailPage({ photoCount: 0 });
+
+    expect(await screen.findByRole('heading', { name: '아직 사진이 없어요' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '사진 추가하기' })).toHaveAttribute(
+      'href',
+      '/trips/7/edit?step=images',
+    );
+  });
+
   it('장소 폴더 조회에 실패하면 다시 시도로 재요청한다', async () => {
     vi.mocked(getTripPlaceFolders).mockRejectedValue(new Error('failed'));
     renderTripDetailPage();
