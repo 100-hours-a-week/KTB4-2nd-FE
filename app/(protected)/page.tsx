@@ -10,11 +10,6 @@ export default async function Page({
 }) {
   const { renewed } = await searchParams;
 
-  // 백엔드 인증 연동 전에도 개발 중 화면을 확인할 수 있도록 개발 환경에서는 인증을 건너뜁니다.
-  if (process.env.NODE_ENV === 'development') {
-    return <HomePage />;
-  }
-
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {

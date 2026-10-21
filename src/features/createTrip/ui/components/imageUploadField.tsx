@@ -6,10 +6,10 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { CloseIcon, PlusIcon } from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 
-import { createPreviewBlob } from '../model/createPreviewBlob';
-import { prepareHeicPreviewDecoder } from '../model/heicPreviewDecoder';
-import { HeicPreviewResourceError } from '../model/heicPreviewError';
-import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
+import { createPreviewBlob } from '../../model/createPreviewBlob';
+import { prepareHeicPreviewDecoder } from '../../model/heicPreviewDecoder';
+import { HeicPreviewResourceError } from '../../model/heicPreviewError';
+import { TRIP_IMAGE_MAX_COUNT } from '../../model/imageValidation';
 
 type ImageUploadFieldProps = {
   files: File[];

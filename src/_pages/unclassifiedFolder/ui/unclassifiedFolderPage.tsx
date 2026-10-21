@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import type { PhotoAccent } from '@/features/photoList';
+import { PHOTO_ACCENT_GRADIENT } from '@/features/photoList';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
   toUnclassifiedIssueSlug,
@@ -207,19 +207,10 @@ function FolderThumbnail({ folder }: { folder: UnclassifiedFolder }) {
     );
   }
 
-  const accentClass: Record<PhotoAccent, string> = {
-    coast: 'from-[#cee7f0] via-[#70abc5] to-[#e6d6a5]',
-    night: 'from-[#34476f] via-[#1d2c50] to-[#0e1a2e]',
-    blossom: 'from-[#d9edf3] via-[#f4b9ca] to-[#8fb77b]',
-    sunset: 'from-[#1d2945] via-[#293657] to-[#f1a456]',
-    island: 'from-[#acd8ee] via-[#80b76d] to-[#407a3d]',
-    desert: 'from-[#f4d9ad] via-[#d77b46] to-[#a94728]',
-  };
-
   return (
     <span
       aria-hidden="true"
-      className={`relative block aspect-square w-full overflow-hidden bg-gradient-to-b ${accentClass[folder.accent]}`}
+      className={`relative block aspect-square w-full overflow-hidden bg-gradient-to-b ${PHOTO_ACCENT_GRADIENT[folder.accent]}`}
     >
       <span className="absolute top-[16%] right-[14%] size-[18%] rounded-full bg-[#ffe7a6]" />
       <span className="absolute -right-[8%] bottom-[-8%] h-[42%] w-[80%] rounded-[50%] bg-black/16" />

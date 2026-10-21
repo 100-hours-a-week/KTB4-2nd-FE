@@ -5,8 +5,8 @@ import { useController, useFormContext } from 'react-hook-form';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
-import { validateImageSelection } from '../model/imageValidation';
-import type { TripCreateFormValues } from '../model/types';
+import { validateImageSelection } from '../../model/imageValidation';
+import type { TripCreateFormValues } from '../../model/types';
 import { ImageUploadField } from './imageUploadField';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 

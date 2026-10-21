@@ -79,6 +79,19 @@ describe('TripCreateForm', () => {
     historyLength.mockRestore();
   });
 
+  it('하단 메뉴 등으로 여행 생성 화면을 벗어나면 임시 저장을 지운다', async () => {
+    const user = userEvent.setup();
+    const view = renderTripCreateForm();
+
+    await user.type(screen.getByPlaceholderText('예) 제주도 가을 여행'), '제주 여행');
+    expect(window.localStorage.getItem('trip-create-draft-v1')).toContain('제주 여행');
+
+    view.unmount();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+    expect(window.localStorage.getItem('trip-create-draft-v1')).toBeNull();
+  });
+
   it('첫 단계에 직접 접속해 이전 기록이 없으면 메인으로 이동한다', async () => {
     const user = userEvent.setup();
     const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);

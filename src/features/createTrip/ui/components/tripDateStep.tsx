@@ -6,8 +6,8 @@ import { Button } from '@/shared/ui/button';
 import { DateRangeCalendar, toDateString } from '@/shared/ui/calendar';
 import { toast } from '@/shared/ui/toast';
 
-import type { TripCreateFormValues } from '../model/types';
-import { TRIP_DATE_MAX_DAYS, validateTripDateRange } from '../model/validation';
+import type { TripCreateFormValues } from '../../model/types';
+import { TRIP_DATE_MAX_DAYS, validateTripDateRange } from '../../model/validation';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripDateStepProps = {

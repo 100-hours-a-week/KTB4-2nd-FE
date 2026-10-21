@@ -2,7 +2,7 @@ import { useContext, type ReactNode } from 'react';
 
 import { PageHeader } from '@/shared/ui/pageHeader';
 
-import { TRIP_CREATE_STEPS, type TripCreateStep } from '../model/types';
+import { TRIP_CREATE_STEPS, type TripCreateStep } from '../../model/types';
 import { TripFormModeContext } from './tripFormMode';
 
 export const tripCreateButtonClassName =

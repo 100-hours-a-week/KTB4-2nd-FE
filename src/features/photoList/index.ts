@@ -3,6 +3,7 @@ export type { PlacePhotoPageResult } from './api/getPlacePhotos';
 export { getPhotoOriginal } from './api/getPhotoOriginal';
 export { deletePhoto, deletePhotos } from './api/photoDelete';
 export { issueBulkPhotoDownloadUrl, issuePhotoDownloadUrl } from './api/photoDownload';
+export { PHOTO_ACCENT_GRADIENT } from './model/photoAccent';
 export { BULK_DOWNLOAD_LIMIT } from './model/types';
 export type { PhotoAccent, PhotoListItem, PhotoListViewState } from './model/types';
 export { usePhotoDelete } from './model/usePhotoDelete';

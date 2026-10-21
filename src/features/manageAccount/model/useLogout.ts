@@ -2,14 +2,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { clearAllStoryCreateDrafts } from '@/features/createStory';
-import { clearPendingTripProcessing } from '@/features/createTrip';
-import { clearTripCreateDraft } from '@/features/createTrip/model/tripCreateDraft';
 import { fetchCsrfToken } from '@/shared/api/browser';
-import { clearIdentity } from '@/shared/lib/analytics';
 import { toast } from '@/shared/ui/toast';
 
 import { logout } from '../api/logout';
+import { clearUserLocalData } from './clearUserLocalData';
 import { redirectToLogin } from './redirectToLogin';
 
 export function useLogout() {
@@ -21,10 +18,7 @@ export function useLogout() {
       await logout(csrfToken);
     },
     onSuccess: () => {
-      clearAllStoryCreateDrafts();
-      clearPendingTripProcessing();
-      clearTripCreateDraft();
-      clearIdentity();
+      clearUserLocalData();
       queryClient.clear();
       redirectToLogin();
     },

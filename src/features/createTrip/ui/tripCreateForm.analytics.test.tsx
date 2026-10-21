@@ -40,7 +40,7 @@ vi.mock('../api/uploadInitialAttachments', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/uploadInitialAttachments')>()),
   uploadInitialAttachmentBatch: vi.fn(),
 }));
-vi.mock('./tripImageStep', () => ({
+vi.mock('./components/tripImageStep', () => ({
   TripImageStep: function TestImageStep() {
     const { setValue } = useFormContext<TripCreateFormValues>();
     return (
@@ -53,7 +53,7 @@ vi.mock('./tripImageStep', () => ({
     );
   },
 }));
-vi.mock('./tripProcessingView', () => ({
+vi.mock('./components/tripProcessingView', () => ({
   TripProcessingView: () => <div>처리 중</div>,
 }));
 

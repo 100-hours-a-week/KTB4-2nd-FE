@@ -25,11 +25,13 @@ import {
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
 import { useTripCreateSubmit } from '../model/useTripCreateSubmit';
 import { getAccessibleTripCreateStep } from '../model/validation';
-import { TripDateStep } from './tripDateStep';
-import { TripImageStep } from './tripImageStep';
-import { TripLocationStep } from './tripLocationStep';
-import { TripNameStep } from './tripNameStep';
-import { TripProcessingView } from './tripProcessingView';
+import { TripDateStep } from './components/tripDateStep';
+import { TripImageStep } from './components/tripImageStep';
+import { TripLocationStep } from './components/tripLocationStep';
+import { TripNameStep } from './components/tripNameStep';
+import { TripProcessingView } from './components/tripProcessingView';
+
+let pendingDraftClear: number | undefined;
 
 type TripCreateFormProps = {
   initialStep: TripCreateStep;
@@ -72,6 +74,15 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
     methods.reset(readTripCreateDraft());
     draftRestored.current = true;
   }, [methods]);
+
+  // 새로고침에는 입력을 유지하고, 다른 화면으로 나가면(언마운트) 임시 저장을 지웁니다.
+  // 개발 모드의 StrictMode는 바로 다시 마운트하므로, 다시 마운트되면 지우기를 취소합니다.
+  useEffect(() => {
+    window.clearTimeout(pendingDraftClear);
+    return () => {
+      pendingDraftClear = window.setTimeout(clearTripCreateDraft, 0);
+    };
+  }, []);
 
   useEffect(() => {
     if (!draftRestored.current) return;
@@ -164,6 +175,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
         uploadRatio={submit.uploadRatio}
         processingStatus={submit.uploadRatio >= 1 ? submit.processingStatus : undefined}
         onCancel={submit.cancelProcessing}
+        isCanceling={submit.isCanceling}
         onContinueElsewhere={() => router.replace('/')}
       />
     );
