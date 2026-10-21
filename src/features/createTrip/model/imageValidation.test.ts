@@ -21,6 +21,7 @@ describe('여행 사진 선택 검증', () => {
       ok: true,
       files: [...existing, ...selected],
       duplicateCount: 0,
+      emptyCount: 0,
     });
   });
 
@@ -38,6 +39,7 @@ describe('여행 사진 선택 검증', () => {
       ok: true,
       files: [existing[0], selected[2]],
       duplicateCount: 2,
+      emptyCount: 0,
     });
   });
 
@@ -91,5 +93,22 @@ describe('여행 사진 선택 검증', () => {
         message: '사진은 최대 200장까지 선택할 수 있어요.',
       },
     );
+  });
+
+  it('0바이트 파일은 목록에 넣지 않고 제외한 개수를 알려준다', () => {
+    const result = validateImageSelection(
+      [],
+      [createFile('photo.jpg', 'image/jpeg'), createFile('empty.jpg', 'image/jpeg', 0)],
+    );
+
+    expect(result).toMatchObject({ ok: true, emptyCount: 1 });
+    expect(result.ok && result.files.map((file) => file.name)).toEqual(['photo.jpg']);
+  });
+
+  it('선택한 파일이 모두 0바이트면 추가하지 않는다', () => {
+    expect(validateImageSelection([], [createFile('empty.png', 'image/png', 0)])).toEqual({
+      ok: false,
+      message: '내용이 비어 있는 파일은 올릴 수 없어요.',
+    });
   });
 });

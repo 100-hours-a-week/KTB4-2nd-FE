@@ -16,12 +16,20 @@ type ImageUploadFieldProps = {
   error?: string;
   onSelect: (files: File[]) => void;
   onRemove: (index: number) => void;
+  /** 사진을 열 수 없어(디코딩 실패) 미리보기가 불가능하거나, 다시 가능해졌을 때 알립니다. */
+  onPreviewBrokenChange?: (file: File, broken: boolean) => void;
 };
 
 const PREVIEW_ROOT_MARGIN = '300px 0px';
 const PREVIEW_READY_EVENT = 'heic-preview-ready';
 
-export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUploadFieldProps) {
+export function ImageUploadField({
+  files,
+  error,
+  onSelect,
+  onRemove,
+  onPreviewBrokenChange,
+}: ImageUploadFieldProps) {
   const { scrollRootRef, registerCard, getPreviewPriority } = usePreviewPriorities(files);
 
   useEffect(() => {
@@ -117,6 +125,7 @@ export function ImageUploadField({ files, error, onSelect, onRemove }: ImageUplo
                   file={file}
                   delayMs={(index % 3) * 120}
                   getPreviewPriority={getPreviewPriority}
+                  onBrokenChange={onPreviewBrokenChange}
                 />
                 <button
                   type="button"
@@ -218,11 +227,17 @@ function ImagePreview({
   file,
   delayMs,
   getPreviewPriority,
+  onBrokenChange,
 }: {
   file: File;
   delayMs: number;
   getPreviewPriority: (fileId: string) => number;
+  onBrokenChange?: (file: File, broken: boolean) => void;
 }) {
+  const onBrokenChangeRef = useRef(onBrokenChange);
+  useEffect(() => {
+    onBrokenChangeRef.current = onBrokenChange;
+  });
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   const [failure, setFailure] = useState<{
     file: File;
@@ -252,6 +267,7 @@ function ImagePreview({
         if (!active) return;
         previewUrl = URL.createObjectURL(previewBlob);
         setPreview({ file, url: previewUrl });
+        onBrokenChangeRef.current?.(file, false);
       })
       .catch((error: unknown) => {
         if (!active) return;
@@ -262,6 +278,8 @@ function ImagePreview({
               : 'network'
             : 'conversion';
         setFailure({ file, kind });
+        // 네트워크·모듈 문제는 환경 탓이라 사진 자체는 정상일 수 있어 막지 않습니다.
+        if (kind === 'conversion') onBrokenChangeRef.current?.(file, true);
       });
 
     return () => {
@@ -307,7 +325,10 @@ function ImagePreview({
       sizes="(max-width: 430px) 33vw, 130px"
       unoptimized
       className="object-cover"
-      onError={() => setFailure({ file, kind: 'conversion' })}
+      onError={() => {
+        setFailure({ file, kind: 'conversion' });
+        onBrokenChangeRef.current?.(file, true);
+      }}
     />
   );
 }

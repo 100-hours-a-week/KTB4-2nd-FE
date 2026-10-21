@@ -103,7 +103,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   useEffect(() => {
     return methods.subscribe({
-      name: ['tripName', 'places', 'startDate', 'endDate'],
+      name: ['tripName', 'places', 'startDate', 'endDate', 'attachments'],
       formState: { values: true },
       callback: resetCreatedTrip,
     });

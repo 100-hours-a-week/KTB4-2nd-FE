@@ -38,7 +38,26 @@ const CONTENT_TYPES_BY_EXTENSION: Record<string, string> = {
   heic: 'image/heic',
 };
 
-export function getContentType(file: File) {
+const HEIC_BRANDS = new Set(['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'mif1', 'msf1']);
+
+function detectContentType(header: Uint8Array) {
+  if (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) return 'image/jpeg';
+  if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) {
+    return 'image/png';
+  }
+  const box = String.fromCharCode(...header.slice(4, 8));
+  const brand = String.fromCharCode(...header.slice(8, 12));
+  if (box === 'ftyp' && HEIC_BRANDS.has(brand)) return 'image/heic';
+  return null;
+}
+
+export async function getContentType(file: File) {
+  try {
+    const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    const detected = detectContentType(header);
+    if (detected) return detected;
+  } catch {
+  }
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   return CONTENT_TYPES_BY_EXTENSION[extension] ?? file.type;
 }
@@ -83,11 +102,13 @@ export async function uploadInitialAttachmentBatch({
       batchNo,
       totalAttachmentCount,
       complete,
-      attachments: files.map((file) => ({
-        fileName: file.name,
-        contentType: getContentType(file),
-        sizeBytes: file.size,
-      })),
+      attachments: await Promise.all(
+        files.map(async (file) => ({
+          fileName: file.name,
+          contentType: await getContentType(file),
+          sizeBytes: file.size,
+        })),
+      ),
     },
     { headers, signal },
   );

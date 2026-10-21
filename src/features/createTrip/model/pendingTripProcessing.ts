@@ -44,8 +44,7 @@ function writePendingTrips(trips: PendingTrip[]) {
   try {
     if (trips.length === 0) window.localStorage.removeItem(PENDING_TRIP_PROCESSING_KEY);
     else window.localStorage.setItem(PENDING_TRIP_PROCESSING_KEY, JSON.stringify(trips));
-  } catch {
-  }
+  } catch {}
   notifyChange();
 }
 
