@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { KakaoLoginButton } from '@/features/kakaoLogin';
+import { UserLocalDataReset } from '@/features/manageAccount';
 import { PinIcon } from '@/shared/ui/icons';
 
 const CONTACT_EMAIL = 'leo@yeodam-2gether.com';
@@ -8,6 +9,7 @@ const CONTACT_EMAIL = 'leo@yeodam-2gether.com';
 export function LoginPage() {
   return (
     <main className="page-enter flex h-full flex-col overflow-hidden px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
+      <UserLocalDataReset />
       <header className="flex items-center gap-2">
         <BrandMark />
         <span className="text-brand text-lg font-extrabold tracking-[-0.02em]">여담</span>
