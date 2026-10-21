@@ -47,6 +47,9 @@ export function TripEditImageStep({
     if (result.duplicateCount > 0) {
       toast.info(`중복 사진 ${result.duplicateCount}장은 제외했어요.`);
     }
+    if (result.emptyCount > 0) {
+      toast.info(`내용이 비어 있는 파일 ${result.emptyCount}개는 제외했어요.`);
+    }
   };
 
   const removeFile = (targetIndex: number) => {

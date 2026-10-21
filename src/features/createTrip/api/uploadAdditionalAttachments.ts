@@ -40,11 +40,13 @@ export async function uploadAdditionalAttachmentBatch({
       batchNo,
       totalAttachmentCount,
       complete,
-      attachments: files.map((file) => ({
-        fileName: file.name,
-        contentType: getContentType(file),
-        sizeBytes: file.size,
-      })),
+      attachments: await Promise.all(
+        files.map(async (file) => ({
+          fileName: file.name,
+          contentType: await getContentType(file),
+          sizeBytes: file.size,
+        })),
+      ),
     },
     { headers, signal },
   );
