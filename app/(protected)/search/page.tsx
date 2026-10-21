@@ -13,10 +13,6 @@ export default async function Page({ searchParams }: PageProps<'/search'>) {
   const { q, renewed } = await searchParams;
   const query = typeof q === 'string' ? normalizeSearchQuery(q) : '';
 
-  if (process.env.NODE_ENV === 'development') {
-    return <SearchPage query={query} />;
-  }
-
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {
