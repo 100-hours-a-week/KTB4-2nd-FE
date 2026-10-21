@@ -7,7 +7,7 @@ import { Dialog } from '@/shared/ui/dialog';
 import { MapIcon, PinIcon, SearchIcon, UploadIcon, type IconProps } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
-import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
+import type { TripProcessingStatusResponse } from '../../api/getTripProcessingStatus';
 import { tripCreateButtonClassName } from './tripCreateStepLayout';
 import { TripFormModeContext } from './tripFormMode';
 

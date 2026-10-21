@@ -1,11 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { HeicPreviewResourceError } from '../model/heicPreviewError';
+import { HeicPreviewResourceError } from '../../model/heicPreviewError';
 import { ImageUploadField } from './imageUploadField';
 
 const { prepare, decode } = vi.hoisted(() => ({ prepare: vi.fn(), decode: vi.fn() }));
-vi.mock('../model/heicPreviewDecoder', () => ({
+vi.mock('../../model/heicPreviewDecoder', () => ({
   prepareHeicPreviewDecoder: prepare,
   resetHeicPreviewDecoder: vi.fn(),
 }));

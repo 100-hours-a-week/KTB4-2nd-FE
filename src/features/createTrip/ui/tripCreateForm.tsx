@@ -25,11 +25,11 @@ import {
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
 import { useTripCreateSubmit } from '../model/useTripCreateSubmit';
 import { getAccessibleTripCreateStep } from '../model/validation';
-import { TripDateStep } from './tripDateStep';
-import { TripImageStep } from './tripImageStep';
-import { TripLocationStep } from './tripLocationStep';
-import { TripNameStep } from './tripNameStep';
-import { TripProcessingView } from './tripProcessingView';
+import { TripDateStep } from './components/tripDateStep';
+import { TripImageStep } from './components/tripImageStep';
+import { TripLocationStep } from './components/tripLocationStep';
+import { TripNameStep } from './components/tripNameStep';
+import { TripProcessingView } from './components/tripProcessingView';
 
 let pendingDraftClear: number | undefined;
 

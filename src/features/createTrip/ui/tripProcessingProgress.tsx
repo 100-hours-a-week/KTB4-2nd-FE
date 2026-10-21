@@ -16,7 +16,7 @@ import { toast } from '@/shared/ui/toast';
 
 import { isTripProcessingRunning } from '../api/getTripProcessingStatus';
 import { removePendingTripProcessing } from '../model/pendingTripProcessing';
-import { TripProcessingView } from './tripProcessingView';
+import { TripProcessingView } from './components/tripProcessingView';
 
 type TripProcessingProgressProps = {
   tripId: number;

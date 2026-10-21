@@ -5,9 +5,9 @@ import { useController, useFormContext } from 'react-hook-form';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
-import type { TripEditPhoto } from '../api/getTripForEdit';
-import { TRIP_IMAGE_MAX_COUNT, validateImageSelection } from '../model/imageValidation';
-import type { TripCreateFormValues } from '../model/types';
+import type { TripEditPhoto } from '../../api/getTripForEdit';
+import { TRIP_IMAGE_MAX_COUNT, validateImageSelection } from '../../model/imageValidation';
+import type { TripCreateFormValues } from '../../model/types';
 import { ImageUploadField } from './imageUploadField';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 

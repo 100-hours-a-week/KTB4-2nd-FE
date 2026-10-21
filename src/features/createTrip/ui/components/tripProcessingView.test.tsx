@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
+import type { TripProcessingStatusResponse } from '../../api/getTripProcessingStatus';
 import { TripProcessingView } from './tripProcessingView';
 
 function status(progress: TripProcessingStatusResponse['progress']): TripProcessingStatusResponse {

@@ -23,12 +23,12 @@ import { getTripEditSubmitError } from '../model/editSubmitError';
 import type { TripCreateFormValues, TripCreateStep } from '../model/types';
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
 import { hasTripEditChanges, useTripEditSubmit } from '../model/useTripEditSubmit';
-import { TripDateStep } from './tripDateStep';
-import { TripEditImageStep } from './tripEditImageStep';
-import { TripFormModeContext } from './tripFormMode';
-import { TripLocationStep } from './tripLocationStep';
-import { TripNameStep } from './tripNameStep';
-import { TripProcessingView } from './tripProcessingView';
+import { TripDateStep } from './components/tripDateStep';
+import { TripEditImageStep } from './components/tripEditImageStep';
+import { TripFormModeContext } from './components/tripFormMode';
+import { TripLocationStep } from './components/tripLocationStep';
+import { TripNameStep } from './components/tripNameStep';
+import { TripProcessingView } from './components/tripProcessingView';
 
 type TripEditFormProps = {
   tripId: number;
