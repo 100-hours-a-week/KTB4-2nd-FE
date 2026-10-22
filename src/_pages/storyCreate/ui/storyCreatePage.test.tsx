@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAiStatus } from '@/features/aiStatus/api/getAiStatus';
 import { cancelStoryGeneration } from '@/features/createStory/api/cancelStoryGeneration';
@@ -104,6 +105,31 @@ describe('StoryCreatePage', () => {
     expect(await screen.findAllByRole('checkbox')).toHaveLength(6);
     expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
     expect(window.location.search).toBe('?step=folder');
+  });
+
+  it('사진 정리 중이라 폴더 조회가 409로 거절되면 정리 중 안내와 돌아가기 링크를 보여준다', async () => {
+    const config = { headers: new AxiosHeaders() };
+    vi.mocked(getStorySourceFolders).mockRejectedValue(
+      new AxiosError('conflict', undefined, config, null, {
+        status: 409,
+        statusText: '',
+        data: { message: 'STORY_GENERATION_NOT_ALLOWED', data: null },
+        headers: {},
+        config,
+      }),
+    );
+    const { user } = setup();
+    await user.click(screen.getByRole('radio', { name: /담백하게/ }));
+    await user.click(screen.getByRole('button', { name: '생성' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '사진을 정리하는 중이라 지금은 스토리를 만들 수 없어요.',
+    );
+    expect(screen.getByRole('link', { name: '여행 상세로 돌아가기' })).toHaveAttribute(
+      'href',
+      '/trips/7',
+    );
+    expect(getStorySourceFolders).toHaveBeenCalledTimes(1);
   });
 
   it('최대 10개만 선택하고 선택 해제 후 다른 폴더를 선택한다', async () => {

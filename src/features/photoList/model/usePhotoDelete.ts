@@ -7,6 +7,7 @@ import { fetchCsrfToken } from '@/shared/api/browser';
 import { toast } from '@/shared/ui/toast';
 
 import { deletePhoto, deletePhotos } from '../api/photoDelete';
+import { getPhotoDeleteErrorMessage } from './photoDeleteError';
 
 export function usePhotoDelete(tripId: number, tripPlaceId: number) {
   const queryClient = useQueryClient();
@@ -29,8 +30,8 @@ export function usePhotoDelete(tripId: number, tripPlaceId: number) {
       void queryClient.invalidateQueries({ queryKey: ['tripDetail'], refetchType: 'none' });
       toast.success('사진이 삭제됐어요.');
     },
-    onError: () => {
-      toast.error('사진을 삭제하지 못했어요.');
+    onError: (error) => {
+      toast.error(getPhotoDeleteErrorMessage(error));
     },
   });
 }

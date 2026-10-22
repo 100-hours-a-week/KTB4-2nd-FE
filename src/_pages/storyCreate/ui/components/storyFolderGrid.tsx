@@ -1,7 +1,9 @@
 'use client';
 
 import { useInfiniteQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { STORY_NOT_ALLOWED_MESSAGE, isStoryNotAllowedError } from '@/features/createStory';
 import { storyCreateQueries } from '@/queryFactory';
 import { Button } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -71,7 +73,17 @@ export function StoryFolderGrid({
               </li>
             ))}
           </ul>
-          {query.isError ? (
+          {query.isError && isStoryNotAllowedError(query.error) ? (
+            <div role="alert" className="py-8 text-center">
+              <p className="text-muted mb-3 text-xs leading-5">{STORY_NOT_ALLOWED_MESSAGE}</p>
+              <Link
+                href={`/trips/${tripId}`}
+                className="bg-surface-subtle text-brand inline-flex min-h-10 items-center rounded-full px-4 text-sm font-bold"
+              >
+                여행 상세로 돌아가기
+              </Link>
+            </div>
+          ) : query.isError ? (
             <div role="alert" className="py-8 text-center">
               <p className="text-muted mb-3 text-xs">폴더를 불러오지 못했어요.</p>
               <Button variant="secondary" onClick={() => void query.refetch()} className="text-sm">

@@ -6,3 +6,4 @@ export { useStoryCreateFunnel } from './model/useStoryCreateFunnel';
 export { useStoryGeneration } from './model/useStoryGeneration';
 export type { StoryGenerationViewStatus } from './model/useStoryGeneration';
 export { StoryGenerationWatcher } from './ui/storyGenerationWatcher';
+export { STORY_NOT_ALLOWED_MESSAGE, isStoryNotAllowedError } from './model/submitError';
