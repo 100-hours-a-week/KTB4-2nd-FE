@@ -19,10 +19,7 @@ export {
   RestorePlaceRequiredError,
   useRestoreUnclassifiedPhotos,
 } from './model/useRestoreUnclassifiedPhotos';
-export type {
-  RestoreUnclassifiedInput,
-  RestoreUnclassifiedTarget,
-} from './model/useRestoreUnclassifiedPhotos';
+export type { RestoreUnclassifiedInput } from './model/useRestoreUnclassifiedPhotos';
 export { RestorePlaceDialog } from './ui/restorePlaceDialog';
 export { useUnclassifiedFolders } from './model/useUnclassifiedFolders';
 export { useUnclassifiedPhotos } from './model/useUnclassifiedPhotos';

@@ -131,6 +131,7 @@ function StoryCreateContent({
               tripId={trip.id}
               selectedIds={form.selectedIds}
               onToggle={form.toggleFolder}
+              onUnavailableSelected={form.removeFolders}
             />
           )}
           <footer className="bg-surface before:from-surface relative shrink-0 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent">
@@ -141,7 +142,7 @@ function StoryCreateContent({
               onClick={step === 'mood' ? () => goToStep('folder') : start}
               className="w-full gap-2 rounded-[16px] text-sm disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
             >
-              생성{' '}
+              {step === 'mood' ? '다음' : '생성'}{' '}
               {step === 'folder' && form.selectedIds.length > 0 && (
                 <span
                   aria-hidden="true"

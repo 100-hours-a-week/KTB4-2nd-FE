@@ -102,7 +102,7 @@ export function PhotoViewer({
         ? [
             {
               id: 'restore',
-              label: '복구',
+              label: '해제',
               icon: <RestoreIcon size="17" />,
               onSelect: onRestore,
               disabled: actionsDisabled,

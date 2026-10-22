@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useController, useForm, useWatch } from 'react-hook-form';
 
 import { toast } from '@/shared/ui/toast';
@@ -46,11 +46,24 @@ export function useStoryCreateForm(tripId: number) {
     setValue('tripPlaceIds', [...selectedIds, id]);
   }
 
+  const removeFolders = useCallback(
+    (ids: number[]) => {
+      const current = getValues('tripPlaceIds');
+      const next = current.filter((id) => !ids.includes(id));
+      if (next.length === current.length) return;
+
+      setValue('tripPlaceIds', next);
+      toast.info(`사진이 없거나 사라진 폴더 ${current.length - next.length}개는 선택에서 뺐어요.`);
+    },
+    [getValues, setValue],
+  );
+
   return {
     mood,
     setMood,
     selectedIds,
     toggleFolder,
+    removeFolders,
     clearFolders: () => setValue('tripPlaceIds', []),
     getValues,
   };

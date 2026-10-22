@@ -55,4 +55,17 @@ describe('toTripStory', () => {
       10, 20, 30,
     ]);
   });
+
+  it('촬영일이 여행 시작일보다 앞서도 0일째·음수 대신 첫째 날로 둔다', () => {
+    const response: TripStoryResponse = {
+      storyId: 1,
+      tripId: 7,
+      userByMe: true,
+      mood: 'CALM',
+      storySummary: '',
+      days: [{ date: '2026-10-10', dayLabel: '여행 전 · 공항', blocks: [block(1, 1)] }],
+    };
+
+    expect(toTripStory(trip, response).days[0].dayNumber).toBe(1);
+  });
 });

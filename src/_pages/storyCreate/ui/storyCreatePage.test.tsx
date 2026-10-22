@@ -55,7 +55,7 @@ function setup() {
 
 async function chooseMoodAndFolders(user: ReturnType<typeof userEvent.setup>, folderIndexes = [0]) {
   await user.click(screen.getByRole('radio', { name: /담백하게/ }));
-  await user.click(screen.getByRole('button', { name: '생성' }));
+  await user.click(screen.getByRole('button', { name: '다음' }));
   const boxes = await screen.findAllByRole('checkbox');
   for (const index of folderIndexes) await user.click(boxes[index]);
 }
@@ -94,14 +94,14 @@ beforeEach(() => {
 describe('StoryCreatePage', () => {
   it('기본 선택 없이 시작하고 분위기를 하나만 선택한다', async () => {
     const { user } = setup();
-    expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
     expect(
       screen.getAllByRole('radio').every((radio) => !(radio as HTMLInputElement).checked),
     ).toBe(true);
     await user.click(screen.getByRole('radio', { name: /감성적으로/ }));
     await user.click(screen.getByRole('radio', { name: /차분하게/ }));
     expect(screen.getByRole('radio', { name: /감성적으로/ })).not.toBeChecked();
-    await user.click(screen.getByRole('button', { name: '생성' }));
+    await user.click(screen.getByRole('button', { name: '다음' }));
     expect(await screen.findAllByRole('checkbox')).toHaveLength(6);
     expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
     expect(window.location.search).toBe('?step=folder');
@@ -120,7 +120,7 @@ describe('StoryCreatePage', () => {
     );
     const { user } = setup();
     await user.click(screen.getByRole('radio', { name: /담백하게/ }));
-    await user.click(screen.getByRole('button', { name: '생성' }));
+    await user.click(screen.getByRole('button', { name: '다음' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '사진을 정리하는 중이라 지금은 스토리를 만들 수 없어요.',
@@ -130,6 +130,55 @@ describe('StoryCreatePage', () => {
       '/trips/7',
     );
     expect(getStorySourceFolders).toHaveBeenCalledTimes(1);
+  });
+
+  it('저장해 둔 선택 중 사진이 0장이 되었거나 사라진 폴더는 선택에서 뺀다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        mood: 'PLAIN',
+        tripPlaceIds: [1, 2, 99],
+        generationId: null,
+        startedAt: null,
+      }),
+    );
+    vi.mocked(getStorySourceFolders).mockResolvedValue({
+      folders: [
+        { id: 1, name: '장소 1', photoCount: 3, thumbnailUrl: null, accent: 'coast' },
+        { id: 2, name: '장소 2', photoCount: 0, thumbnailUrl: null, accent: 'coast' },
+      ],
+      hasNext: false,
+      nextCursor: null,
+    });
+    window.history.replaceState(null, '', '/trips/7/story/create?step=folder');
+    setup();
+
+    await waitFor(() =>
+      expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+        tripPlaceIds: [1],
+      }),
+    );
+    expect(screen.getByRole('checkbox', { name: '장소 1 사진 3장 선택' })).toBeChecked();
+    expect(screen.getByLabelText('선택한 폴더 수')).toHaveTextContent('1 / 10');
+  });
+
+  it('아직 불러오지 않은 페이지에 있을 수 있는 폴더는 선택을 유지한다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ mood: 'PLAIN', tripPlaceIds: [1, 99], generationId: null, startedAt: null }),
+    );
+    vi.mocked(getStorySourceFolders).mockResolvedValue({
+      folders: [{ id: 1, name: '장소 1', photoCount: 3, thumbnailUrl: null, accent: 'coast' }],
+      hasNext: true,
+      nextCursor: 'cursor-2',
+    });
+    window.history.replaceState(null, '', '/trips/7/story/create?step=folder');
+    setup();
+
+    await screen.findByRole('checkbox', { name: '장소 1 사진 3장 선택' });
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      tripPlaceIds: [1, 99],
+    });
   });
 
   it('최대 10개만 선택하고 선택 해제 후 다른 폴더를 선택한다', async () => {
@@ -287,7 +336,7 @@ describe('StoryCreatePage', () => {
     const back = vi.spyOn(window.history, 'back');
     const { user } = setup();
     await user.click(screen.getByRole('radio', { name: /담백하게/ }));
-    await user.click(screen.getByRole('button', { name: '생성' }));
+    await user.click(screen.getByRole('button', { name: '다음' }));
     await screen.findAllByRole('checkbox');
 
     await user.click(screen.getByRole('button', { name: '분위기 선택으로 돌아가기' }));

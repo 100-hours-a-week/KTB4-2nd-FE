@@ -2,22 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 import { PHOTO_ACCENT_GRADIENT } from '@/features/photoList';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
   toUnclassifiedIssueSlug,
-  RestorePlaceDialog,
-  RestorePlaceRequiredError,
-  useRestoreUnclassifiedPhotos,
   useUnclassifiedFolders,
-  type UnclassifiedIssue,
   type UnclassifiedFolder,
 } from '@/features/unclassifiedPhotos';
-import { Button } from '@/shared/ui/button';
-import { Dialog, DialogActions } from '@/shared/ui/dialog';
-import { CheckIcon, RestoreIcon, TrashIcon, WarningIcon } from '@/shared/ui/icons';
+import { CheckIcon, TrashIcon, WarningIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Skeleton } from '@/shared/ui/skeleton';
 
@@ -29,13 +22,6 @@ export type UnclassifiedFolderPageProps = {
 export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderPageProps) {
   const router = useRouter();
   const { folders, viewState, refetch } = useUnclassifiedFolders(tripId);
-  const { mutate: requestRestore, isPending: isRestoring } = useRestoreUnclassifiedPhotos(tripId);
-  const [pendingRestoreFolder, setPendingRestoreFolder] = useState<UnclassifiedFolder | null>(null);
-  const [placeRequest, setPlaceRequest] = useState<{
-    issue: UnclassifiedIssue;
-    photoCount: number;
-  } | null>(null);
-
   const visibleFolders = folders.filter((folder) => folder.photoCount > 0);
   const totalCount = folders.reduce((sum, folder) => sum + folder.photoCount, 0);
 
@@ -46,32 +32,6 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
     }
 
     router.replace(`/trips/${tripId}`);
-  }
-
-  function confirmRestore() {
-    if (!pendingRestoreFolder) return;
-
-    const { issue } = pendingRestoreFolder;
-    requestRestore(
-      { issue },
-      {
-        onError: (error) => {
-          if (error instanceof RestorePlaceRequiredError) {
-            setPlaceRequest({ issue, photoCount: error.photoCount });
-          }
-        },
-        onSettled: () => setPendingRestoreFolder(null),
-      },
-    );
-  }
-
-  function restoreWithPlace(tripPlaceId: number) {
-    if (!placeRequest) return;
-
-    requestRestore(
-      { issue: placeRequest.issue, fallbackPlaceId: tripPlaceId },
-      { onSuccess: () => setPlaceRequest(null) },
-    );
   }
 
   return (
@@ -97,7 +57,7 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
         <span>
           흔들렸거나 기준에 맞지 않아 자동으로 분류된 사진이에요.
           <br />
-          괜찮은 사진은 해제해서 원래 위치 폴더로 되돌릴 수 있어요.
+          폴더를 열어 괜찮은 사진을 골라 해제하면 원래 위치 폴더로 돌아가요.
         </span>
       </p>
 
@@ -113,63 +73,17 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
                 <UnclassifiedFolderCard
                   folder={folder}
                   href={`/trips/${tripId}/unclassified/${toUnclassifiedIssueSlug(folder.issue)}?trip=${encodeURIComponent(tripName)}`}
-                  onRestore={() => setPendingRestoreFolder(folder)}
                 />
               </li>
             ))}
           </ul>
         )}
       </section>
-
-      <Dialog
-        open={pendingRestoreFolder !== null}
-        onClose={() => !isRestoring && setPendingRestoreFolder(null)}
-        title={
-          pendingRestoreFolder
-            ? `${UNCLASSIFIED_ISSUE_LABEL[pendingRestoreFolder.issue]} ${pendingRestoreFolder.photoCount}장을 해제할까요?`
-            : ''
-        }
-        description="해제한 사진은 원래 위치 폴더로 돌아가요."
-      >
-        <DialogActions>
-          <Button
-            variant="secondary"
-            onClick={() => setPendingRestoreFolder(null)}
-            disabled={isRestoring}
-            className="min-h-11 w-full px-0 text-sm"
-          >
-            취소
-          </Button>
-          <Button
-            onClick={confirmRestore}
-            isLoading={isRestoring}
-            className="min-h-11 w-full px-0 text-sm"
-          >
-            해제하기
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <RestorePlaceDialog
-        open={placeRequest !== null}
-        tripId={tripId}
-        photoCount={placeRequest?.photoCount ?? 0}
-        isRestoring={isRestoring}
-        onClose={() => setPlaceRequest(null)}
-        onConfirm={restoreWithPlace}
-      />
     </main>
   );
 }
 
-function UnclassifiedFolderCard({
-  folder,
-  href,
-  onRestore,
-}: {
-  folder: UnclassifiedFolder;
-  href: string;
-  onRestore: () => void;
-}) {
+function UnclassifiedFolderCard({ folder, href }: { folder: UnclassifiedFolder; href: string }) {
   const label = UNCLASSIFIED_ISSUE_LABEL[folder.issue];
 
   return (
@@ -184,14 +98,6 @@ function UnclassifiedFolderCard({
           {label} · {folder.photoCount}장
         </span>
       </Link>
-      <button
-        type="button"
-        onClick={onRestore}
-        aria-label={`${label} 전체 해제`}
-        className="absolute right-2.5 bottom-2.5 inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-full bg-black/45 px-3 text-[11px] font-bold text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
-        <RestoreIcon strokeWidth="2" size="13" /> 해제
-      </button>
     </div>
   );
 }
