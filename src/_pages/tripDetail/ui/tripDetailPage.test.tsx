@@ -61,7 +61,6 @@ function renderTripDetailPage(
   tripOverride: Partial<TripDetail> = {},
   latestOverride: Partial<TripDetail> = {},
 ) {
-  // 브라우저에서 다시 받는 요약은 기본적으로 서버 값과 같다고 봅니다.
   vi.mocked(fetchTripSummary).mockResolvedValue({ ...trip, ...tripOverride, ...latestOverride });
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

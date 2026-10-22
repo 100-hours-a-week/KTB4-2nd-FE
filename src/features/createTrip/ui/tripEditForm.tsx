@@ -101,7 +101,6 @@ function TripEditFormContent({
     } else {
       toast.success('여행을 수정했어요.');
     }
-    // 이름·날짜·사진이 바뀌었으므로 목록, 지도, 장소 폴더를 새로 받습니다.
     void invalidateTripData(queryClient);
     router.replace(tripPath);
   };
