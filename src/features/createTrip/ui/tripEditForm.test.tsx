@@ -201,6 +201,30 @@ describe('TripEditForm', () => {
     expect(toast.success).toHaveBeenCalledWith('여행을 수정했어요.');
   });
 
+  it('사진 정리 중 다른 작업 이어하기를 누르면 409로 막히는 상세 대신 목록으로 나간다', async () => {
+    vi.mocked(getTripProcessingStatus).mockResolvedValue({
+      tripId: 7,
+      status: 'PROCESSING',
+      progress: null,
+      currentStep: null,
+      result: null,
+      error: null,
+    });
+    const user = userEvent.setup();
+    const { container } = renderForm('images');
+
+    await screen.findByRole('button', { name: '수정 완료' });
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]');
+    await user.upload(input!, new File(['photo'], 'new.jpg', { type: 'image/jpeg' }));
+    await user.click(screen.getByRole('button', { name: '수정 완료' }));
+
+    expect(await screen.findByRole('heading', { name: '여행 수정' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: '다른 작업 이어하기' }));
+
+    expect(replace).toHaveBeenCalledWith('/trips');
+    expect(replace).not.toHaveBeenCalledWith('/trips/7');
+  });
+
   it('같은 이름의 여행이 있으면 이름 단계로 돌아가 안내한다', async () => {
     vi.mocked(updateTrip).mockRejectedValue(conflict('TRIP_NAME_DUPLICATED'));
     const user = userEvent.setup();

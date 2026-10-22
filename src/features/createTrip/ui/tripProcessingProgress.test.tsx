@@ -76,4 +76,23 @@ describe('TripProcessingProgress', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips'));
     expect(toast.error).toHaveBeenCalledTimes(1);
   });
+
+  it('수정 작업이면 여행 수정 제목을 보여주고, 완료 시 사진 추가 완료로 알린다', async () => {
+    addPendingTripProcessing({ tripId: 7, kind: 'edit' });
+    vi.mocked(getTripProcessingStatus).mockResolvedValueOnce(status('PROCESSING'));
+    renderProgress();
+
+    expect(await screen.findByRole('heading', { name: '여행 수정' })).toBeInTheDocument();
+
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(status('COMPLETED'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips/7'), { timeout: 4_000 });
+    expect(toast.success).toHaveBeenCalledWith('추가한 사진을 장소별로 정리했어요.');
+  });
+
+  it('이 브라우저에 기록이 없으면 여행 만들기 제목을 쓴다', async () => {
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(status('PROCESSING'));
+    renderProgress();
+
+    expect(await screen.findByRole('heading', { name: '여행 만들기' })).toBeInTheDocument();
+  });
 });
