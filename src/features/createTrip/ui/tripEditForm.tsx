@@ -181,7 +181,7 @@ function TripEditFormContent({
       <TripProcessingView
         uploadRatio={edit.uploadRatio}
         processingStatus={edit.uploadRatio >= 1 ? edit.processingStatus : undefined}
-        onContinueElsewhere={() => router.replace(tripPath)}
+        onContinueElsewhere={() => router.replace('/trips')}
       />
     );
   }
