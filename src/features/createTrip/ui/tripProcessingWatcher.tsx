@@ -16,6 +16,7 @@ import { toast } from '@/shared/ui/toast';
 
 import { getTripProcessingStatus, isTripProcessingRunning } from '../api/getTripProcessingStatus';
 import {
+  getPendingTripProcessingKey,
   getPendingTripProcessingSnapshot,
   parsePendingTripProcessing,
   removePendingTripProcessing,
@@ -34,7 +35,14 @@ const FAILED_MESSAGE: Record<PendingTrip['kind'], string> = {
   edit: '추가한 사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.',
 };
 
-/** 만들기·수정·진행률 화면에 있으면 그 화면이 직접 결과를 보여주므로 여기서는 확인하지 않습니다. */
+function backgroundStatusKey(trip: PendingTrip) {
+  return [
+    ...createTripQueries.processingStatusKeys(trip.tripId),
+    'background',
+    trip.startedAt,
+  ] as const;
+}
+
 function isHandledByCurrentPage(trip: PendingTrip, pathname: string) {
   if (pathname === `/trips/${trip.tripId}/processing`) return true;
   return trip.kind === 'create'
@@ -42,9 +50,6 @@ function isHandledByCurrentPage(trip: PendingTrip, pathname: string) {
     : pathname === `/trips/${trip.tripId}/edit`;
 }
 
-/**
- * 여행 만들기·수정 화면을 나가도 사진 정리를 계속 확인하고, 끝나면 어느 화면에서든 토스트로 알립니다.
- */
 export function TripProcessingWatcher() {
   const router = useRouter();
   const pathname = usePathname();
@@ -64,8 +69,7 @@ export function TripProcessingWatcher() {
   );
   const results = useQueries({
     queries: trips.map((trip) => ({
-      // 만들기 화면의 상태 조회는 결과 처리를 함께 하므로 같은 캐시를 쓰지 않도록 키를 나눕니다.
-      queryKey: [...createTripQueries.processingStatusKeys(trip.tripId), 'background'],
+      queryKey: backgroundStatusKey(trip),
       queryFn: () => getTripProcessingStatus(trip.tripId),
       refetchInterval: POLLING_MS,
     })),
@@ -74,14 +78,14 @@ export function TripProcessingWatcher() {
   useEffect(() => {
     trips.forEach((trip, index) => {
       const { data, error } = results[index] ?? {};
-      const handledKey = `${trip.kind}:${trip.tripId}`;
+      const handledKey = getPendingTripProcessingKey(trip);
       if (handled.current.has(handledKey)) return;
 
       const gone = isAxiosError(error) && error.response?.status === 404;
       if (!gone && (!data || isTripProcessingRunning(data.status))) return;
 
       handled.current.add(handledKey);
-      removePendingTripProcessing(trip.tripId);
+      removePendingTripProcessing(trip.tripId, trip.startedAt);
       if (gone) return;
 
       if (data?.status === 'COMPLETED') {

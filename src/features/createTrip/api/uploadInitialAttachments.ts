@@ -56,8 +56,7 @@ export async function getContentType(file: File) {
     const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
     const detected = detectContentType(header);
     if (detected) return detected;
-  } catch {
-  }
+  } catch {}
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   return CONTENT_TYPES_BY_EXTENSION[extension] ?? file.type;
 }
