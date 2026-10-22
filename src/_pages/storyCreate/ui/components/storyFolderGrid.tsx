@@ -18,7 +18,6 @@ export function StoryFolderGrid({
   tripId: number;
   selectedIds: number[];
   onToggle: (id: number) => void;
-  /** 저장해 둔 선택 중 사진이 0장이 되었거나 사라진 폴더를 알립니다. */
   onUnavailableSelected?: (ids: number[]) => void;
 }) {
   const query = useInfiniteQuery(storyCreateQueries.sourceFolders(tripId));
@@ -29,9 +28,6 @@ export function StoryFolderGrid({
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = query;
   const hasMore = visibleCount < folders.length || hasNextPage;
 
-  // 임시 저장에서 복원한 선택은 그 사이 사진이 지워졌을 수 있어 최신 폴더 목록과 맞춥니다.
-  // 0장 폴더는 비활성이라 사용자가 직접 선택을 풀 수 없습니다.
-  // 목록에 없는 폴더는 아직 안 불러온 페이지에 있을 수 있어 끝까지 불러온 뒤에만 뺍니다.
   useEffect(() => {
     if (!query.data || !onUnavailableSelected) return;
 
