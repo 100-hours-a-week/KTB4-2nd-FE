@@ -15,6 +15,7 @@ import { toast } from '@/shared/ui/toast';
 import type { TripEditData } from '../api/getTripForEdit';
 import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
 import { getTripEditSubmitError } from '../model/editSubmitError';
+import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 import type { TripCreateFormValues, TripCreateStep } from '../model/types';
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
 import { hasTripEditChanges, useTripEditSubmit } from '../model/useTripEditSubmit';
@@ -124,7 +125,20 @@ function TripEditFormContent({
     else router.replace(tripPath);
   };
 
+  const existingPhotos = data.photos.filter((photo) => !edit.deletedPhotoIds.has(photo.id));
+  const pendingRemovedIds = new Set(
+    [...removedPhotoIds].filter((id) => !edit.deletedPhotoIds.has(id)),
+  );
+  const keptPhotoCount = existingPhotos.length - pendingRemovedIds.size;
+
   const toggleRemovedPhoto = (photoId: number) => {
+    const restoring = removedPhotoIds.has(photoId);
+    const newPhotoCount = methods.getValues('attachments').length;
+    if (restoring && keptPhotoCount + 1 + newPhotoCount > TRIP_IMAGE_MAX_COUNT) {
+      toast.error(`여행 하나에 사진은 최대 ${TRIP_IMAGE_MAX_COUNT}장까지 올릴 수 있어요.`);
+      return;
+    }
+
     setRemovedPhotoIds((current) => {
       const next = new Set(current);
       if (next.has(photoId)) next.delete(photoId);
@@ -136,12 +150,17 @@ function TripEditFormContent({
   const submitForm = (values: TripCreateFormValues) => {
     if (edit.isSaving) return;
 
-    if (data.photos.length - removedPhotoIds.size + values.attachments.length === 0) {
+    const totalPhotoCount = keptPhotoCount + values.attachments.length;
+    if (totalPhotoCount === 0) {
       toast.error('사진을 한 장 이상 남겨주세요.');
       return;
     }
+    if (totalPhotoCount > TRIP_IMAGE_MAX_COUNT) {
+      toast.error(`여행 하나에 사진은 최대 ${TRIP_IMAGE_MAX_COUNT}장까지 올릴 수 있어요.`);
+      return;
+    }
 
-    const input = { values, removedPhotoIds: [...removedPhotoIds] };
+    const input = { values, removedPhotoIds: [...pendingRemovedIds] };
     if (!hasTripEditChanges(data, input)) {
       toast.info('바뀐 내용이 없어요.');
       return;
@@ -194,8 +213,8 @@ function TripEditFormContent({
           </Funnel.Step>
           <Funnel.Step name="images">
             <TripEditImageStep
-              existingPhotos={data.photos}
-              removedPhotoIds={removedPhotoIds}
+              existingPhotos={existingPhotos}
+              removedPhotoIds={pendingRemovedIds}
               onToggleRemove={toggleRemovedPhoto}
               onBack={() => handleBack('images')}
               isSubmitting={edit.isSaving}
