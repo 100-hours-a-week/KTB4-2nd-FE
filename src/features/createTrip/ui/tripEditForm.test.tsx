@@ -256,7 +256,6 @@ describe('TripEditForm', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(deletePhoto).toHaveBeenCalledWith(101, 'csrf-token');
-    // 이미 지워진 사진은 "삭제 취소"로 되살릴 수 없게 목록에서 빠집니다.
     expect(await screen.findByRole('button', { name: '1번째 기존 사진 삭제' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /삭제 취소/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /번째 기존 사진/ })).toHaveLength(1);
