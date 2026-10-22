@@ -1,4 +1,5 @@
 export { STORY_FOLDER_LIMIT, STORY_MOODS, isStoryCreateStep } from './model/types';
+export { STORY_FOLDER_ACCENT_GRADIENT } from './model/storyFolderAccent';
 export type { StoryCreateStep, StoryMood, StorySourceFolder } from './model/types';
 export { clearAllStoryCreateDrafts, clearStoryCreateDraft } from './model/storyCreateDraft';
 export { useStoryCreateForm } from './model/useStoryCreateForm';

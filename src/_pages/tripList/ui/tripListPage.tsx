@@ -11,6 +11,7 @@ import {
   type TripListItem,
   type TripSortOrder,
 } from '@/features/tripList';
+import { getThumbnailFallbackGradient } from '@/shared/config/thumbnailGradient';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 import { AlertCircleIcon, ImageIcon, MapIcon, StarIcon } from '@/shared/ui/icons';
 import { SelectDropdown } from '@/shared/ui/selectDropdown';
@@ -310,15 +311,10 @@ function TripThumbnail({ trip, colorIndex }: { trip: TripListItem; colorIndex: n
       </div>
     );
   }
-  const gradients = [
-    'from-[#273a63] via-[#4d638c] to-[#172743]',
-    'from-[#f3d5a2] via-[#d87743] to-[#9d3f25]',
-    'from-[#cfe5ed] via-[#8ebaa6] to-[#528b9e]',
-  ];
   return (
     <div
       aria-hidden="true"
-      className={`relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[13px] bg-gradient-to-br ${gradients[colorIndex % gradients.length]}`}
+      className={`relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[13px] bg-gradient-to-br ${getThumbnailFallbackGradient(colorIndex)}`}
     >
       <span className="absolute right-[-10px] bottom-[-18px] size-16 rounded-full bg-white/20" />
       <span className="absolute bottom-3 left-3 h-1.5 w-12 rounded-full bg-white/30" />

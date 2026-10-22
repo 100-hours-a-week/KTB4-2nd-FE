@@ -9,6 +9,8 @@ function readStep(fallback: StoryCreateStep) {
   return isStoryCreateStep(queryStep) ? queryStep : fallback;
 }
 
+type FunnelHistoryState = { storyCreatePreviousStep?: StoryCreateStep } | null;
+
 function createStepUrl(step: StoryCreateStep) {
   const url = new URL(window.location.href);
   url.searchParams.set('step', step);
@@ -26,10 +28,14 @@ export function useStoryCreateFunnel(initialStep: StoryCreateStep) {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [initialStep]);
 
-  const goToStep = useCallback((nextStep: StoryCreateStep) => {
-    window.history.pushState(null, '', createStepUrl(nextStep));
-    setStep(nextStep);
-  }, []);
+  const goToStep = useCallback(
+    (nextStep: StoryCreateStep) => {
+      const state: FunnelHistoryState = { storyCreatePreviousStep: step };
+      window.history.pushState(state, '', createStepUrl(nextStep));
+      setStep(nextStep);
+    },
+    [step],
+  );
 
   const replaceStep = useCallback((nextStep: StoryCreateStep) => {
     window.history.replaceState(null, '', createStepUrl(nextStep));
@@ -40,5 +46,14 @@ export function useStoryCreateFunnel(initialStep: StoryCreateStep) {
     window.history.back();
   }, []);
 
-  return { step, goToStep, replaceStep, goBack };
+  const returnToStep = useCallback(
+    (targetStep: StoryCreateStep) => {
+      const state = window.history.state as FunnelHistoryState;
+      if (state?.storyCreatePreviousStep === targetStep) goBack();
+      else replaceStep(targetStep);
+    },
+    [goBack, replaceStep],
+  );
+
+  return { step, goToStep, replaceStep, goBack, returnToStep };
 }

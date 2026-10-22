@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import type { StorySourceFolder } from '@/features/createStory';
+import { STORY_FOLDER_ACCENT_GRADIENT, type StorySourceFolder } from '@/features/createStory';
 import { CheckIcon } from '@/shared/ui/icons';
 
 export function StoryFolderChoice({
@@ -16,17 +16,9 @@ export function StoryFolderChoice({
 }) {
   const [failed, setFailed] = useState(false);
   const empty = folder.photoCount === 0;
-  const colors = {
-    coast: 'from-[#b5def4] to-[#306762]',
-    sunset: 'from-[#ffd299] via-[#f9a393] to-[#1b2c51]',
-    island: 'from-[#78cae8] via-[#a4e4ed] to-[#32495c]',
-    night: 'from-[#33476c] to-[#14233c]',
-    field: 'from-[#d6edda] to-[#71a48c]',
-    sky: 'from-[#dce6fa] to-[#668cab]',
-  };
   return (
     <label
-      className={`relative block aspect-[0.94] overflow-hidden rounded-[18px] bg-gradient-to-b ${colors[folder.accent]} ${empty ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
+      className={`relative block aspect-[0.94] overflow-hidden rounded-[18px] bg-gradient-to-b ${STORY_FOLDER_ACCENT_GRADIENT[folder.accent]} ${empty ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
     >
       {folder.thumbnailUrl && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
