@@ -33,7 +33,7 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
   const router = useRouter();
   const { photos, viewState, refetch } = usePlacePhotos(tripId, tripPlaceId);
   const { mutate: requestDownload, isPending: isDownloading } = usePhotoDownload();
-  const { mutate: requestDelete, isPending: isDeleting } = usePhotoDelete(tripId, tripPlaceId);
+  const { mutate: requestDelete, isPending: isDeleting } = usePhotoDelete();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
@@ -89,6 +89,7 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
         selectionMode={selectionMode}
         selectedCount={selectedCount}
         allSelected={allSelected}
+        canSelect={photos.length > 0}
         onBack={handleBack}
         onEnterSelection={() => setSelectionMode(true)}
         onCancelSelection={leaveSelectionMode}
@@ -274,6 +275,7 @@ function PhotoListHeader({
   selectionMode,
   selectedCount,
   allSelected,
+  canSelect,
   onBack,
   onEnterSelection,
   onCancelSelection,
@@ -283,6 +285,8 @@ function PhotoListHeader({
   selectionMode: boolean;
   selectedCount: number;
   allSelected: boolean;
+  /** 사진이 없으면 고를 것도 없으므로 선택 버튼을 숨깁니다. */
+  canSelect: boolean;
   onBack: () => void;
   onEnterSelection: () => void;
   onCancelSelection: () => void;
@@ -313,13 +317,15 @@ function PhotoListHeader({
         {selectionMode ? `${selectedCount}장 선택됨` : placeName}
       </h1>
 
-      <button
-        type="button"
-        onClick={selectionMode ? onToggleAll : onEnterSelection}
-        className="focus-visible:outline-brand justify-self-end rounded px-1 py-2 text-sm font-bold focus-visible:outline-2"
-      >
-        {selectionMode ? (allSelected ? '전체 해제' : '전체 선택') : '선택'}
-      </button>
+      {canSelect && (
+        <button
+          type="button"
+          onClick={selectionMode ? onToggleAll : onEnterSelection}
+          className="focus-visible:outline-brand justify-self-end rounded px-1 py-2 text-sm font-bold focus-visible:outline-2"
+        >
+          {selectionMode ? (allSelected ? '전체 해제' : '전체 선택') : '선택'}
+        </button>
+      )}
     </header>
   );
 }

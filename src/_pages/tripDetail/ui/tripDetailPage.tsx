@@ -7,6 +7,7 @@ import { useState } from 'react';
 import {
   useDeleteTrip,
   useTripPlaceFolders,
+  useTripSummary,
   type TripDetail,
   type TripPlaceFolder,
 } from '@/features/tripDetail';
@@ -33,8 +34,9 @@ export type TripDetailPageProps = {
   trip: TripDetail;
 };
 
-export function TripDetailPage({ trip }: TripDetailPageProps) {
+export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const router = useRouter();
+  const trip = useTripSummary(initialTrip);
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);

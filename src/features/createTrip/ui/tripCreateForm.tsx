@@ -1,9 +1,11 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { invalidateTripData } from '@/queryFactory';
 import { Funnel } from '@/shared/lib/funnel';
 import { Button } from '@/shared/ui/button';
 import { Dialog } from '@/shared/ui/dialog';
@@ -39,6 +41,7 @@ type TripCreateFormProps = {
 
 export function TripCreateForm({ initialStep }: TripCreateFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const draftRestored = useRef(false);
   const methods = useForm<TripCreateFormValues>({
     defaultValues: TRIP_CREATE_DEFAULT_VALUES,
@@ -62,13 +65,15 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
     const outcome = getTripCreateSubmitOutcome(result);
     if (outcome.kind === 'completed' || outcome.kind === 'canceled') {
       clearTripCreateDraft();
+      // 이 화면에서 끝까지 기다린 경우에도 백그라운드 완료와 똑같이 홈 지도·목록을 새로 받습니다.
+      void invalidateTripData(queryClient);
       if (outcome.kind === 'completed') toast.success(outcome.message);
       else toast.warning(outcome.message);
       router.replace(outcome.redirectTo);
       return;
     }
     toast.error(outcome.message);
-  }, [router, submit.processingResult]);
+  }, [queryClient, router, submit.processingResult]);
 
   useEffect(() => {
     methods.reset(readTripCreateDraft());
