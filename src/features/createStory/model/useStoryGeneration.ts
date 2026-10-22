@@ -117,7 +117,11 @@ export function useStoryGeneration(tripId: number) {
   }, [status]);
 
   useEffect(() => {
-    if (status === 'failed') toast.error('잠시 후 다시 시도해주세요.');
+    if (status === 'failed') {
+      toast.error('잠시 후 다시 시도해주세요.');
+      updateStoryCreateDraft(tripId, EMPTY_JOB);
+      return;
+    }
     if (status !== 'completed') return;
 
     clearStoryCreateDraft(tripId);

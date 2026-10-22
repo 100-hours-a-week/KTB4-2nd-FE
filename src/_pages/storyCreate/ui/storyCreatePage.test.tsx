@@ -244,6 +244,58 @@ describe('StoryCreatePage', () => {
     expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 
+  it('완성 화면에서 상단 뒤로가기를 누르면 폴더 선택이 아니라 여행 상세로 나간다', async () => {
+    vi.mocked(getStoryGenerationStatus).mockResolvedValue({
+      generationId: 31,
+      status: 'COMPLETED',
+      progress: 100,
+      storyId: 5,
+      error: null,
+    });
+    const { user } = setup();
+    await chooseMoodAndFolders(user);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+    await screen.findByRole('button', { name: '스토리 보기' });
+
+    await user.click(screen.getByRole('button', { name: '스토리 생성에서 돌아가기' }));
+
+    expect(replace).toHaveBeenCalledWith('/trips/7');
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('생성에 실패하면 화면에서 알린 뒤 저장된 작업 번호를 지워, 나가도 다시 알리지 않는다', async () => {
+    vi.mocked(getStoryGenerationStatus).mockResolvedValue({
+      generationId: 31,
+      status: 'FAILED',
+      progress: 10,
+      storyId: null,
+      error: { code: 'STORY_GENERATION_FAILED', message: '스토리 생성에 실패했습니다.' },
+    });
+    const { user } = setup();
+    await chooseMoodAndFolders(user);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+
+    expect(await screen.findByRole('button', { name: '다시 시도하기' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+        generationId: null,
+      }),
+    );
+  });
+
+  it('폴더 단계에서 뒤로가면 분위기 단계 기록을 새로 쌓지 않고 이전 기록으로 돌아간다', async () => {
+    const back = vi.spyOn(window.history, 'back');
+    const { user } = setup();
+    await user.click(screen.getByRole('radio', { name: /담백하게/ }));
+    await user.click(screen.getByRole('button', { name: '생성' }));
+    await screen.findAllByRole('checkbox');
+
+    await user.click(screen.getByRole('button', { name: '분위기 선택으로 돌아가기' }));
+
+    expect(back).toHaveBeenCalledOnce();
+    back.mockRestore();
+  });
+
   it('생성에 실패하면 같은 선택으로 다시 시도할 수 있다', async () => {
     vi.mocked(getStoryGenerationStatus).mockResolvedValueOnce({
       generationId: 31,

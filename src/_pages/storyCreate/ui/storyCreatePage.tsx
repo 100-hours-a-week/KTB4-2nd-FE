@@ -45,7 +45,7 @@ function StoryCreateContent({
 }: StoryCreatePageProps) {
   const router = useRouter();
   const generation = useStoryGeneration(trip.id);
-  const { step, goToStep, replaceStep } = useStoryCreateFunnel(initialStep);
+  const { step, goToStep, replaceStep, returnToStep } = useStoryCreateFunnel(initialStep);
   const form = useStoryCreateForm(trip.id);
   const { getValues } = form;
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -79,12 +79,14 @@ function StoryCreateContent({
   }
   function back() {
     if (generation.status === 'processing') setCancelOpen(true);
-    else if (processing) {
+    else if (generation.status === 'completed') {
+      router.replace(`/trips/${trip.id}`);
+    } else if (processing) {
       generation.reset();
       replaceStep('folder');
     } else if (step === 'folder') {
       form.clearFolders();
-      replaceStep('mood');
+      returnToStep('mood');
     } else {
       clearStoryCreateDraft(trip.id);
       router.replace(`/trips/${trip.id}`);

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import {
+  PLACE_FOLDER_ACCENT_GRADIENT,
   useDeleteTrip,
   useTripPlaceFolders,
   useTripSummary,
@@ -277,19 +278,10 @@ function FolderThumbnail({ folder }: { folder: TripPlaceFolder }) {
     );
   }
 
-  const accentClass: Record<TripPlaceFolder['accent'], string> = {
-    coast: 'from-[#cce4ee] via-[#6eafc8] to-[#d8cda0]',
-    sunset: 'from-[#1d2b49] via-[#314263] to-[#f5a85a]',
-    island: 'from-[#acd6ed] via-[#70ad64] to-[#447c3e]',
-    night: 'from-[#425783] via-[#23365c] to-[#101d34]',
-    field: 'from-[#f3deb4] via-[#ce9956] to-[#788b56]',
-    sky: 'from-[#badbea] via-[#96c5dc] to-[#e9d8a9]',
-  };
-
   return (
     <span
       aria-hidden="true"
-      className={`relative block aspect-square w-full overflow-hidden rounded-[14px] bg-gradient-to-b ${accentClass[folder.accent]}`}
+      className={`relative block aspect-square w-full overflow-hidden rounded-[14px] bg-gradient-to-b ${PLACE_FOLDER_ACCENT_GRADIENT[folder.accent]}`}
     >
       <span className="absolute right-[14%] top-[16%] size-[18%] rounded-full bg-[#ffe7a6]" />
       <span className="absolute -right-[8%] bottom-[-8%] h-[42%] w-[80%] rounded-[50%] bg-black/16" />
