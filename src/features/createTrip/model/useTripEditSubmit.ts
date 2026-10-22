@@ -1,10 +1,10 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 
 import { deletePhoto, deletePhotos } from '@/features/photoList';
-import { createTripQueries } from '@/queryFactory';
+import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
 
 import type { TripEditData } from '../api/getTripForEdit';
@@ -64,7 +64,9 @@ export function useTripEditSubmit(
   onFinished: (status: TripProcessingStatusResponse | null) => void,
 ) {
   const tripId = initial.tripId;
+  const queryClient = useQueryClient();
   const [uploadRatio, setUploadRatio] = useState(0);
+  const [deletedIds, setDeletedIds] = useState<ReadonlySet<number>>(() => new Set());
   const [awaitingProcessing, setAwaitingProcessing] = useState(false);
   const deletedPhotoIds = useRef(new Set<number>());
   const addition = useRef<AdditionPoint | null>(null);
@@ -80,6 +82,7 @@ export function useTripEditSubmit(
       if (photoIdsToDelete.length === 1) await deletePhoto(photoIdsToDelete[0], csrfToken);
       else if (photoIdsToDelete.length > 1) await deletePhotos(photoIdsToDelete, csrfToken);
       photoIdsToDelete.forEach((id) => deletedPhotoIds.current.add(id));
+      if (photoIdsToDelete.length > 0) setDeletedIds(new Set(deletedPhotoIds.current));
 
       const files = values.attachments;
       if (files.length === 0) return { processing: false };
@@ -110,6 +113,9 @@ export function useTripEditSubmit(
       addPendingTripProcessing({ tripId, kind: 'edit' });
       return { processing: true };
     },
+    onError: () => {
+      void invalidateTripData(queryClient);
+    },
   });
 
   const processingStatus = useQuery({
@@ -139,6 +145,7 @@ export function useTripEditSubmit(
     resetAddition: () => {
       addition.current = null;
     },
+    deletedPhotoIds: deletedIds,
     isSaving: mutation.isPending,
     isProcessing: awaitingProcessing,
     uploadRatio,

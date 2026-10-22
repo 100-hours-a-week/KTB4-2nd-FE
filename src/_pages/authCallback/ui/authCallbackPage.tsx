@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { exchangeLoginTicket } from '@/features/kakaoLogin';
+import { syncLocalDataOwner } from '@/features/manageAccount';
 import type { ApiErrorResponse } from '@/shared/api';
 import { EVENTS, identify, track } from '@/shared/lib/analytics';
 
@@ -52,10 +53,12 @@ export function AuthCallbackPage({
     exchangeLoginTicket(loginTicket)
       .then((result) => {
         if (result.requiresNickname) {
+          syncLocalDataOwner(null);
           window.location.replace('/signup');
           return;
         }
 
+        syncLocalDataOwner(result.user.userId);
         identify(result.user.userId, { signup_method: 'kakao' });
         track(EVENTS.LOGIN, { method: 'kakao' });
         window.location.replace('/');
