@@ -1,12 +1,13 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import { useController, useFormContext } from 'react-hook-form';
 
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
-import { validateImageSelection } from '../model/imageValidation';
-import type { TripCreateFormValues } from '../model/types';
+import { validateImageSelection } from '../../model/imageValidation';
+import type { TripCreateFormValues } from '../../model/types';
 import { ImageUploadField } from './imageUploadField';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
@@ -25,6 +26,18 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
     },
   });
 
+  const [brokenFiles, setBrokenFiles] = useState<ReadonlySet<File>>(() => new Set());
+  const brokenCount = field.value.filter((file) => brokenFiles.has(file)).length;
+  const markPreviewBroken = useCallback((file: File, broken: boolean) => {
+    setBrokenFiles((previous) => {
+      if (previous.has(file) === broken) return previous;
+      const next = new Set(previous);
+      if (broken) next.add(file);
+      else next.delete(file);
+      return next;
+    });
+  }, []);
+
   const selectFiles = (selectedFiles: File[]) => {
     if (selectedFiles.length === 0) return;
 
@@ -37,6 +50,9 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
     field.onChange(result.files);
     if (result.duplicateCount > 0) {
       toast.info(`중복 사진 ${result.duplicateCount}장은 제외했어요.`);
+    }
+    if (result.emptyCount > 0) {
+      toast.info(`내용이 비어 있는 파일 ${result.emptyCount}개는 제외했어요.`);
     }
   };
 
@@ -56,7 +72,7 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
         <Button
           type="submit"
           className={`w-full ${tripCreateButtonClassName}`}
-          disabled={field.value.length === 0 || isCheckingLocation}
+          disabled={field.value.length === 0 || brokenCount > 0 || isCheckingLocation}
         >
           {isCheckingLocation ? '위치 정보 확인 중…' : '여행 만들기'}
         </Button>
@@ -64,9 +80,15 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
     >
       <ImageUploadField
         files={field.value}
-        error={fieldState.error?.message}
+        error={
+          fieldState.error?.message ??
+          (brokenCount > 0
+            ? `열 수 없는 사진 ${brokenCount}장이 있어요. 삭제한 뒤 여행을 만들어주세요.`
+            : undefined)
+        }
         onSelect={selectFiles}
         onRemove={removeFile}
+        onPreviewBrokenChange={markPreviewBroken}
       />
     </TripCreateStepLayout>
   );

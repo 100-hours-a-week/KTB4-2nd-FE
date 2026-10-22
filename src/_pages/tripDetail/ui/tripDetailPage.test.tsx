@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
+import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripPlaceFolderPageResult } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripDetail } from '@/features/tripDetail/model/types';
@@ -19,6 +20,7 @@ vi.mock('@/features/tripDetail/api/deleteTrip', () => ({ deleteTrip: vi.fn() }))
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
+vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({ fetchTripSummary: vi.fn() }));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn(),
 }));
@@ -55,7 +57,11 @@ function axiosErrorWithStatus(status: number) {
   });
 }
 
-function renderTripDetailPage(tripOverride: Partial<TripDetail> = {}) {
+function renderTripDetailPage(
+  tripOverride: Partial<TripDetail> = {},
+  latestOverride: Partial<TripDetail> = {},
+) {
+  vi.mocked(fetchTripSummary).mockResolvedValue({ ...trip, ...tripOverride, ...latestOverride });
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -127,6 +133,48 @@ describe('TripDetailPage', () => {
 
     expect(await screen.findByRole('link', { name: /우도/ })).toBeInTheDocument();
     expect(getTripPlaceFolders).toHaveBeenLastCalledWith(7, 'cursor-2');
+  });
+
+  it('장소 폴더가 없고 사진이 있으면 미분류로 안내한다', async () => {
+    vi.mocked(getTripPlaceFolders).mockResolvedValue({
+      folders: [],
+      hasNext: false,
+      nextCursor: null,
+    });
+    renderTripDetailPage();
+
+    expect(
+      await screen.findByRole('heading', { name: '장소를 찾은 사진이 없어요' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/위치 정보가 없는 사진은 미분류에 모아뒀어요/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '미분류 사진 보기' })).toHaveAttribute(
+      'href',
+      `/trips/7/unclassified?trip=${encodeURIComponent('제주도 가을 여행')}`,
+    );
+  });
+
+  it('장소 폴더도 사진도 없으면 사진 추가를 안내한다', async () => {
+    vi.mocked(getTripPlaceFolders).mockResolvedValue({
+      folders: [],
+      hasNext: false,
+      nextCursor: null,
+    });
+    renderTripDetailPage({ photoCount: 0 });
+
+    expect(await screen.findByRole('heading', { name: '아직 사진이 없어요' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '사진 추가하기' })).toHaveAttribute(
+      'href',
+      '/trips/7/edit?step=images',
+    );
+  });
+
+  it('서버 값을 먼저 보여주고, 브라우저에서 다시 받은 총 사진 수로 바꾼다', async () => {
+    vi.mocked(getTripPlaceFolders).mockResolvedValue(folders);
+    renderTripDetailPage({}, { photoCount: 129 });
+
+    expect(screen.getByText(/사진 128장/)).toBeInTheDocument();
+    expect(await screen.findByText(/사진 129장/)).toBeInTheDocument();
+    expect(fetchTripSummary).toHaveBeenCalledWith(7);
   });
 
   it('장소 폴더 조회에 실패하면 다시 시도로 재요청한다', async () => {

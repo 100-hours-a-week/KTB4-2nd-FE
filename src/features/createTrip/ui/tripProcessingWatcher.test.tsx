@@ -14,12 +14,10 @@ import {
 } from '../model/pendingTripProcessing';
 import { TripProcessingWatcher } from './tripProcessingWatcher';
 
-const { refresh, pathname } = vi.hoisted(() => ({
-  refresh: vi.fn(),
+const { pathname } = vi.hoisted(() => ({
   pathname: { current: '/' },
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh }),
   usePathname: () => pathname.current,
 }));
 vi.mock('@/shared/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -35,8 +33,11 @@ function status(
   return { tripId, status: value, progress: null, currentStep: null, result: null, error: null };
 }
 
+let client: QueryClient;
+
 function renderWatcher() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  vi.spyOn(client, 'invalidateQueries');
   return render(
     <QueryClientProvider client={client}>
       <TripProcessingWatcher />
@@ -60,7 +61,7 @@ describe('TripProcessingWatcher', () => {
       expect(toast.success).toHaveBeenCalledWith('여행을 만들었어요. 장소별로 사진을 정리했어요.'),
     );
     expect(getPendingTripProcessingSnapshot()).toBe('');
-    expect(refresh).toHaveBeenCalled();
+    expect(client.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tripDetail'] });
   });
 
   it('FINALIZING은 진행 중으로 보고 알리지 않는다', async () => {
@@ -71,7 +72,7 @@ describe('TripProcessingWatcher', () => {
     await waitFor(() => expect(getTripProcessingStatus).toHaveBeenCalledWith(7));
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
-    expect(getPendingTripProcessingSnapshot()).toBe('create:7');
+    expect(getPendingTripProcessingSnapshot()).toMatch(/^create:7:\d+$/);
   });
 
   it('여행 수정에서 추가한 사진 정리가 실패하면 실패 토스트를 띄운다', async () => {
@@ -115,5 +116,28 @@ describe('TripProcessingWatcher', () => {
 
     await act(async () => {});
     expect(getTripProcessingStatus).not.toHaveBeenCalled();
+  });
+
+  it('같은 여행을 다시 수정해도 두 번째 수정의 완료를 알리고 확인을 멈춘다', async () => {
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(status(9, 'COMPLETED'));
+    renderWatcher();
+
+    act(() => addPendingTripProcessing({ tripId: 9, kind: 'edit' }));
+    await waitFor(() => expect(getPendingTripProcessingSnapshot()).toBe(''));
+    expect(toast.success).toHaveBeenCalledTimes(1);
+
+    // 두 번째 수정은 진행 중으로 시작해, 이전 완료 결과로 바로 끝났다고 보지 않아야 합니다.
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(status(9, 'PROCESSING'));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      addPendingTripProcessing({ tripId: 9, kind: 'edit' });
+    });
+    await waitFor(() => expect(getTripProcessingStatus).toHaveBeenCalledTimes(2));
+    expect(toast.success).toHaveBeenCalledTimes(1);
+    expect(getPendingTripProcessingSnapshot()).toMatch(/^edit:9:\d+$/);
+
+    vi.mocked(getTripProcessingStatus).mockResolvedValue(status(9, 'COMPLETED'));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(2), { timeout: 4_000 });
+    expect(getPendingTripProcessingSnapshot()).toBe('');
   });
 });

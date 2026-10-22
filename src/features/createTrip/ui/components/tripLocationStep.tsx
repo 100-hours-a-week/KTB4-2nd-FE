@@ -9,12 +9,12 @@ import { Button } from '@/shared/ui/button';
 import { CloseIcon } from '@/shared/ui/icons';
 import { toast } from '@/shared/ui/toast';
 
-import type { PlaceCandidate, TripCreateFormValues } from '../model/types';
+import type { PlaceCandidate, TripCreateFormValues } from '../../model/types';
 import {
   isSearchablePlaceQuery,
   TRIP_PLACE_MAX_COUNT,
   validateTripPlaces,
-} from '../model/validation';
+} from '../../model/validation';
 import { PlaceSearchField } from './placeSearchField';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 

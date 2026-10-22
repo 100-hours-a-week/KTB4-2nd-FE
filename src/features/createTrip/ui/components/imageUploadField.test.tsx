@@ -3,7 +3,7 @@ import { StrictMode } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import skeletonStyles from '@/shared/ui/skeleton/skeleton.module.css';
-import { getHeicWorkerCount } from '../model/heicWorkerCount';
+import { getHeicWorkerCount } from '../../model/heicWorkerCount';
 
 import { ImageUploadField } from './imageUploadField';
 
@@ -13,10 +13,10 @@ const { convertHeic, convertHeicWasm, prepareWasm } = vi.hoisted(() => ({
   prepareWasm: vi.fn(),
 }));
 
-vi.mock('../model/heicWorkerCount', () => ({ getHeicWorkerCount: () => 4 }));
+vi.mock('../../model/heicWorkerCount', () => ({ getHeicWorkerCount: () => 4 }));
 const concurrency = getHeicWorkerCount();
 vi.mock('heic-to', () => ({ heicTo: convertHeic }));
-vi.mock('../model/decodeHeicWithWasm', () => ({
+vi.mock('../../model/decodeHeicWithWasm', () => ({
   decodeHeicWithWasm: convertHeicWasm,
   prepareHeicWasmWorker: prepareWasm,
 }));

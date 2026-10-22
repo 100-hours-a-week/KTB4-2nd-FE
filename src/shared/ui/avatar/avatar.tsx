@@ -38,7 +38,6 @@ export function Avatar({ src, alt = '', size = 'md', fallback, className = '' }:
           alt={alt}
           width={sizePx[size]}
           height={sizePx[size]}
-          // SSR된 이미지가 hydration 전에 실패하면 error 이벤트를 놓치므로 ref에서 한 번 더 확인합니다.
           ref={(node) => {
             if (node?.complete && node.naturalWidth === 0) setFailedSrc(src!);
           }}

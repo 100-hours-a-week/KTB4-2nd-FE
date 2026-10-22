@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
 
 import { usePhotoOriginal } from '../model/usePhotoOriginal';
-import type { PhotoAccent, PhotoListItem } from '../model/types';
+import { PHOTO_ACCENT_GRADIENT } from '../model/photoAccent';
+import type { PhotoListItem } from '../model/types';
 
 import {
   ChevronLeftIcon,
@@ -101,7 +102,7 @@ export function PhotoViewer({
         ? [
             {
               id: 'restore',
-              label: '복구',
+              label: '해제',
               icon: <RestoreIcon size="17" />,
               onSelect: onRestore,
               disabled: actionsDisabled,
@@ -214,19 +215,10 @@ export function PhotoArtwork({ photo, large = false }: { photo: PhotoListItem; l
     );
   }
 
-  const accentClass: Record<PhotoAccent, string> = {
-    coast: 'from-[#cee7f0] via-[#70abc5] to-[#e6d6a5]',
-    night: 'from-[#34476f] via-[#1d2c50] to-[#0e1a2e]',
-    blossom: 'from-[#d9edf3] via-[#f4b9ca] to-[#8fb77b]',
-    sunset: 'from-[#1d2945] via-[#293657] to-[#f1a456]',
-    island: 'from-[#acd8ee] via-[#80b76d] to-[#407a3d]',
-    desert: 'from-[#f4d9ad] via-[#d77b46] to-[#a94728]',
-  };
-
   return (
     <span
       aria-hidden="true"
-      className={`relative block size-full overflow-hidden bg-gradient-to-b ${accentClass[photo.accent]}`}
+      className={`relative block size-full overflow-hidden bg-gradient-to-b ${PHOTO_ACCENT_GRADIENT[photo.accent]}`}
     >
       <span
         className={`absolute right-[14%] top-[14%] rounded-full bg-[#ffe59a] ${large ? 'size-16' : 'size-[17%]'}`}

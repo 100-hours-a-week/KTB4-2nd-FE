@@ -5,8 +5,8 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 
-import type { TripCreateFormValues } from '../model/types';
-import { TRIP_NAME_MAX_LENGTH, validateTripName } from '../model/validation';
+import type { TripCreateFormValues } from '../../model/types';
+import { TRIP_NAME_MAX_LENGTH, validateTripName } from '../../model/validation';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripNameStepProps = {

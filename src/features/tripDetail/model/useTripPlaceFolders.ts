@@ -12,10 +12,10 @@ export function useTripPlaceFolders(tripId: number) {
     useInfiniteQuery(tripDetailQueries.placeFolders(tripId));
 
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    if (!hasNextPage || isFetchingNextPage || isError) return;
 
     void fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isError]);
 
   const folders = useMemo<TripPlaceFolder[]>(
     () => data?.pages.flatMap((page) => page.folders) ?? [],

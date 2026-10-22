@@ -7,7 +7,7 @@ import { Dialog } from '@/shared/ui/dialog';
 import { MapIcon, PinIcon, SearchIcon, UploadIcon, type IconProps } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
-import type { TripProcessingStatusResponse } from '../api/getTripProcessingStatus';
+import type { TripProcessingStatusResponse } from '../../api/getTripProcessingStatus';
 import { tripCreateButtonClassName } from './tripCreateStepLayout';
 import { TripFormModeContext } from './tripFormMode';
 
@@ -15,6 +15,7 @@ type TripProcessingViewProps = {
   uploadRatio: number;
   processingStatus?: TripProcessingStatusResponse;
   onCancel?: () => void;
+  isCanceling?: boolean;
   onContinueElsewhere?: () => void;
 };
 
@@ -69,7 +70,7 @@ export function TripProcessingView(props: TripProcessingViewProps) {
   const stage = getStage(props);
   const { Icon, title } = STAGE_COPY[stage];
   const detail = getDetail(stage, props.processingStatus);
-  const { onCancel, onContinueElsewhere } = props;
+  const { onCancel, isCanceling = false, onContinueElsewhere } = props;
   const mode = useContext(TripFormModeContext);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const canLeave = stage !== 'upload';
@@ -79,7 +80,7 @@ export function TripProcessingView(props: TripProcessingViewProps) {
       <PageHeader
         title={mode === 'edit' ? '여행 수정' : '여행 만들기'}
         backLabel="이전 단계로 이동"
-        onBack={() => (onCancel ? setCancelDialogOpen(true) : onContinueElsewhere?.())}
+        onBack={() => onContinueElsewhere?.()}
         backDisabled={!canLeave}
       />
 
@@ -117,7 +118,7 @@ export function TripProcessingView(props: TripProcessingViewProps) {
         </p>
       </section>
 
-      {/* 다른 단계 화면의 하단 버튼과 같은 위치에 둡니다. 업로드 중에는 나갈 수 없으므로 비활성으로 보여줍니다. */}
+      {/* 다른 단계 화면의 하단 버튼과 같은 위치에 둡니다. 업로드 중에는 나가거나 취소할 수 없으므로 비활성으로 보여줍니다. */}
       <footer className="shrink-0 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] text-center">
         <p className="text-muted mb-3 text-sm">
           {canLeave
@@ -131,6 +132,17 @@ export function TripProcessingView(props: TripProcessingViewProps) {
             className={`w-full ${tripCreateButtonClassName}`}
           >
             다른 작업 이어하기
+          </Button>
+        )}
+        {/* 만들기 화면에서만 생성을 취소할 수 있습니다. 뒤로가기는 취소하지 않고 화면만 나갑니다. */}
+        {onCancel && (
+          <Button
+            variant="ghost"
+            onClick={() => setCancelDialogOpen(true)}
+            disabled={!canLeave || isCanceling}
+            className="mt-2 min-h-10 w-full text-sm font-medium"
+          >
+            {isCanceling ? '취소하는 중...' : '여행 생성 취소하기'}
           </Button>
         )}
       </footer>

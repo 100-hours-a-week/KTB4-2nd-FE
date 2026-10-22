@@ -14,7 +14,8 @@ function isSupportedImage(file: File) {
 }
 
 export type ImageSelectionResult =
-  { ok: true; files: File[]; duplicateCount: number } | { ok: false; message: string };
+  | { ok: true; files: File[]; duplicateCount: number; emptyCount: number }
+  | { ok: false; message: string };
 
 function getFileIdentity(file: File) {
   return `${file.name}\u0000${file.size}\u0000${file.lastModified}`;
@@ -44,7 +45,13 @@ export function validateImageSelection(
     return { ok: false, message: '사진 한 장의 용량은 15MB를 넘을 수 없어요.' };
   }
 
-  const allFiles = [...existingFiles, ...selectedFiles];
+  const nonEmptyFiles = selectedFiles.filter((file) => file.size > 0);
+  const emptyCount = selectedFiles.length - nonEmptyFiles.length;
+  if (nonEmptyFiles.length === 0) {
+    return { ok: false, message: '내용이 비어 있는 파일은 올릴 수 없어요.' };
+  }
+
+  const allFiles = [...existingFiles, ...nonEmptyFiles];
   const files = removeDuplicateImages(allFiles);
   const duplicateCount = allFiles.length - files.length;
 
@@ -60,5 +67,5 @@ export function validateImageSelection(
     return { ok: false, message: '선택한 사진의 전체 용량은 3GB를 넘을 수 없어요.' };
   }
 
-  return { ok: true, files, duplicateCount };
+  return { ok: true, files, duplicateCount, emptyCount };
 }

@@ -31,6 +31,9 @@ vi.mock('@/shared/api/browser', () => ({
 vi.mock('@/features/aiStatus/api/getAiStatus', () => ({
   getAiStatus: vi.fn().mockResolvedValue({ running: true, ready: true }),
 }));
+vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({
+  fetchTripSummary: vi.fn().mockRejectedValue(new Error('not needed')),
+}));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn().mockResolvedValue({ folders: [], hasNext: false, nextCursor: null }),
 }));
@@ -116,7 +119,7 @@ async function enterStoryCreate() {
 
 async function startStory(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: /담백하게/ }));
-  await user.click(screen.getByRole('button', { name: '생성' }));
+  await user.click(screen.getByRole('button', { name: '다음' }));
   await user.click(await screen.findByRole('checkbox', { name: '제주 사진 3장 선택' }));
   await user.click(screen.getByRole('button', { name: '생성' }));
 }

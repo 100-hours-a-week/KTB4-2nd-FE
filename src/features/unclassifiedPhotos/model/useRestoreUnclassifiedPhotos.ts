@@ -3,22 +3,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 
-import { photoListQueries, tripDetailQueries, unclassifiedPhotosQueries } from '@/queryFactory';
+import { invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { toast } from '@/shared/ui/toast';
 
-import { getAllUnclassifiedPhotos } from '../api/getUnclassifiedPhotos';
 import {
   restoreAttachment,
   restoreAttachments,
   type RestoreAttachmentItem,
 } from '../api/restoreUnclassifiedPhotos';
-import { BULK_RESTORE_LIMIT, type UnclassifiedIssue, type UnclassifiedPhoto } from './types';
+import { BULK_RESTORE_LIMIT, type UnclassifiedPhoto } from './types';
 
-export type RestoreUnclassifiedTarget =
-  { issue: UnclassifiedIssue } | { photos: UnclassifiedPhoto[] };
-
-export type RestoreUnclassifiedInput = RestoreUnclassifiedTarget & {
+export type RestoreUnclassifiedInput = {
+  photos: UnclassifiedPhoto[];
   fallbackPlaceId?: number;
 };
 
@@ -47,8 +44,7 @@ function toRestoreItems(photos: UnclassifiedPhoto[], fallbackPlaceId?: number) {
 }
 
 async function restore(tripId: number, input: RestoreUnclassifiedInput) {
-  const photos =
-    'issue' in input ? await getAllUnclassifiedPhotos(tripId, input.issue) : input.photos;
+  const { photos } = input;
   if (photos.length === 0) return;
 
   const items = toRestoreItems(photos, input.fallbackPlaceId);
@@ -69,12 +65,12 @@ export function useRestoreUnclassifiedPhotos(tripId: number) {
 
   return useMutation({
     mutationFn: (input: RestoreUnclassifiedInput) => restore(tripId, input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: unclassifiedPhotosQueries.tripKeys(tripId),
-      });
-      void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
-      void queryClient.invalidateQueries({ queryKey: photoListQueries.allKeys() });
+    // 여러 묶음으로 나눠 복원하다 중간에 실패해도 앞 묶음은 이미 복원됐으므로, 성공·실패 모두 갱신합니다.
+    onSettled: async (_data, error) => {
+      if (error instanceof RestorePlaceRequiredError) return;
+      await invalidateTripData(queryClient);
+    },
+    onSuccess: () => {
       toast.success('사진을 원래 폴더로 되돌렸어요.');
     },
     onError: (error) => {
@@ -87,9 +83,6 @@ export function useRestoreUnclassifiedPhotos(tripId: number) {
         code === 'ATTACHMENT_NOT_FOUND' ||
         code === 'RESTORE_PLACE_MISMATCH'
       ) {
-        void queryClient.invalidateQueries({
-          queryKey: unclassifiedPhotosQueries.tripKeys(tripId),
-        });
         toast.error('이미 처리됐거나 되돌릴 수 없는 사진이 있어요. 목록을 다시 확인해주세요.');
         return;
       }

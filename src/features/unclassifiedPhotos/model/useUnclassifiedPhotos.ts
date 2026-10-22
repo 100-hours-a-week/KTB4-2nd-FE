@@ -12,10 +12,10 @@ export function useUnclassifiedPhotos(tripId: number, issue: UnclassifiedIssue) 
     useInfiniteQuery(unclassifiedPhotosQueries.photos(tripId, issue));
 
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    if (!hasNextPage || isFetchingNextPage || isError) return;
 
     void fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isError]);
 
   const photos = useMemo<UnclassifiedPhoto[]>(
     () => data?.pages.flatMap((page) => page.photos) ?? [],

@@ -164,6 +164,7 @@ describe('PhotoListPage', () => {
     renderPhotoListPage();
 
     expect(await screen.findByText('폴더에 사진이 없어요')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '선택' })).not.toBeInTheDocument();
   });
 
   it('사진을 누르면 원본 API로 원본 URL을 받아 보여준다', async () => {

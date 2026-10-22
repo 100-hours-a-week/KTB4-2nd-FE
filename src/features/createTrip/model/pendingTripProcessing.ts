@@ -3,6 +3,7 @@ export type PendingTripKind = 'create' | 'edit';
 export type PendingTrip = {
   tripId: number;
   kind: PendingTripKind;
+  startedAt: number;
 };
 
 const PENDING_TRIP_PROCESSING_KEY = 'trip-processing-pending-v1';
@@ -13,16 +14,20 @@ function notifyChange() {
   listeners.forEach((listener) => listener());
 }
 
-function isPendingTrip(value: unknown): value is PendingTrip {
-  if (typeof value !== 'object' || value === null) return false;
+function toPendingTrip(value: unknown): PendingTrip | null {
+  if (typeof value !== 'object' || value === null) return null;
 
   const trip = value as Record<string, unknown>;
-  return (
-    typeof trip.tripId === 'number' &&
-    Number.isSafeInteger(trip.tripId) &&
-    trip.tripId > 0 &&
-    (trip.kind === 'create' || trip.kind === 'edit')
-  );
+  if (
+    typeof trip.tripId !== 'number' ||
+    !Number.isSafeInteger(trip.tripId) ||
+    trip.tripId <= 0 ||
+    (trip.kind !== 'create' && trip.kind !== 'edit')
+  ) {
+    return null;
+  }
+  const startedAt = typeof trip.startedAt === 'number' ? trip.startedAt : 0;
+  return { tripId: trip.tripId, kind: trip.kind, startedAt };
 }
 
 function readPendingTrips(): PendingTrip[] {
@@ -32,7 +37,9 @@ function readPendingTrips(): PendingTrip[] {
     const stored: unknown = JSON.parse(
       window.localStorage.getItem(PENDING_TRIP_PROCESSING_KEY) ?? '[]',
     );
-    return Array.isArray(stored) ? stored.filter(isPendingTrip) : [];
+    return Array.isArray(stored)
+      ? stored.map(toPendingTrip).filter((trip): trip is PendingTrip => trip !== null)
+      : [];
   } catch {
     return [];
   }
@@ -44,31 +51,34 @@ function writePendingTrips(trips: PendingTrip[]) {
   try {
     if (trips.length === 0) window.localStorage.removeItem(PENDING_TRIP_PROCESSING_KEY);
     else window.localStorage.setItem(PENDING_TRIP_PROCESSING_KEY, JSON.stringify(trips));
-  } catch {
-  }
+  } catch {}
   notifyChange();
 }
 
-export function addPendingTripProcessing(trip: PendingTrip) {
+export function addPendingTripProcessing(trip: Omit<PendingTrip, 'startedAt'>) {
   const trips = readPendingTrips().filter((saved) => saved.tripId !== trip.tripId);
-  writePendingTrips([...trips, trip]);
+  writePendingTrips([...trips, { ...trip, startedAt: Date.now() }]);
 }
 
-export function removePendingTripProcessing(tripId: number) {
+export function removePendingTripProcessing(tripId: number, startedAt?: number) {
   const trips = readPendingTrips();
-  if (!trips.some((trip) => trip.tripId === tripId)) return;
-  writePendingTrips(trips.filter((trip) => trip.tripId !== tripId));
+  const remaining = trips.filter(
+    (trip) => trip.tripId !== tripId || (startedAt !== undefined && trip.startedAt !== startedAt),
+  );
+  if (remaining.length === trips.length) return;
+  writePendingTrips(remaining);
 }
 
 export function clearPendingTripProcessing() {
   writePendingTrips([]);
 }
 
+export function getPendingTripProcessingKey(trip: PendingTrip) {
+  return `${trip.kind}:${trip.tripId}:${trip.startedAt}`;
+}
+
 export function getPendingTripProcessingSnapshot(): string {
-  return readPendingTrips()
-    .map((trip) => `${trip.kind}:${trip.tripId}`)
-    .sort()
-    .join(',');
+  return readPendingTrips().map(getPendingTripProcessingKey).sort().join(',');
 }
 
 export function parsePendingTripProcessing(snapshot: string): PendingTrip[] {
@@ -76,8 +86,12 @@ export function parsePendingTripProcessing(snapshot: string): PendingTrip[] {
     .split(',')
     .filter(Boolean)
     .map((entry) => {
-      const [kind, tripId] = entry.split(':');
-      return { kind: kind as PendingTripKind, tripId: Number(tripId) };
+      const [kind, tripId, startedAt] = entry.split(':');
+      return {
+        kind: kind as PendingTripKind,
+        tripId: Number(tripId),
+        startedAt: Number(startedAt),
+      };
     });
 }
 

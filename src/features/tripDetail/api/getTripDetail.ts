@@ -4,25 +4,8 @@ import { cookies } from 'next/headers';
 import type { ApiResponse } from '@/shared/api';
 import { createServerApiClient } from '@/shared/api/server';
 
-import type { TripDetail, TripDetailResult } from '../model/types';
-
-type TripDetailRegionResponse = {
-  regionId: number;
-  regionCode: string;
-  regionName: string;
-};
-
-type TripDetailApiResponse = {
-  tripId: number;
-  tripName: string;
-  startDate: string;
-  endDate: string;
-  nightCount: number;
-  regions: TripDetailRegionResponse[];
-  attachmentCount: number;
-  hasStory: boolean;
-  isFavorite: boolean;
-};
+import type { TripDetailResult } from '../model/types';
+import { toTripDetail, type TripDetailApiResponse } from './tripDetailResponse';
 
 export async function getTripDetail(tripId: number): Promise<TripDetailResult> {
   if (!(await cookies()).has('accessToken')) {
@@ -46,18 +29,4 @@ export async function getTripDetail(tripId: number): Promise<TripDetailResult> {
 
     throw new Error('여행 상세를 불러오지 못했습니다.');
   }
-}
-
-function toTripDetail(response: TripDetailApiResponse): TripDetail {
-  return {
-    id: response.tripId,
-    name: response.tripName,
-    locations: response.regions.map((region) => region.regionName),
-    startDate: response.startDate,
-    endDate: response.endDate,
-    nights: response.nightCount,
-    photoCount: response.attachmentCount,
-    reviewCount: 0,
-    hasStory: response.hasStory,
-  };
 }

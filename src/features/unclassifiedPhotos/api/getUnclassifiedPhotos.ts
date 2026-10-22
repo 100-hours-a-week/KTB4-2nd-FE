@@ -56,19 +56,3 @@ export async function getUnclassifiedPhotos(
     nextCursor: data.data.nextCursor,
   };
 }
-
-export async function getAllUnclassifiedPhotos(
-  tripId: number,
-  issue: UnclassifiedIssue,
-): Promise<UnclassifiedPhoto[]> {
-  const photos: UnclassifiedPhoto[] = [];
-  let cursor: string | null = null;
-
-  do {
-    const page = await getUnclassifiedPhotos(tripId, issue, cursor);
-    photos.push(...page.photos);
-    cursor = page.hasNext ? page.nextCursor : null;
-  } while (cursor);
-
-  return photos;
-}

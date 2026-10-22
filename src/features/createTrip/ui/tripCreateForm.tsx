@@ -1,9 +1,11 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { invalidateTripData } from '@/queryFactory';
 import { Funnel } from '@/shared/lib/funnel';
 import { Button } from '@/shared/ui/button';
 import { Dialog } from '@/shared/ui/dialog';
@@ -25,11 +27,13 @@ import {
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
 import { useTripCreateSubmit } from '../model/useTripCreateSubmit';
 import { getAccessibleTripCreateStep } from '../model/validation';
-import { TripDateStep } from './tripDateStep';
-import { TripImageStep } from './tripImageStep';
-import { TripLocationStep } from './tripLocationStep';
-import { TripNameStep } from './tripNameStep';
-import { TripProcessingView } from './tripProcessingView';
+import { TripDateStep } from './components/tripDateStep';
+import { TripImageStep } from './components/tripImageStep';
+import { TripLocationStep } from './components/tripLocationStep';
+import { TripNameStep } from './components/tripNameStep';
+import { TripProcessingView } from './components/tripProcessingView';
+
+let pendingDraftClear: number | undefined;
 
 type TripCreateFormProps = {
   initialStep: TripCreateStep;
@@ -37,6 +41,7 @@ type TripCreateFormProps = {
 
 export function TripCreateForm({ initialStep }: TripCreateFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const draftRestored = useRef(false);
   const methods = useForm<TripCreateFormValues>({
     defaultValues: TRIP_CREATE_DEFAULT_VALUES,
@@ -60,18 +65,29 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
     const outcome = getTripCreateSubmitOutcome(result);
     if (outcome.kind === 'completed' || outcome.kind === 'canceled') {
       clearTripCreateDraft();
+      // 이 화면에서 끝까지 기다린 경우에도 백그라운드 완료와 똑같이 홈 지도·목록을 새로 받습니다.
+      void invalidateTripData(queryClient);
       if (outcome.kind === 'completed') toast.success(outcome.message);
       else toast.warning(outcome.message);
       router.replace(outcome.redirectTo);
       return;
     }
     toast.error(outcome.message);
-  }, [router, submit.processingResult]);
+  }, [queryClient, router, submit.processingResult]);
 
   useEffect(() => {
     methods.reset(readTripCreateDraft());
     draftRestored.current = true;
   }, [methods]);
+
+  // 새로고침에는 입력을 유지하고, 다른 화면으로 나가면(언마운트) 임시 저장을 지웁니다.
+  // 개발 모드의 StrictMode는 바로 다시 마운트하므로, 다시 마운트되면 지우기를 취소합니다.
+  useEffect(() => {
+    window.clearTimeout(pendingDraftClear);
+    return () => {
+      pendingDraftClear = window.setTimeout(clearTripCreateDraft, 0);
+    };
+  }, []);
 
   useEffect(() => {
     if (!draftRestored.current) return;
@@ -92,7 +108,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
 
   useEffect(() => {
     return methods.subscribe({
-      name: ['tripName', 'places', 'startDate', 'endDate'],
+      name: ['tripName', 'places', 'startDate', 'endDate', 'attachments'],
       formState: { values: true },
       callback: resetCreatedTrip,
     });
@@ -164,6 +180,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
         uploadRatio={submit.uploadRatio}
         processingStatus={submit.uploadRatio >= 1 ? submit.processingStatus : undefined}
         onCancel={submit.cancelProcessing}
+        isCanceling={submit.isCanceling}
         onContinueElsewhere={() => router.replace('/')}
       />
     );

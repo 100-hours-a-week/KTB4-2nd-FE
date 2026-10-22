@@ -5,9 +5,9 @@ import { useController, useFormContext } from 'react-hook-form';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
-import type { TripEditPhoto } from '../api/getTripForEdit';
-import { TRIP_IMAGE_MAX_COUNT, validateImageSelection } from '../model/imageValidation';
-import type { TripCreateFormValues } from '../model/types';
+import type { TripEditPhoto } from '../../api/getTripForEdit';
+import { TRIP_IMAGE_MAX_COUNT, validateImageSelection } from '../../model/imageValidation';
+import type { TripCreateFormValues } from '../../model/types';
 import { ImageUploadField } from './imageUploadField';
 import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
 
@@ -46,6 +46,9 @@ export function TripEditImageStep({
     field.onChange(result.files);
     if (result.duplicateCount > 0) {
       toast.info(`중복 사진 ${result.duplicateCount}장은 제외했어요.`);
+    }
+    if (result.emptyCount > 0) {
+      toast.info(`내용이 비어 있는 파일 ${result.emptyCount}개는 제외했어요.`);
     }
   };
 

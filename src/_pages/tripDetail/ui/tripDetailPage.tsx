@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import {
+  PLACE_FOLDER_ACCENT_GRADIENT,
   useDeleteTrip,
   useTripPlaceFolders,
+  useTripSummary,
   type TripDetail,
   type TripPlaceFolder,
 } from '@/features/tripDetail';
@@ -33,8 +35,9 @@ export type TripDetailPageProps = {
   trip: TripDetail;
 };
 
-export function TripDetailPage({ trip }: TripDetailPageProps) {
+export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const router = useRouter();
+  const trip = useTripSummary(initialTrip);
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -143,15 +146,7 @@ export function TripDetailPage({ trip }: TripDetailPageProps) {
         {viewState !== 'ready' ? (
           <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
         ) : folders.length === 0 ? (
-          <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
-            <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100 [&>svg]:size-7">
-              <ImageIcon size="13" />
-            </span>
-            <h2 className="mt-4 text-[15px] font-extrabold">
-              장소별 사진이 아직 정리되지 않았어요
-            </h2>
-            <p className="text-muted mt-1.5 text-xs">장소별 사진 정리 기능은 준비 중이에요.</p>
-          </div>
+          <EmptyPlaceFolders trip={trip} />
         ) : (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
             {folders.map((folder) => (
@@ -283,19 +278,10 @@ function FolderThumbnail({ folder }: { folder: TripPlaceFolder }) {
     );
   }
 
-  const accentClass: Record<TripPlaceFolder['accent'], string> = {
-    coast: 'from-[#cce4ee] via-[#6eafc8] to-[#d8cda0]',
-    sunset: 'from-[#1d2b49] via-[#314263] to-[#f5a85a]',
-    island: 'from-[#acd6ed] via-[#70ad64] to-[#447c3e]',
-    night: 'from-[#425783] via-[#23365c] to-[#101d34]',
-    field: 'from-[#f3deb4] via-[#ce9956] to-[#788b56]',
-    sky: 'from-[#badbea] via-[#96c5dc] to-[#e9d8a9]',
-  };
-
   return (
     <span
       aria-hidden="true"
-      className={`relative block aspect-square w-full overflow-hidden rounded-[14px] bg-gradient-to-b ${accentClass[folder.accent]}`}
+      className={`relative block aspect-square w-full overflow-hidden rounded-[14px] bg-gradient-to-b ${PLACE_FOLDER_ACCENT_GRADIENT[folder.accent]}`}
     >
       <span className="absolute right-[14%] top-[16%] size-[18%] rounded-full bg-[#ffe7a6]" />
       <span className="absolute -right-[8%] bottom-[-8%] h-[42%] w-[80%] rounded-[50%] bg-black/16" />
@@ -340,4 +326,40 @@ function PlaceFolderSkeleton({ showError, onRetry }: { showError: boolean; onRet
 
 function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
+}
+
+function EmptyPlaceFolders({ trip }: { trip: TripDetail }) {
+  const hasPhotos = trip.photoCount > 0;
+
+  return (
+    <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
+      <span className="text-muted grid size-16 place-items-center rounded-full bg-slate-100 [&>svg]:size-7">
+        <ImageIcon size="13" />
+      </span>
+      <h2 className="mt-4 text-[15px] font-extrabold">
+        {hasPhotos ? '장소를 찾은 사진이 없어요' : '아직 사진이 없어요'}
+      </h2>
+      <p className="text-muted mt-1.5 text-xs leading-5">
+        {hasPhotos ? (
+          <>
+            위치 정보가 없는 사진은 미분류에 모아뒀어요.
+            <br />
+            미분류에서 원하는 장소로 옮길 수 있어요.
+          </>
+        ) : (
+          '여행 수정에서 사진을 추가해 보세요.'
+        )}
+      </p>
+      <Link
+        href={
+          hasPhotos
+            ? `/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`
+            : `/trips/${trip.id}/edit?step=images`
+        }
+        className="bg-brand hover:bg-brand-hover focus-visible:outline-brand mt-5 inline-flex min-h-10 items-center rounded-full px-4 text-xs font-bold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        {hasPhotos ? '미분류 사진 보기' : '사진 추가하기'}
+      </Link>
+    </div>
+  );
 }

@@ -128,7 +128,7 @@ export function StoryPhotoViewer({
           <span aria-hidden="true">⌖</span> {getStoryPhotoLabel(photo)}
         </span>
         <p className="mt-2.5 text-xs text-white/55">
-          {day.date.slice(5).replace('-', '.')} {day.dayNumber}일째
+          {day.date.slice(5).replace('-', '.')} {day.dayLabel ?? `${day.dayNumber}일째`}
         </p>
         <p className="mt-1.5 text-sm font-semibold leading-6">{photo.sentence}</p>
         <div className="mt-5 flex items-center justify-between">

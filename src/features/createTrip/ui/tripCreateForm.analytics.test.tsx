@@ -40,7 +40,7 @@ vi.mock('../api/uploadInitialAttachments', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/uploadInitialAttachments')>()),
   uploadInitialAttachmentBatch: vi.fn(),
 }));
-vi.mock('./tripImageStep', () => ({
+vi.mock('./components/tripImageStep', () => ({
   TripImageStep: function TestImageStep() {
     const { setValue } = useFormContext<TripCreateFormValues>();
     return (
@@ -53,7 +53,7 @@ vi.mock('./tripImageStep', () => ({
     );
   },
 }));
-vi.mock('./tripProcessingView', () => ({
+vi.mock('./components/tripProcessingView', () => ({
   TripProcessingView: () => <div>처리 중</div>,
 }));
 
@@ -146,6 +146,27 @@ describe('TripCreateForm 생성 완료 이벤트', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(createTrip).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: '여행 만들기' })).toBeEnabled();
+  });
+
+  it('업로드 실패 뒤 사진 목록을 바꿔 다시 제출하면 이전 여행을 버리고 새 여행으로 업로드한다', async () => {
+    vi.mocked(createTrip)
+      .mockResolvedValueOnce({ tripId: 7, status: 'PROCESSING' })
+      .mockResolvedValueOnce({ tripId: 8, status: 'PROCESSING' });
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockRejectedValueOnce(new Error('invalid file'))
+      .mockResolvedValueOnce({ ...completed, tripId: 8 });
+    await submitForm();
+    await waitFor(() => expect(uploadInitialAttachmentBatch).toHaveBeenCalledTimes(1));
+
+    // 테스트용 사진 단계는 누를 때마다 새 사진 목록으로 바꿉니다.
+    await userEvent.setup().click(await screen.findByRole('button', { name: '여행 만들기' }));
+
+    await waitFor(() => expect(uploadInitialAttachmentBatch).toHaveBeenCalledTimes(2));
+    expect(createTrip).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(uploadInitialAttachmentBatch).mock.calls[1][0]).toMatchObject({
+      tripId: 8,
+      batchNo: 1,
+    });
   });
 
   it('Batch에서 완료되면 이벤트를 보내고 한 번만 완료 안내·이동한다', async () => {

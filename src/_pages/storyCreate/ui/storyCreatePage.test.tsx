@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAiStatus } from '@/features/aiStatus/api/getAiStatus';
 import { cancelStoryGeneration } from '@/features/createStory/api/cancelStoryGeneration';
@@ -54,7 +55,7 @@ function setup() {
 
 async function chooseMoodAndFolders(user: ReturnType<typeof userEvent.setup>, folderIndexes = [0]) {
   await user.click(screen.getByRole('radio', { name: /담백하게/ }));
-  await user.click(screen.getByRole('button', { name: '생성' }));
+  await user.click(screen.getByRole('button', { name: '다음' }));
   const boxes = await screen.findAllByRole('checkbox');
   for (const index of folderIndexes) await user.click(boxes[index]);
 }
@@ -93,17 +94,91 @@ beforeEach(() => {
 describe('StoryCreatePage', () => {
   it('기본 선택 없이 시작하고 분위기를 하나만 선택한다', async () => {
     const { user } = setup();
-    expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
     expect(
       screen.getAllByRole('radio').every((radio) => !(radio as HTMLInputElement).checked),
     ).toBe(true);
     await user.click(screen.getByRole('radio', { name: /감성적으로/ }));
     await user.click(screen.getByRole('radio', { name: /차분하게/ }));
     expect(screen.getByRole('radio', { name: /감성적으로/ })).not.toBeChecked();
-    await user.click(screen.getByRole('button', { name: '생성' }));
+    await user.click(screen.getByRole('button', { name: '다음' }));
     expect(await screen.findAllByRole('checkbox')).toHaveLength(6);
     expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
     expect(window.location.search).toBe('?step=folder');
+  });
+
+  it('사진 정리 중이라 폴더 조회가 409로 거절되면 정리 중 안내와 돌아가기 링크를 보여준다', async () => {
+    const config = { headers: new AxiosHeaders() };
+    vi.mocked(getStorySourceFolders).mockRejectedValue(
+      new AxiosError('conflict', undefined, config, null, {
+        status: 409,
+        statusText: '',
+        data: { message: 'STORY_GENERATION_NOT_ALLOWED', data: null },
+        headers: {},
+        config,
+      }),
+    );
+    const { user } = setup();
+    await user.click(screen.getByRole('radio', { name: /담백하게/ }));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '사진을 정리하는 중이라 지금은 스토리를 만들 수 없어요.',
+    );
+    expect(screen.getByRole('link', { name: '여행 상세로 돌아가기' })).toHaveAttribute(
+      'href',
+      '/trips/7',
+    );
+    expect(getStorySourceFolders).toHaveBeenCalledTimes(1);
+  });
+
+  it('저장해 둔 선택 중 사진이 0장이 되었거나 사라진 폴더는 선택에서 뺀다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        mood: 'PLAIN',
+        tripPlaceIds: [1, 2, 99],
+        generationId: null,
+        startedAt: null,
+      }),
+    );
+    vi.mocked(getStorySourceFolders).mockResolvedValue({
+      folders: [
+        { id: 1, name: '장소 1', photoCount: 3, thumbnailUrl: null, accent: 'coast' },
+        { id: 2, name: '장소 2', photoCount: 0, thumbnailUrl: null, accent: 'coast' },
+      ],
+      hasNext: false,
+      nextCursor: null,
+    });
+    window.history.replaceState(null, '', '/trips/7/story/create?step=folder');
+    setup();
+
+    await waitFor(() =>
+      expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+        tripPlaceIds: [1],
+      }),
+    );
+    expect(screen.getByRole('checkbox', { name: '장소 1 사진 3장 선택' })).toBeChecked();
+    expect(screen.getByLabelText('선택한 폴더 수')).toHaveTextContent('1 / 10');
+  });
+
+  it('아직 불러오지 않은 페이지에 있을 수 있는 폴더는 선택을 유지한다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ mood: 'PLAIN', tripPlaceIds: [1, 99], generationId: null, startedAt: null }),
+    );
+    vi.mocked(getStorySourceFolders).mockResolvedValue({
+      folders: [{ id: 1, name: '장소 1', photoCount: 3, thumbnailUrl: null, accent: 'coast' }],
+      hasNext: true,
+      nextCursor: 'cursor-2',
+    });
+    window.history.replaceState(null, '', '/trips/7/story/create?step=folder');
+    setup();
+
+    await screen.findByRole('checkbox', { name: '장소 1 사진 3장 선택' });
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      tripPlaceIds: [1, 99],
+    });
   });
 
   it('최대 10개만 선택하고 선택 해제 후 다른 폴더를 선택한다', async () => {
@@ -216,6 +291,58 @@ describe('StoryCreatePage', () => {
     await user.click(await screen.findByRole('button', { name: '스토리 보기' }));
     expect(replace).toHaveBeenCalledWith('/trips/7/story');
     expect(window.localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it('완성 화면에서 상단 뒤로가기를 누르면 폴더 선택이 아니라 여행 상세로 나간다', async () => {
+    vi.mocked(getStoryGenerationStatus).mockResolvedValue({
+      generationId: 31,
+      status: 'COMPLETED',
+      progress: 100,
+      storyId: 5,
+      error: null,
+    });
+    const { user } = setup();
+    await chooseMoodAndFolders(user);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+    await screen.findByRole('button', { name: '스토리 보기' });
+
+    await user.click(screen.getByRole('button', { name: '스토리 생성에서 돌아가기' }));
+
+    expect(replace).toHaveBeenCalledWith('/trips/7');
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('생성에 실패하면 화면에서 알린 뒤 저장된 작업 번호를 지워, 나가도 다시 알리지 않는다', async () => {
+    vi.mocked(getStoryGenerationStatus).mockResolvedValue({
+      generationId: 31,
+      status: 'FAILED',
+      progress: 10,
+      storyId: null,
+      error: { code: 'STORY_GENERATION_FAILED', message: '스토리 생성에 실패했습니다.' },
+    });
+    const { user } = setup();
+    await chooseMoodAndFolders(user);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+
+    expect(await screen.findByRole('button', { name: '다시 시도하기' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+        generationId: null,
+      }),
+    );
+  });
+
+  it('폴더 단계에서 뒤로가면 분위기 단계 기록을 새로 쌓지 않고 이전 기록으로 돌아간다', async () => {
+    const back = vi.spyOn(window.history, 'back');
+    const { user } = setup();
+    await user.click(screen.getByRole('radio', { name: /담백하게/ }));
+    await user.click(screen.getByRole('button', { name: '다음' }));
+    await screen.findAllByRole('checkbox');
+
+    await user.click(screen.getByRole('button', { name: '분위기 선택으로 돌아가기' }));
+
+    expect(back).toHaveBeenCalledOnce();
+    back.mockRestore();
   });
 
   it('생성에 실패하면 같은 선택으로 다시 시도할 수 있다', async () => {

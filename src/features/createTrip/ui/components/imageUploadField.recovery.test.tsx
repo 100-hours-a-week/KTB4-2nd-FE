@@ -1,11 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { HeicPreviewResourceError } from '../model/heicPreviewError';
+import { HeicPreviewResourceError } from '../../model/heicPreviewError';
 import { ImageUploadField } from './imageUploadField';
 
 const { prepare, decode } = vi.hoisted(() => ({ prepare: vi.fn(), decode: vi.fn() }));
-vi.mock('../model/heicPreviewDecoder', () => ({
+vi.mock('../../model/heicPreviewDecoder', () => ({
   prepareHeicPreviewDecoder: prepare,
   resetHeicPreviewDecoder: vi.fn(),
 }));
@@ -138,4 +138,23 @@ it('오프라인 중 삭제한 사진은 연결이 복구되어도 변환하지 
   const count = prepare.mock.calls.length;
   await act(async () => window.dispatchEvent(new Event('online')));
   expect(prepare).toHaveBeenCalledTimes(count);
+});
+
+it('사진을 열 수 없으면(디코딩 실패) 부모에게 미리보기 불가를 알린다', async () => {
+  decode.mockRejectedValue(new Error('broken image'));
+  const onPreviewBrokenChange = vi.fn();
+  const broken = new File(['heic'], 'broken.heic', { type: 'image/heic' });
+  await act(async () => {
+    render(
+      <ImageUploadField
+        files={[broken]}
+        onSelect={vi.fn()}
+        onRemove={vi.fn()}
+        onPreviewBrokenChange={onPreviewBrokenChange}
+      />,
+    );
+  });
+
+  await waitFor(() => expect(screen.getByText('미리보기 불가')).toBeInTheDocument());
+  expect(onPreviewBrokenChange).toHaveBeenCalledWith(broken, true);
 });

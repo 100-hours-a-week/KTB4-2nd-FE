@@ -15,10 +15,6 @@ export default async function Page({
 }) {
   const { renewed } = await searchParams;
 
-  if (process.env.NODE_ENV === 'development') {
-    return <TripListPage />;
-  }
-
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {

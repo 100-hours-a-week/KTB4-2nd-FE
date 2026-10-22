@@ -1,6 +1,6 @@
 import { CloseIcon, PinIcon, SearchIcon } from '@/shared/ui/icons';
 
-import type { PlaceCandidate } from '../model/types';
+import type { PlaceCandidate } from '../../model/types';
 
 type PlaceSearchFieldProps = {
   query: string;

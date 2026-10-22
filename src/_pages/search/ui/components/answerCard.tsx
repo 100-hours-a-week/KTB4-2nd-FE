@@ -11,14 +11,14 @@ export function AnswerCard({
 
   return (
     <section
-      aria-label="AI의 한 줄 답변"
+      aria-label="AI 답변"
       className="border-border-subtle bg-surface mt-4 shrink-0 rounded-[18px] border px-4 py-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)]"
     >
       <h2 className="flex items-center gap-1.5 text-[13px] font-extrabold">
         <span className="text-[#3973b9]">
           <SparkleIcon fill="currentColor" size="15" />
         </span>
-        AI의 한 줄 답변
+        AI 답변
       </h2>
       {answer ? (
         <p className="mt-2 text-[15px] leading-snug font-bold">{answer}</p>

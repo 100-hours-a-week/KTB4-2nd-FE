@@ -12,10 +12,10 @@ export function useTripList(filter: TripListFilter) {
     useInfiniteQuery(tripListQueries.list(filter));
 
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
+    if (!hasNextPage || isFetchingNextPage || isError) return;
 
     void fetchNextPage();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isError]);
 
   const trips = useMemo<TripListItem[]>(
     () => data?.pages.flatMap((page) => page.trips) ?? [],
