@@ -1,4 +1,3 @@
-/** 대표 사진이 없는 여행·폴더 썸네일 자리에 순서대로 돌아가며 쓰는 그라데이션입니다. */
 export const THUMBNAIL_FALLBACK_GRADIENTS = [
   'from-[#273a63] via-[#4d638c] to-[#172743]',
   'from-[#f3d5a2] via-[#d87743] to-[#9d3f25]',

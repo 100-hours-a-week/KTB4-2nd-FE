@@ -1,6 +1,5 @@
 import type { TripPlaceFolderAccent } from './types';
 
-/** 대표 사진이 없는 장소 폴더 카드의 배경 그라데이션입니다. */
 export const PLACE_FOLDER_ACCENT_GRADIENT: Record<TripPlaceFolderAccent, string> = {
   coast: 'from-[#cce4ee] via-[#6eafc8] to-[#d8cda0]',
   sunset: 'from-[#1d2b49] via-[#314263] to-[#f5a85a]',
