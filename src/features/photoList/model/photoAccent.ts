@@ -1,6 +1,5 @@
 import type { PhotoAccent } from './types';
 
-/** 썸네일이 없을 때 사진 자리를 채우는 그라데이션입니다. 사진을 보여주는 모든 화면이 같은 색을 씁니다. */
 export const PHOTO_ACCENT_GRADIENT: Record<PhotoAccent, string> = {
   coast: 'from-[#cee7f0] via-[#70abc5] to-[#e6d6a5]',
   night: 'from-[#34476f] via-[#1d2c50] to-[#0e1a2e]',
