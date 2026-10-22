@@ -152,17 +152,36 @@ describe('SearchPage', () => {
     expect(inputs[0]).toHaveValue('판교에서 친구랑 찍은 사진 보여줘');
   });
 
-  it('AI 서버가 준비되지 않았으면 검색하지 않고 안내 모달을 띄운다', async () => {
+  it('검색 주소로 바로 들어와도 AI 서버가 준비되지 않았으면 검색하지 않고 안내한다', async () => {
     vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: false });
     const user = userEvent.setup();
-    renderPage('');
-
-    await user.type(screen.getByRole('searchbox', { name: '검색어' }), '제주 바다{Enter}');
+    renderPage('제주 바다');
 
     const dialog = await screen.findByRole('dialog', { name: 'AI를 준비하고 있어요' });
-    expect(push).not.toHaveBeenCalled();
+    expect(searchTrips).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole('button', { name: '확인' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('지금은 AI 검색을 사용할 수 없어요.');
+
+    // 준비된 뒤 다시 시도하면 GPU 상태를 다시 확인하고 검색합니다.
+    vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    await waitFor(() => expect(searchTrips).toHaveBeenCalledWith('제주 바다'));
+  });
+
+  it('검색이 실패한 뒤 같은 검색어로 다시 검색하면 다시 요청한다', async () => {
+    vi.mocked(searchTrips).mockRejectedValueOnce(new Error('network'));
+    const user = userEvent.setup();
+    renderPage('제주 바다');
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(searchTrips).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('searchbox', { name: '검색어' }));
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(searchTrips).toHaveBeenCalledTimes(2));
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('AI 상태 확인에 실패하면 막지 않고 그대로 검색한다', async () => {

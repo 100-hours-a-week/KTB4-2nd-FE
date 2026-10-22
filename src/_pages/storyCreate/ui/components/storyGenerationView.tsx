@@ -13,6 +13,7 @@ export function StoryGenerationView({
   onBack,
   onView,
   onRetry,
+  isRetrying = false,
 }: {
   nickname: string;
   status: 'processing' | 'completed' | 'failed';
@@ -23,6 +24,7 @@ export function StoryGenerationView({
   onBack: () => void;
   onView: () => void;
   onRetry: () => void;
+  isRetrying?: boolean;
 }) {
   const completed = status === 'completed';
   const failed = status === 'failed';
@@ -156,7 +158,7 @@ export function StoryGenerationView({
           </Button>
         )}
         <Button
-          disabled={status === 'processing'}
+          disabled={status === 'processing' || (failed && isRetrying)}
           onClick={completed ? onView : onRetry}
           className="w-full rounded-[16px] text-sm disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
         >
