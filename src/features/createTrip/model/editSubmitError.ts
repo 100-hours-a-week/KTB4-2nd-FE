@@ -10,7 +10,18 @@ export type TripEditSubmitError = {
   resetAddition?: boolean;
 };
 
+const RESET_ADDITION_STATUSES = new Set([400, 415]);
+
 export function getTripEditSubmitError(error: unknown): TripEditSubmitError {
+  const result = toTripEditSubmitError(error);
+  const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+
+  return status !== undefined && RESET_ADDITION_STATUSES.has(status)
+    ? { ...result, resetAddition: true }
+    : result;
+}
+
+function toTripEditSubmitError(error: unknown): TripEditSubmitError {
   const code = axios.isAxiosError<ApiErrorResponse>(error)
     ? error.response?.data?.message
     : undefined;
@@ -22,12 +33,16 @@ export function getTripEditSubmitError(error: unknown): TripEditSubmitError {
     case 'INVALID_REQUEST':
       return { message: '여행 정보를 다시 확인해주세요.', step: 'name' };
     case 'TRIP_UPDATE_NOT_ALLOWED':
-    case 'TRIP_ATTACHMENT_ADD_NOT_ALLOWED':
       return {
         message: '사진을 정리하는 중이라 지금은 수정할 수 없어요. 잠시 후 다시 시도해주세요.',
       };
+    case 'TRIP_ATTACHMENT_ADD_NOT_ALLOWED':
+      return {
+        message:
+          '사진 정리나 스토리 생성이 진행 중이라 지금은 사진을 추가할 수 없어요. 잠시 후 다시 시도해주세요.',
+      };
     case 'INVALID_ATTACHMENT_UPLOAD':
-      return { message: '사진을 다시 선택해주세요.', step: 'images', resetAddition: true };
+      return { message: '사진을 다시 선택해주세요.', step: 'images' };
     case 'ATTACHMENT_UPLOAD_LIMIT_EXCEEDED':
       return {
         message: '여행 하나에 사진은 최대 200장, 한 장에 15MB까지 올릴 수 있어요.',

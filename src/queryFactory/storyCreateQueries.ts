@@ -17,6 +17,8 @@ export const storyCreateQueries = {
       queryFn: ({ pageParam }) => getStorySourceFolders(tripId, pageParam),
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
+      retry: (failureCount, error) =>
+        !(isAxiosError(error) && error.response?.status === 409) && failureCount < 3,
     }),
   generationStatusKeys: (generationId: number) =>
     [...storyCreateQueries.allKeys(), 'generationStatus', generationId] as const,
