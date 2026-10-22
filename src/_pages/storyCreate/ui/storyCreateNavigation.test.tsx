@@ -31,6 +31,9 @@ vi.mock('@/shared/api/browser', () => ({
 vi.mock('@/features/aiStatus/api/getAiStatus', () => ({
   getAiStatus: vi.fn().mockResolvedValue({ running: true, ready: true }),
 }));
+vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({
+  fetchTripSummary: vi.fn().mockRejectedValue(new Error('not needed')),
+}));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn().mockResolvedValue({ folders: [], hasNext: false, nextCursor: null }),
 }));

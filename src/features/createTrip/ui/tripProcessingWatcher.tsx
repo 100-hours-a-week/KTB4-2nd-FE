@@ -2,16 +2,10 @@
 
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
-import {
-  createTripQueries,
-  mainMapQueries,
-  photoListQueries,
-  tripDetailQueries,
-  tripListQueries,
-} from '@/queryFactory';
+import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { toast } from '@/shared/ui/toast';
 
 import { getTripProcessingStatus, isTripProcessingRunning } from '../api/getTripProcessingStatus';
@@ -51,7 +45,6 @@ function isHandledByCurrentPage(trip: PendingTrip, pathname: string) {
 }
 
 export function TripProcessingWatcher() {
-  const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const handled = useRef(new Set<string>());
@@ -90,16 +83,12 @@ export function TripProcessingWatcher() {
 
       if (data?.status === 'COMPLETED') {
         toast.success(COMPLETED_MESSAGE[trip.kind]);
-        void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
-        void queryClient.invalidateQueries({ queryKey: mainMapQueries.markers().queryKey });
-        void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
-        void queryClient.invalidateQueries({ queryKey: photoListQueries.allKeys() });
-        router.refresh();
+        void invalidateTripData(queryClient);
       } else if (data?.status === 'FAILED') {
         toast.error(FAILED_MESSAGE[trip.kind]);
       }
     });
-  }, [queryClient, results, router, trips]);
+  }, [queryClient, results, trips]);
 
   return null;
 }

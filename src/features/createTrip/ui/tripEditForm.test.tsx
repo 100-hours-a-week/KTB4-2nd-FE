@@ -14,13 +14,12 @@ import { uploadAdditionalAttachmentBatch } from '../api/uploadAdditionalAttachme
 import type { TripCreateStep } from '../model/types';
 import { TripEditForm } from './tripEditForm';
 
-const { replace, back, refresh } = vi.hoisted(() => ({
+const { replace, back } = vi.hoisted(() => ({
   replace: vi.fn(),
   back: vi.fn(),
-  refresh: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace, back, refresh }),
+  useRouter: () => ({ push: vi.fn(), replace, back }),
 }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),

@@ -5,13 +5,7 @@ import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
-import {
-  createTripQueries,
-  mainMapQueries,
-  photoListQueries,
-  tripDetailQueries,
-  tripListQueries,
-} from '@/queryFactory';
+import { createTripQueries, invalidateTripData, tripListQueries } from '@/queryFactory';
 import { toast } from '@/shared/ui/toast';
 
 import { isTripProcessingRunning } from '../api/getTripProcessingStatus';
@@ -67,10 +61,7 @@ export function TripProcessingProgress({ tripId }: TripProcessingProgressProps) 
 
     if (data?.status === 'COMPLETED') {
       toast.success(COMPLETED_MESSAGE[mode]);
-      void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
-      void queryClient.invalidateQueries({ queryKey: mainMapQueries.markers().queryKey });
-      void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
-      void queryClient.invalidateQueries({ queryKey: photoListQueries.allKeys() });
+      void invalidateTripData(queryClient);
       router.replace(`/trips/${tripId}`);
       return;
     }

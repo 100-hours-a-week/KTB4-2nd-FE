@@ -10,3 +10,4 @@ export type {
 } from './model/types';
 export { useDeleteTrip } from './model/useDeleteTrip';
 export { useTripPlaceFolders } from './model/useTripPlaceFolders';
+export { useTripSummary } from './model/useTripSummary';

@@ -8,14 +8,14 @@ import { getStoryGenerationStatus } from '../api/getStoryGenerationStatus';
 import { readStoryCreateDraft, updateStoryCreateDraft } from '../model/storyCreateDraft';
 import { StoryGenerationWatcher } from './storyGenerationWatcher';
 
-const { refresh, pathname } = vi.hoisted(() => ({
-  refresh: vi.fn(),
+const { pathname } = vi.hoisted(() => ({
   pathname: { current: '/trips' },
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh }),
   usePathname: () => pathname.current,
 }));
+
+let client: QueryClient;
 vi.mock('@/shared/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('../api/getStoryGenerationStatus', () => ({ getStoryGenerationStatus: vi.fn() }));
 
@@ -24,7 +24,8 @@ function status(generationId: number, value: 'PROCESSING' | 'COMPLETED' | 'FAILE
 }
 
 function renderWatcher() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  vi.spyOn(client, 'invalidateQueries');
   return render(
     <QueryClientProvider client={client}>
       <StoryGenerationWatcher />
@@ -46,7 +47,9 @@ describe('StoryGenerationWatcher', () => {
 
     await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1));
     expect(window.localStorage.getItem('story-create-draft-v1:7')).toBeNull();
-    expect(refresh).toHaveBeenCalled();
+    expect(client.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['tripDetail', 'summary', 7],
+    });
   });
 
   it('실패하면 알리고 고른 값은 남긴 채 진행 기록만 지운다', async () => {

@@ -14,12 +14,10 @@ import {
 } from '../model/pendingTripProcessing';
 import { TripProcessingWatcher } from './tripProcessingWatcher';
 
-const { refresh, pathname } = vi.hoisted(() => ({
-  refresh: vi.fn(),
+const { pathname } = vi.hoisted(() => ({
   pathname: { current: '/' },
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh }),
   usePathname: () => pathname.current,
 }));
 vi.mock('@/shared/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -35,8 +33,11 @@ function status(
   return { tripId, status: value, progress: null, currentStep: null, result: null, error: null };
 }
 
+let client: QueryClient;
+
 function renderWatcher() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  vi.spyOn(client, 'invalidateQueries');
   return render(
     <QueryClientProvider client={client}>
       <TripProcessingWatcher />
@@ -60,7 +61,7 @@ describe('TripProcessingWatcher', () => {
       expect(toast.success).toHaveBeenCalledWith('여행을 만들었어요. 장소별로 사진을 정리했어요.'),
     );
     expect(getPendingTripProcessingSnapshot()).toBe('');
-    expect(refresh).toHaveBeenCalled();
+    expect(client.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tripDetail'] });
   });
 
   it('FINALIZING은 진행 중으로 보고 알리지 않는다', async () => {

@@ -5,12 +5,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import {
-  createTripQueries,
-  photoListQueries,
-  tripDetailQueries,
-  tripListQueries,
-} from '@/queryFactory';
+import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { Funnel } from '@/shared/lib/funnel';
 import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/pageHeader';
@@ -106,13 +101,8 @@ function TripEditFormContent({
     } else {
       toast.success('여행을 수정했어요.');
     }
-    // 이름·날짜·사진이 바뀌었으므로 목록, 지도, 장소 폴더를 새로 받습니다.
-    void queryClient.invalidateQueries({ queryKey: tripDetailQueries.allKeys() });
-    void queryClient.invalidateQueries({ queryKey: photoListQueries.allKeys() });
-    void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
-    void queryClient.invalidateQueries({ queryKey: ['mainMap'] });
+    void invalidateTripData(queryClient);
     router.replace(tripPath);
-    router.refresh();
   };
   const edit = useTripEditSubmit(data, finish);
   const isUploading = edit.isSaving && isAddingPhotos;

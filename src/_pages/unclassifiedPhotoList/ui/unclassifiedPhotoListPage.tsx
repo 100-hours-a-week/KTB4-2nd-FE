@@ -34,7 +34,7 @@ export function UnclassifiedPhotoListPage({
   const router = useRouter();
   const { photos, viewState, refetch } = useUnclassifiedPhotos(tripId, issue);
   const { mutate: requestRestore, isPending: isRestoring } = useRestoreUnclassifiedPhotos(tripId);
-  const { mutate: requestDelete, isPending: isDeleting } = useDeleteUnclassifiedPhotos(tripId);
+  const { mutate: requestDelete, isPending: isDeleting } = useDeleteUnclassifiedPhotos();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [pendingDeleteIds, setPendingDeleteIds] = useState<number[]>([]);
