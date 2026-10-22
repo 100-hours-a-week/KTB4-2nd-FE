@@ -90,7 +90,7 @@ describe('TripDetailPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: '제주도 가을 여행' })).toBeInTheDocument();
     expect(screen.getByText('서귀포시 외 2개')).toBeInTheDocument();
-    expect(screen.getByText('사진 128장')).toBeInTheDocument();
+    expect(screen.getByText('정리된 사진 128장')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /스토리 보기/ })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /서귀포 사진 35장 보기/ })).toHaveAttribute(
       'href',
@@ -173,6 +173,9 @@ describe('TripDetailPage', () => {
       await screen.findByRole('heading', { name: '장소를 찾은 사진이 없어요' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '미분류 사진 보기' })).toBeInTheDocument();
+    // 상단에는 정리된 사진과 미분류 사진을 나눠 보여줍니다.
+    expect(await screen.findByText(/미분류 5장/)).toBeInTheDocument();
+    expect(screen.getByText(/정리된 사진 0장/)).toBeInTheDocument();
   });
 
   it('장소 폴더도 사진도 없으면 사진 추가를 안내한다', async () => {

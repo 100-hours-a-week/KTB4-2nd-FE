@@ -40,6 +40,12 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const router = useRouter();
   const trip = useTripSummary(initialTrip);
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
+  const unclassified = useUnclassifiedFolders(trip.id);
+  const unclassifiedCount = unclassified.folders.reduce(
+    (sum, folder) => sum + folder.photoCount,
+    0,
+  );
+  const totalPhotoCount = trip.photoCount + unclassifiedCount;
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
@@ -94,7 +100,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
         action={<DropdownMenu items={menuItems} label="여행 더보기 메뉴" />}
       />
 
-      <TripMeta trip={trip} />
+      <TripMeta trip={trip} unclassifiedCount={unclassifiedCount} />
 
       <section aria-label="여행 바로가기" className="mt-5 grid grid-cols-[1fr_100px] gap-2.5">
         <button
@@ -147,7 +153,11 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
         {viewState !== 'ready' ? (
           <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
         ) : folders.length === 0 ? (
-          <EmptyPlaceFolders trip={trip} />
+          <EmptyPlaceFolders
+            trip={trip}
+            hasPhotos={totalPhotoCount > 0}
+            isCounting={unclassified.viewState === 'loading'}
+          />
         ) : (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
             {folders.map((folder) => (
@@ -199,7 +209,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
         title="정말 삭제하시겠습니까?"
         description={
           <>
-            ‘{trip.name}’과 사진 {trip.photoCount}장이 삭제되며
+            ‘{trip.name}’과 사진 {totalPhotoCount}장이 삭제되며
             <br />
             삭제 후에는 되돌릴 수 없습니다.
           </>
@@ -228,7 +238,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   );
 }
 
-function TripMeta({ trip }: { trip: TripDetail }) {
+function TripMeta({ trip, unclassifiedCount }: { trip: TripDetail; unclassifiedCount: number }) {
   const location =
     trip.locations.length > 1
       ? `${trip.locations[0]} 외 ${trip.locations.length - 1}개`
@@ -246,7 +256,15 @@ function TripMeta({ trip }: { trip: TripDetail }) {
         </span>
       </p>
       <p className="inline-flex items-center gap-1">
-        <ImageIcon size="13" /> 사진 {trip.photoCount}장
+        <ImageIcon size="13" /> 정리된 사진 {trip.photoCount}장
+        {unclassifiedCount > 0 && (
+          <>
+            <span aria-hidden="true" className="text-slate-300">
+              ·
+            </span>
+            미분류 {unclassifiedCount}장
+          </>
+        )}
       </p>
     </section>
   );
@@ -329,16 +347,16 @@ function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
 }
 
-/**
- * 장소 폴더가 없을 때 사진이 모두 미분류로 갔는지, 사진 자체가 없는지에 따라 안내를 나눕니다.
- * 여행의 총 사진 수(attachmentCount)에는 미분류 사진이 빠져 있어서 미분류 폴더 수로 판단합니다.
- */
-function EmptyPlaceFolders({ trip }: { trip: TripDetail }) {
-  const { folders: unclassifiedFolders, viewState } = useUnclassifiedFolders(trip.id);
-  if (viewState === 'loading') return <div className="min-h-[280px]" aria-busy="true" />;
-
-  const hasPhotos =
-    trip.photoCount > 0 || unclassifiedFolders.some((folder) => folder.photoCount > 0);
+function EmptyPlaceFolders({
+  trip,
+  hasPhotos,
+  isCounting,
+}: {
+  trip: TripDetail;
+  hasPhotos: boolean;
+  isCounting: boolean;
+}) {
+  if (isCounting) return <div className="min-h-[280px]" aria-busy="true" />;
 
   return (
     <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
