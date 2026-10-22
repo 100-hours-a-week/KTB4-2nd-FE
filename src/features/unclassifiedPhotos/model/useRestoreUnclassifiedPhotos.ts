@@ -7,18 +7,15 @@ import { invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { toast } from '@/shared/ui/toast';
 
-import { getAllUnclassifiedPhotos } from '../api/getUnclassifiedPhotos';
 import {
   restoreAttachment,
   restoreAttachments,
   type RestoreAttachmentItem,
 } from '../api/restoreUnclassifiedPhotos';
-import { BULK_RESTORE_LIMIT, type UnclassifiedIssue, type UnclassifiedPhoto } from './types';
+import { BULK_RESTORE_LIMIT, type UnclassifiedPhoto } from './types';
 
-export type RestoreUnclassifiedTarget =
-  { issue: UnclassifiedIssue } | { photos: UnclassifiedPhoto[] };
-
-export type RestoreUnclassifiedInput = RestoreUnclassifiedTarget & {
+export type RestoreUnclassifiedInput = {
+  photos: UnclassifiedPhoto[];
   fallbackPlaceId?: number;
 };
 
@@ -47,8 +44,7 @@ function toRestoreItems(photos: UnclassifiedPhoto[], fallbackPlaceId?: number) {
 }
 
 async function restore(tripId: number, input: RestoreUnclassifiedInput) {
-  const photos =
-    'issue' in input ? await getAllUnclassifiedPhotos(tripId, input.issue) : input.photos;
+  const { photos } = input;
   if (photos.length === 0) return;
 
   const items = toRestoreItems(photos, input.fallbackPlaceId);

@@ -11,7 +11,10 @@ export function toTripStory(trip: TripDetail, response: TripStoryResponse): Trip
     photoCount: trip.photoCount,
     days: response.days.map((day) => ({
       date: day.date,
-      dayNumber: Math.round((Date.parse(day.date) - Date.parse(trip.startDate)) / 86_400_000) + 1,
+      dayNumber: Math.max(
+        1,
+        Math.round((Date.parse(day.date) - Date.parse(trip.startDate)) / 86_400_000) + 1,
+      ),
       dayLabel: day.dayLabel,
       placeName: '',
       photos: [...day.blocks]

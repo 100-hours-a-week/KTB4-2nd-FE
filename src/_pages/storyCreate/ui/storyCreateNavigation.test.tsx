@@ -119,7 +119,7 @@ async function enterStoryCreate() {
 
 async function startStory(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: /담백하게/ }));
-  await user.click(screen.getByRole('button', { name: '생성' }));
+  await user.click(screen.getByRole('button', { name: '다음' }));
   await user.click(await screen.findByRole('checkbox', { name: '제주 사진 3장 선택' }));
   await user.click(screen.getByRole('button', { name: '생성' }));
 }

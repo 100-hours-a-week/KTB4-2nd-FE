@@ -1,16 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
 import { getUnclassifiedFolders } from '@/features/unclassifiedPhotos/api/getUnclassifiedFolders';
-import { getAllUnclassifiedPhotos } from '@/features/unclassifiedPhotos/api/getUnclassifiedPhotos';
-import { restoreAttachments } from '@/features/unclassifiedPhotos/api/restoreUnclassifiedPhotos';
-import type {
-  UnclassifiedFolder,
-  UnclassifiedPhoto,
-} from '@/features/unclassifiedPhotos/model/types';
+import type { UnclassifiedFolder } from '@/features/unclassifiedPhotos/model/types';
 
 import { UnclassifiedFolderPage } from './unclassifiedFolderPage';
 
@@ -18,22 +11,9 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ back: vi.fn(), replace: 
 vi.mock('@/features/unclassifiedPhotos/api/getUnclassifiedFolders', () => ({
   getUnclassifiedFolders: vi.fn(),
 }));
-vi.mock('@/features/unclassifiedPhotos/api/getUnclassifiedPhotos', () => ({
-  getUnclassifiedPhotos: vi.fn(),
-  getAllUnclassifiedPhotos: vi.fn(),
-}));
-vi.mock('@/features/unclassifiedPhotos/api/restoreUnclassifiedPhotos', () => ({
-  restoreAttachment: vi.fn(),
-  restoreAttachments: vi.fn(),
-}));
-vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({ getTripPlaceFolders: vi.fn() }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
-
-function photo(id: number, restoreTripPlaceId: number | null): UnclassifiedPhoto {
-  return { id, thumbnailUrl: null, accent: 'coast', restoreTripPlaceId };
-}
 
 const folders: UnclassifiedFolder[] = [
   { issue: 'UNCLEAR_LOCATION', photoCount: 14, thumbnailUrl: null, accent: 'island' },
@@ -57,13 +37,6 @@ describe('UnclassifiedFolderPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getUnclassifiedFolders).mockResolvedValue(folders);
-    vi.mocked(getAllUnclassifiedPhotos).mockResolvedValue([photo(1, 11), photo(2, 12)]);
-    vi.mocked(restoreAttachments).mockResolvedValue(undefined);
-    vi.mocked(getTripPlaceFolders).mockResolvedValue({
-      folders: [{ id: 11, name: '서귀포', photoCount: 5, thumbnailUrl: null, accent: 'coast' }],
-      hasNext: false,
-      nextCursor: null,
-    });
   });
 
   it('사진이 있는 사유 폴더만 보여주고 전체 장수를 합산한다', async () => {
@@ -78,55 +51,11 @@ describe('UnclassifiedFolderPage', () => {
     expect(screen.queryByRole('link', { name: /흐릿한 사진/ })).not.toBeInTheDocument();
   });
 
-  it('폴더 해제는 확인 후 해당 사유 사진을 모두 원래 장소로 되돌린다', async () => {
-    const user = userEvent.setup();
+  it('폴더 단위 해제 버튼은 없다', async () => {
     renderPage();
 
-    await user.click(await screen.findByRole('button', { name: '중복 사진 전체 해제' }));
-    const dialog = screen.getByRole('dialog', { name: '중복 사진 35장을 해제할까요?' });
-    await user.click(within(dialog).getByRole('button', { name: '해제하기' }));
-
-    await waitFor(() =>
-      expect(restoreAttachments).toHaveBeenCalledWith(
-        [
-          { tripAttachmentId: 1, tripPlaceId: 11 },
-          { tripAttachmentId: 2, tripPlaceId: 12 },
-        ],
-        'csrf-token',
-      ),
-    );
-    expect(getAllUnclassifiedPhotos).toHaveBeenCalledWith(7, 'DUPLICATED');
-  });
-
-  it('장소를 알 수 없는 사진이 있으면 되돌릴 폴더를 고른 뒤 복구한다', async () => {
-    vi.mocked(getAllUnclassifiedPhotos).mockResolvedValue([photo(1, null), photo(2, 12)]);
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(await screen.findByRole('button', { name: '장소가 애매한 사진 전체 해제' }));
-    await user.click(
-      within(screen.getByRole('dialog', { name: /해제할까요/ })).getByRole('button', {
-        name: '해제하기',
-      }),
-    );
-
-    const picker = await screen.findByRole('dialog', { name: '어느 폴더로 되돌릴까요?' });
-    expect(picker).toHaveTextContent('장소를 알 수 없는 사진 1장');
-    expect(restoreAttachments).not.toHaveBeenCalled();
-
-    await user.click(await within(picker).findByRole('radio', { name: /서귀포/ }));
-    await user.click(within(picker).getByRole('button', { name: '되돌리기' }));
-
-    await waitFor(() =>
-      expect(restoreAttachments).toHaveBeenCalledWith(
-        [
-          { tripAttachmentId: 1, tripPlaceId: 11 },
-          { tripAttachmentId: 2, tripPlaceId: 12 },
-        ],
-        'csrf-token',
-      ),
-    );
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await screen.findByText('49장');
+    expect(screen.queryByRole('button', { name: /전체 해제/ })).not.toBeInTheDocument();
   });
 
   it('모든 폴더가 비어 있으면 빈 상태를 보여준다', async () => {

@@ -13,10 +13,12 @@ export function StoryFolderGrid({
   tripId,
   selectedIds,
   onToggle,
+  onUnavailableSelected,
 }: {
   tripId: number;
   selectedIds: number[];
   onToggle: (id: number) => void;
+  onUnavailableSelected?: (ids: number[]) => void;
 }) {
   const query = useInfiniteQuery(storyCreateQueries.sourceFolders(tripId));
   const [visibleCount, setVisibleCount] = useState(6);
@@ -25,6 +27,19 @@ export function StoryFolderGrid({
   const folders = query.data?.pages.flatMap((page) => page.folders) ?? [];
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = query;
   const hasMore = visibleCount < folders.length || hasNextPage;
+
+  useEffect(() => {
+    if (!query.data || !onUnavailableSelected) return;
+
+    const loaded = new Map(
+      query.data.pages.flatMap((page) => page.folders).map((folder) => [folder.id, folder]),
+    );
+    const unavailable = selectedIds.filter((id) => {
+      const folder = loaded.get(id);
+      return folder ? folder.photoCount === 0 : !hasNextPage;
+    });
+    if (unavailable.length > 0) onUnavailableSelected(unavailable);
+  }, [hasNextPage, onUnavailableSelected, query.data, selectedIds]);
   useEffect(() => {
     if (!sentinel.current || !hasMore || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(

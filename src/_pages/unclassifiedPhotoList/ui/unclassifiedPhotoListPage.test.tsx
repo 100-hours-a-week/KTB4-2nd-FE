@@ -17,7 +17,6 @@ import { UnclassifiedPhotoListPage } from './unclassifiedPhotoListPage';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ back: vi.fn(), replace: vi.fn() }) }));
 vi.mock('@/features/unclassifiedPhotos/api/getUnclassifiedPhotos', () => ({
   getUnclassifiedPhotos: vi.fn(),
-  getAllUnclassifiedPhotos: vi.fn(),
 }));
 vi.mock('@/features/unclassifiedPhotos/api/restoreUnclassifiedPhotos', () => ({
   restoreAttachment: vi.fn(),
@@ -164,14 +163,14 @@ describe('UnclassifiedPhotoListPage', () => {
     expect(trigger).toHaveFocus();
   });
 
-  it('상세보기 메뉴에서 현재 사진만 복구하고 뷰어를 닫는다', async () => {
+  it('상세보기 메뉴에서 현재 사진만 해제하고 뷰어를 닫는다', async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(await screen.findByRole('button', { name: '2번째 사진 상세보기' }));
     await user.click(screen.getByRole('button', { name: '사진 더보기 메뉴' }));
     expect(screen.queryByRole('menuitem', { name: '원본 다운로드' })).not.toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '삭제' })).toBeInTheDocument();
-    await user.click(screen.getByRole('menuitem', { name: '복구' }));
+    await user.click(screen.getByRole('menuitem', { name: '해제' }));
     await waitFor(() =>
       expect(restoreAttachment).toHaveBeenCalledWith(
         { tripAttachmentId: 2, tripPlaceId: 20 },
