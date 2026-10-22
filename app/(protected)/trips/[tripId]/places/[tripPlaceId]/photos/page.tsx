@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { PhotoListPage } from '@/_pages/photoList';
 import { getCurrentUser } from '@/entities/user';
+import { withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '사진 목록 | 여담',
@@ -26,9 +27,8 @@ export default async function Page({
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {
-    redirect(
-      `/auth/renew?next=${encodeURIComponent(`/trips/${tripId}/places/${tripPlaceId}/photos`)}`,
-    );
+    const next = withSearchParams(`/trips/${tripId}/places/${tripPlaceId}/photos`, query);
+    redirect(`/auth/renew?next=${encodeURIComponent(next)}`);
   }
 
   if (session.status === 'notFound') redirect('/login');

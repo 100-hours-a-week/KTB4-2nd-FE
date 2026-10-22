@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { UnclassifiedPhotoListPage } from '@/_pages/unclassifiedPhotoList';
 import { getCurrentUser } from '@/entities/user';
 import { parseUnclassifiedIssueSlug } from '@/features/unclassifiedPhotos';
+import { withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '미분류 사진 | 여담',
@@ -24,7 +25,8 @@ export default async function Page({
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {
-    redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}/unclassified/${rawIssue}`)}`);
+    const next = withSearchParams(`/trips/${tripId}/unclassified/${rawIssue}`, query);
+    redirect(`/auth/renew?next=${encodeURIComponent(next)}`);
   }
 
   if (session.status === 'notFound') redirect('/login');

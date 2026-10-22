@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { UnclassifiedFolderPage } from '@/_pages/unclassifiedFolder';
 import { getCurrentUser } from '@/entities/user';
+import { withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '미분류 폴더 | 여담',
@@ -21,7 +22,8 @@ export default async function Page({
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {
-    redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}/unclassified`)}`);
+    const next = withSearchParams(`/trips/${tripId}/unclassified`, query);
+    redirect(`/auth/renew?next=${encodeURIComponent(next)}`);
   }
 
   if (session.status === 'notFound') redirect('/login');

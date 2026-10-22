@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
+import { getUnclassifiedFolders } from '@/features/unclassifiedPhotos/api/getUnclassifiedFolders';
 import type { TripPlaceFolderPageResult } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripDetail } from '@/features/tripDetail/model/types';
 
@@ -21,6 +22,9 @@ vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({ fetchTripSummary: vi.fn() }));
+vi.mock('@/features/unclassifiedPhotos/api/getUnclassifiedFolders', () => ({
+  getUnclassifiedFolders: vi.fn(),
+}));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn(),
 }));
@@ -78,6 +82,7 @@ describe('TripDetailPage', () => {
     vi.clearAllMocks();
     vi.mocked(getTripPlaceFolders).mockResolvedValue(folders);
     vi.mocked(deleteTrip).mockResolvedValue(undefined);
+    vi.mocked(getUnclassifiedFolders).mockResolvedValue([]);
   });
 
   it('여행 정보와 장소 폴더 API 결과를 표시한다', async () => {
@@ -151,6 +156,23 @@ describe('TripDetailPage', () => {
       'href',
       `/trips/7/unclassified?trip=${encodeURIComponent('제주도 가을 여행')}`,
     );
+  });
+
+  it('총 사진 수가 0장이어도 사진이 모두 미분류에 있으면 미분류로 안내한다', async () => {
+    vi.mocked(getTripPlaceFolders).mockResolvedValue({
+      folders: [],
+      hasNext: false,
+      nextCursor: null,
+    });
+    vi.mocked(getUnclassifiedFolders).mockResolvedValue([
+      { issue: 'UNCLEAR_LOCATION', photoCount: 5, thumbnailUrl: null, accent: 'coast' },
+    ]);
+    renderTripDetailPage({ photoCount: 0 });
+
+    expect(
+      await screen.findByRole('heading', { name: '장소를 찾은 사진이 없어요' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '미분류 사진 보기' })).toBeInTheDocument();
   });
 
   it('장소 폴더도 사진도 없으면 사진 추가를 안내한다', async () => {

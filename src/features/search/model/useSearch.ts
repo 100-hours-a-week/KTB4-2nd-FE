@@ -7,20 +7,20 @@ import { searchQueries } from '@/queryFactory';
 
 import { SEARCH_QUERY_MIN_LENGTH, type SearchViewState } from './types';
 
-export function useSearch(query: string) {
-  const enabled = query.length >= SEARCH_QUERY_MIN_LENGTH;
-  const { data, error, isPending, isError, refetch } = useQuery({
+export function useSearch(query: string, allowed = true) {
+  const valid = query.length >= SEARCH_QUERY_MIN_LENGTH;
+  const { data, error, isError, refetch } = useQuery({
     ...searchQueries.result(query),
-    enabled,
+    enabled: valid && allowed,
   });
 
-  const viewState: SearchViewState = !enabled
+  const viewState: SearchViewState = !valid
     ? 'idle'
     : isError
       ? 'error'
-      : isPending
-        ? 'loading'
-        : 'ready';
+      : data
+        ? 'ready'
+        : 'loading';
 
   const errorMessage =
     axios.isAxiosError(error) && error.response?.status === 503

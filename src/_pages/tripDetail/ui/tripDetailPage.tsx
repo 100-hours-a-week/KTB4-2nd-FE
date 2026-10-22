@@ -12,6 +12,7 @@ import {
   type TripDetail,
   type TripPlaceFolder,
 } from '@/features/tripDetail';
+import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
@@ -328,8 +329,16 @@ function formatShortDate(date: string) {
   return date.slice(2).replaceAll('-', '.');
 }
 
+/**
+ * 장소 폴더가 없을 때 사진이 모두 미분류로 갔는지, 사진 자체가 없는지에 따라 안내를 나눕니다.
+ * 여행의 총 사진 수(attachmentCount)에는 미분류 사진이 빠져 있어서 미분류 폴더 수로 판단합니다.
+ */
 function EmptyPlaceFolders({ trip }: { trip: TripDetail }) {
-  const hasPhotos = trip.photoCount > 0;
+  const { folders: unclassifiedFolders, viewState } = useUnclassifiedFolders(trip.id);
+  if (viewState === 'loading') return <div className="min-h-[280px]" aria-busy="true" />;
+
+  const hasPhotos =
+    trip.photoCount > 0 || unclassifiedFolders.some((folder) => folder.photoCount > 0);
 
   return (
     <div className="flex min-h-[280px] flex-col items-center justify-center px-3 py-10 text-center">
