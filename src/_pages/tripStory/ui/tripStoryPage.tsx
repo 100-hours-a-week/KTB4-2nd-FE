@@ -60,7 +60,9 @@ export function TripStoryPage({
         />
       </div>
       <section aria-label="여행 정보" className="border-border-subtle border-b px-5 pt-6 pb-5">
-        <h2 className="text-[23px] font-extrabold tracking-[-0.04em]">{story.tripName}</h2>
+        <h2 className="text-[23px] font-extrabold tracking-[-0.04em] wrap-break-word">
+          {story.tripName}
+        </h2>
         <p className="text-muted mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium">
           <span className="inline-flex items-center gap-1.5">
             <CalendarIcon
@@ -148,7 +150,9 @@ export function TripStoryPage({
                         <span className="truncate">{getStoryPhotoLabel(photo)}</span>
                       </p>
                       <StoryPhotoCard photo={photo} onOpen={() => setActiveId(photo.id)} />
-                      <p className="mt-2.5 text-[13px] font-medium leading-6">{photo.sentence}</p>
+                      <p className="mt-2.5 text-[13px] font-medium leading-6 wrap-break-word">
+                        {photo.sentence}
+                      </p>
                     </li>
                   ))}
                 </ul>

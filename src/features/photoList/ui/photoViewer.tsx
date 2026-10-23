@@ -185,8 +185,8 @@ export function PhotoViewer({
       </div>
 
       <footer className="px-5 pt-4 pb-[calc(28px+env(safe-area-inset-bottom))]">
-        <strong className="block text-sm">{placeName}</strong>
-        <span className="mt-1 block text-[11px] text-white/55">
+        <strong className="block truncate text-sm">{placeName}</strong>
+        <span className="mt-1 block truncate text-[11px] text-white/55">
           {tripName}
           {photo.capturedAt && ` · ${formatCapturedDate(photo.capturedAt)}`}
         </span>

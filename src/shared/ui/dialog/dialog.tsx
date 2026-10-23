@@ -104,11 +104,17 @@ export function Dialog({
             {icon}
           </span>
         )}
-        <h2 id={titleId} className="text-brand text-base font-bold tracking-[-0.01em]">
+        <h2
+          id={titleId}
+          className="text-brand text-base font-bold tracking-[-0.01em] wrap-break-word"
+        >
           {title}
         </h2>
         {description && (
-          <p id={descriptionId} className="text-muted mt-2 text-[13px] leading-relaxed">
+          <p
+            id={descriptionId}
+            className="text-muted mt-2 text-[13px] leading-relaxed wrap-break-word"
+          >
             {description}
           </p>
         )}
