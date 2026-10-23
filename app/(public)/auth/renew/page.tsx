@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { AuthRenewPage } from '@/_pages/authRenew';
+import { toSafeReturnPath } from '@/shared/lib/url';
 
 export default async function Page({
   searchParams,
@@ -14,8 +15,7 @@ export default async function Page({
 
   const { next } = await searchParams;
   const requestedPath = Array.isArray(next) ? next[0] : next;
-  const returnTo =
-    requestedPath?.startsWith('/') && !requestedPath.startsWith('//') ? requestedPath : '/';
+  const returnTo = toSafeReturnPath(requestedPath);
 
   return <AuthRenewPage returnTo={returnTo} />;
 }

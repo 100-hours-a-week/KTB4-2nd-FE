@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { UnclassifiedFolderPage } from '@/_pages/unclassifiedFolder';
 import { getCurrentUser } from '@/entities/user';
-import { withSearchParams } from '@/shared/lib/url';
+import { getRenewRedirectPath, withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '미분류 폴더 | 여담',
@@ -23,7 +23,7 @@ export default async function Page({
 
   if (session.status === 'unauthorized') {
     const next = withSearchParams(`/trips/${tripId}/unclassified`, query);
-    redirect(`/auth/renew?next=${encodeURIComponent(next)}`);
+    redirect(getRenewRedirectPath(next, query.renewed));
   }
 
   if (session.status === 'notFound') redirect('/login');

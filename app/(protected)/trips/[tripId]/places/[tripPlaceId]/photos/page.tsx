@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { PhotoListPage } from '@/_pages/photoList';
 import { getCurrentUser } from '@/entities/user';
-import { withSearchParams } from '@/shared/lib/url';
+import { getRenewRedirectPath, withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '사진 목록 | 여담',
@@ -14,7 +14,11 @@ export default async function Page({
   searchParams,
 }: {
   params: Promise<{ tripId: string; tripPlaceId: string }>;
-  searchParams: Promise<{ place?: string | string[]; trip?: string | string[] }>;
+  searchParams: Promise<{
+    place?: string | string[];
+    trip?: string | string[];
+    renewed?: string | string[];
+  }>;
 }) {
   const { tripId: rawTripId, tripPlaceId: rawTripPlaceId } = await params;
   const query = await searchParams;
@@ -28,7 +32,7 @@ export default async function Page({
 
   if (session.status === 'unauthorized') {
     const next = withSearchParams(`/trips/${tripId}/places/${tripPlaceId}/photos`, query);
-    redirect(`/auth/renew?next=${encodeURIComponent(next)}`);
+    redirect(getRenewRedirectPath(next, query.renewed));
   }
 
   if (session.status === 'notFound') redirect('/login');

@@ -3,13 +3,15 @@ import { notFound, redirect } from 'next/navigation';
 
 import { TripDetailPage } from '@/_pages/tripDetail';
 import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { getRenewRedirectPath } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '여행 상세 | 여담',
 };
 
-export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
+export default async function Page({ params, searchParams }: PageProps<'/trips/[tripId]'>) {
   const { tripId: rawTripId } = await params;
+  const { renewed } = await searchParams;
   const tripId = Number(rawTripId);
 
   if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
@@ -21,7 +23,7 @@ export default async function Page({ params }: PageProps<'/trips/[tripId]'>) {
   }
 
   if (result.status === 'unauthorized') {
-    redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}`)}`);
+    redirect(getRenewRedirectPath(`/trips/${tripId}`, renewed));
   }
 
   if (result.status === 'notReady') redirect(`/trips/${tripId}/processing`);
