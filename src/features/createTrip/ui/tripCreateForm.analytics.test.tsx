@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EVENTS, track } from '@/shared/lib/analytics';
 import { toast } from '@/shared/ui/toast';
 
+import { cancelTripProcessing } from '../api/cancelTripProcessing';
 import { createTrip } from '../api/createTrip';
 import {
   getTripProcessingStatus,
@@ -31,6 +32,8 @@ vi.mock('@/shared/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 vi.mock('../api/createTrip', () => ({ createTrip: vi.fn() }));
+vi.mock('../api/cancelTripProcessing', () => ({ cancelTripProcessing: vi.fn() }));
+vi.mock('@/features/tripDetail/api/deleteTrip', () => ({ deleteTrip: vi.fn() }));
 vi.mock('../model/hasAnyPhotoLocation', () => ({ hasAnyPhotoLocation: vi.fn() }));
 vi.mock('../api/getTripProcessingStatus', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/getTripProcessingStatus')>()),
@@ -163,6 +166,11 @@ describe('TripCreateForm 생성 완료 이벤트', () => {
 
     await waitFor(() => expect(uploadInitialAttachmentBatch).toHaveBeenCalledTimes(2));
     expect(createTrip).toHaveBeenCalledTimes(2);
+    // 버린 여행(7)이 남아 있으면 같은 이름으로 새로 만들 때 이름 중복(409)이 나므로 먼저 정리합니다.
+    expect(cancelTripProcessing).toHaveBeenCalledWith(7, 'csrf');
+    expect(vi.mocked(cancelTripProcessing).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(createTrip).mock.invocationCallOrder[1],
+    );
     expect(vi.mocked(uploadInitialAttachmentBatch).mock.calls[1][0]).toMatchObject({
       tripId: 8,
       batchNo: 1,
@@ -222,5 +230,23 @@ describe('TripCreateForm 생성 완료 이벤트', () => {
       vi.mocked(track).mock.calls.filter(([event]) => event === EVENTS.DIARY_GENERATE_COMPLETE),
     ).toHaveLength(0);
     expect(screen.getByRole('button', { name: '여행 만들기' })).toBeInTheDocument();
+  });
+
+  it('취소할 수 없는 상태로 남은 여행은 삭제로 정리하고 새 여행을 만든다', async () => {
+    const { deleteTrip } = await import('@/features/tripDetail/api/deleteTrip');
+    vi.mocked(cancelTripProcessing).mockRejectedValueOnce(new Error('cannot cancel'));
+    vi.mocked(createTrip)
+      .mockResolvedValueOnce({ tripId: 7, status: 'PROCESSING' })
+      .mockResolvedValueOnce({ tripId: 8, status: 'PROCESSING' });
+    vi.mocked(uploadInitialAttachmentBatch)
+      .mockRejectedValueOnce(new Error('invalid file'))
+      .mockResolvedValueOnce({ ...completed, tripId: 8 });
+    await submitForm();
+    await waitFor(() => expect(uploadInitialAttachmentBatch).toHaveBeenCalledTimes(1));
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: '여행 만들기' }));
+
+    await waitFor(() => expect(createTrip).toHaveBeenCalledTimes(2));
+    expect(deleteTrip).toHaveBeenCalledWith(7, 'csrf');
   });
 });

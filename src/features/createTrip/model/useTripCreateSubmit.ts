@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { createTripQueries } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { EVENTS, track } from '@/shared/lib/analytics';
 import { toast } from '@/shared/ui/toast';
 
@@ -22,6 +23,18 @@ import {
 import { getTripRegion } from './getTripRegion';
 import { addPendingTripProcessing, removePendingTripProcessing } from './pendingTripProcessing';
 import type { TripCreateFormValues } from './types';
+
+async function discardTrip(tripId: number) {
+  const csrfToken = await fetchCsrfToken();
+  try {
+    await cancelTripProcessing(tripId, csrfToken);
+  } catch {
+    try {
+      await deleteTrip(tripId, csrfToken);
+    } catch {
+    }
+  }
+}
 
 function clampRatio(ratio: number) {
   return Math.min(Math.max(ratio, 0), 1);
@@ -46,6 +59,8 @@ type GenerationAnalyticsPoint = {
 
 export function useTripCreateSubmit() {
   const createdTripId = useRef<number | null>(null);
+  const completedTripId = useRef<number | null>(null);
+  const discardedTripIds = useRef<number[]>([]);
   const uploadProgressPoint = useRef<UploadProgressPoint | null>(null);
   const uploadAnalyticsPoint = useRef<UploadAnalyticsPoint | null>(null);
   const uploadAbortController = useRef<AbortController | null>(null);
@@ -83,6 +98,7 @@ export function useTripCreateSubmit() {
     awaitingProcessingRef.current = false;
     setAwaitingProcessing(false);
     removePendingTripProcessing(status.tripId);
+    if (status.status === 'COMPLETED') completedTripId.current = status.tripId;
     setProcessingResult(status);
   }, []);
 
@@ -96,6 +112,9 @@ export function useTripCreateSubmit() {
       let currentTripId = createdTripId.current;
 
       if (currentTripId === null) {
+        const discarded = discardedTripIds.current.splice(0);
+        await Promise.all(discarded.map(discardTrip));
+
         const createCsrfToken = await fetchCsrfToken();
         const trip = await createTrip(
           {
@@ -273,6 +292,11 @@ export function useTripCreateSubmit() {
   }, [requestCancel]);
 
   const resetCreatedTrip = useCallback(() => {
+    const previousTripId = createdTripId.current;
+    // 완성되지 않은 채 버려지는 여행은 다음 제출 전에 서버에서 정리합니다.
+    if (previousTripId !== null && previousTripId !== completedTripId.current) {
+      discardedTripIds.current.push(previousTripId);
+    }
     createdTripId.current = null;
     uploadProgressPoint.current = null;
     uploadAnalyticsPoint.current = null;
