@@ -6,6 +6,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { refreshSession } from '@/shared/api/browser';
 import { Button } from '@/shared/ui/button';
 
+function getRenewedDestination(returnTo: string) {
+  try {
+    const destination = new URL(returnTo, window.location.origin);
+    if (destination.origin !== window.location.origin) return '/?renewed=1';
+    destination.searchParams.set('renewed', '1');
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return '/?renewed=1';
+  }
+}
+
 export function AuthRenewPage({ returnTo = '/' }: { returnTo?: string }) {
   const attempted = useRef(false);
   const [failed, setFailed] = useState(false);
@@ -15,9 +26,7 @@ export function AuthRenewPage({ returnTo = '/' }: { returnTo?: string }) {
 
     try {
       await refreshSession();
-      const destination = new URL(returnTo, window.location.origin);
-      destination.searchParams.set('renewed', '1');
-      window.location.replace(`${destination.pathname}${destination.search}${destination.hash}`);
+      window.location.replace(getRenewedDestination(returnTo));
       return;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {

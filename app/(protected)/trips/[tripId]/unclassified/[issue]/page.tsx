@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { UnclassifiedPhotoListPage } from '@/_pages/unclassifiedPhotoList';
 import { getCurrentUser } from '@/entities/user';
 import { parseUnclassifiedIssueSlug } from '@/features/unclassifiedPhotos';
-import { withSearchParams } from '@/shared/lib/url';
+import { getRenewRedirectPath, withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '미분류 사진 | 여담',
@@ -26,7 +26,7 @@ export default async function Page({
 
   if (session.status === 'unauthorized') {
     const next = withSearchParams(`/trips/${tripId}/unclassified/${rawIssue}`, query);
-    redirect(`/auth/renew?next=${encodeURIComponent(next)}`);
+    redirect(getRenewRedirectPath(next, query.renewed));
   }
 
   if (session.status === 'notFound') redirect('/login');
