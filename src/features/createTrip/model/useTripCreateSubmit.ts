@@ -31,8 +31,7 @@ async function discardTrip(tripId: number) {
   } catch {
     try {
       await deleteTrip(tripId, csrfToken);
-    } catch {
-    }
+    } catch {}
   }
 }
 

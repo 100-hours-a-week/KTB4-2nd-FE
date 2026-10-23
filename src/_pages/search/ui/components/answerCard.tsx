@@ -21,7 +21,7 @@ export function AnswerCard({
         AI 답변
       </h2>
       {answer ? (
-        <p className="mt-2 text-[15px] leading-snug font-bold">{answer}</p>
+        <p className="mt-2 text-[15px] leading-snug font-bold wrap-break-word">{answer}</p>
       ) : (
         <p className="text-muted mt-2 text-xs">
           답변을 만들지 못했어요. 아래 검색 결과를 확인해보세요.
