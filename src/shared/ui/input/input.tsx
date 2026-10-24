@@ -9,8 +9,8 @@ export type InputProps = ComponentPropsWithRef<'input'> & {
   helperText?: string;
   error?: string;
   variant?: 'underline' | 'boxed';
-  /** register 사용 시 useWatch로 구독한 문자열의 length를 전달합니다. */
   characterCount?: number;
+  characterLimit?: number;
 };
 
 export function Input({
@@ -21,6 +21,7 @@ export function Input({
   error,
   variant = 'underline',
   characterCount,
+  characterLimit,
   value,
   maxLength,
   disabled,
@@ -36,7 +37,8 @@ export function Input({
   const messageId = `${inputId}-message`;
   const countId = `${inputId}-count`;
   const count = characterCount ?? (value != null ? String(value).length : undefined);
-  const showCount = maxLength != null && count != null;
+  const limit = characterLimit ?? maxLength;
+  const showCount = limit != null && count != null;
   const describedBy =
     `${ariaDescribedBy ?? ''} ${message ? messageId : ''} ${showCount ? countId : ''}`.trim();
   const isBoxed = variant === 'boxed';
@@ -84,7 +86,7 @@ export function Input({
               isBoxed ? 'absolute right-3 bottom-3' : 'pr-2'
             }`}
           >
-            {count}/{maxLength}
+            {count}/{limit}
           </span>
         )}
       </div>

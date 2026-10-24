@@ -7,6 +7,7 @@ import { createTripQueries } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { EVENTS, track } from '@/shared/lib/analytics';
+import { normalizeText } from '@/shared/lib/text';
 import { toast } from '@/shared/ui/toast';
 
 import { cancelTripProcessing } from '../api/cancelTripProcessing';
@@ -117,7 +118,7 @@ export function useTripCreateSubmit() {
         const createCsrfToken = await fetchCsrfToken();
         const trip = await createTrip(
           {
-            tripName: values.tripName,
+            tripName: normalizeText(values.tripName),
             startDate: values.startDate,
             endDate: values.endDate,
             regionCodes: values.places.map((place) => place.regionCode),

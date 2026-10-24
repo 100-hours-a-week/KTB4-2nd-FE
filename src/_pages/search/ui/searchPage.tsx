@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { AiUnavailableDialog, useAiReadyGuard } from '@/features/aiStatus';
-import { SEARCH_QUERY_MIN_LENGTH, useSearch } from '@/features/search';
+import { isSearchableQuery, useSearch } from '@/features/search';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 
 import { SearchForm } from './components/searchForm';
@@ -38,7 +38,7 @@ export function SearchPage({ query }: SearchPageProps) {
   const { result, viewState, errorMessage, refetch } = useSearch(query, allowedQuery === query);
 
   useEffect(() => {
-    if (query.length < SEARCH_QUERY_MIN_LENGTH) return;
+    if (!isSearchableQuery(query)) return;
 
     void runWhenAiReady(() => setAllowedQuery(query)).then((outcome) => {
       if (outcome === 'blocked') setBlockedQuery(query);
