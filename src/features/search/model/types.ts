@@ -1,6 +1,6 @@
 import type { PhotoAccent } from '@/features/photoList';
+import { countChars, hasVisibleText, normalizeText, sliceChars } from '@/shared/lib/text';
 
-/** 검색 결과 폴더는 여행이 아니라 여행 안의 장소 폴더 단위입니다. */
 export type SearchFolder = {
   tripId: number;
   tripPlaceId: number;
@@ -32,5 +32,10 @@ export const SEARCH_QUERY_MIN_LENGTH = 2;
 export const SEARCH_QUERY_MAX_LENGTH = 100;
 
 export function normalizeSearchQuery(value: string) {
-  return value.replace(/\s+/g, ' ').trim().slice(0, SEARCH_QUERY_MAX_LENGTH);
+  return sliceChars(normalizeText(value.replace(/\s+/g, ' ')), SEARCH_QUERY_MAX_LENGTH);
+}
+
+/** 보이지 않는 문자만 있거나 2글자(이모지는 1글자로 셈)보다 짧으면 검색하지 않습니다. */
+export function isSearchableQuery(query: string) {
+  return hasVisibleText(query) && countChars(query) >= SEARCH_QUERY_MIN_LENGTH;
 }

@@ -44,4 +44,16 @@ describe('여행 생성 입력 검증', () => {
       }),
     ).toBe('location');
   });
+
+  it('보이지 않는 문자만 있는 여행 이름은 비어 있다고 본다', () => {
+    expect(validateTripName('\u3164\u3164')).toBe('여행 폴더 이름을 입력해주세요.');
+    expect(validateTripName('\u200B')).toBe('여행 폴더 이름을 입력해주세요.');
+  });
+
+  it('이모지가 섞인 여행 이름은 이모지를 1자로 세어 10자까지 허용한다', () => {
+    expect(validateTripName('제주도가을여행기록🌊')).toBe(true);
+    expect(validateTripName('제주도가을여행기록🌊🌊')).toBe(
+      '여행 폴더 이름은 10자까지 입력할 수 있어요.',
+    );
+  });
 });

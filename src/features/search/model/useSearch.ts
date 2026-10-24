@@ -5,10 +5,10 @@ import axios from 'axios';
 
 import { searchQueries } from '@/queryFactory';
 
-import { SEARCH_QUERY_MIN_LENGTH, type SearchViewState } from './types';
+import { isSearchableQuery, type SearchViewState } from './types';
 
 export function useSearch(query: string, allowed = true) {
-  const valid = query.length >= SEARCH_QUERY_MIN_LENGTH;
+  const valid = isSearchableQuery(query);
   const { data, error, isError, refetch } = useQuery({
     ...searchQueries.result(query),
     enabled: valid && allowed,

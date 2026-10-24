@@ -5,6 +5,7 @@ import { useId, useState, type FormEvent } from 'react';
 import {
   SEARCH_QUERY_MAX_LENGTH,
   SEARCH_QUERY_MIN_LENGTH,
+  isSearchableQuery,
   normalizeSearchQuery,
 } from '@/features/search';
 import { CloseIcon } from '@/shared/ui/icons';
@@ -32,7 +33,7 @@ export function SearchForm({
     event.preventDefault();
     const normalized = normalizeSearchQuery(value);
 
-    if (normalized.length < SEARCH_QUERY_MIN_LENGTH) {
+    if (!isSearchableQuery(normalized)) {
       setShowLengthError(true);
       return;
     }
@@ -56,7 +57,8 @@ export function SearchForm({
           enterKeyHint="search"
           autoComplete="off"
           value={value}
-          maxLength={SEARCH_QUERY_MAX_LENGTH}
+          // 글자 수는 제출할 때 이모지를 깨지 않게 자르므로, 입력창은 넉넉하게 둡니다.
+          maxLength={SEARCH_QUERY_MAX_LENGTH * 2}
           onChange={(event) => {
             setValue(event.target.value);
             if (showLengthError) setShowLengthError(false);

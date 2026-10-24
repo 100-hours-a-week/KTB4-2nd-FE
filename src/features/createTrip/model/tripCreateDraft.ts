@@ -44,7 +44,6 @@ function isValidDate(value: string) {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
 
-
 function sanitizeDraftDates(draft: TripCreateDraft): TripCreateDraft {
   const { startDate, endDate } = draft;
   const empty = startDate === '' && endDate === '';
@@ -91,6 +90,5 @@ export function clearTripCreateDraft(): void {
 
   try {
     window.localStorage.removeItem(TRIP_CREATE_DRAFT_KEY);
-  } catch {
-  }
+  } catch {}
 }

@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { deletePhoto, deletePhotos } from '@/features/photoList';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { normalizeText } from '@/shared/lib/text';
 
 import type { TripEditData } from '../api/getTripForEdit';
 import {
@@ -36,7 +37,8 @@ export function getTripUpdateRequest(
   values: TripCreateFormValues,
 ): UpdateTripRequest | null {
   const request: UpdateTripRequest = {};
-  if (values.tripName !== initial.tripName) request.tripName = values.tripName;
+  const tripName = normalizeText(values.tripName);
+  if (tripName !== initial.tripName) request.tripName = tripName;
   if (values.startDate !== initial.startDate) request.startDate = values.startDate;
   if (values.endDate !== initial.endDate) request.endDate = values.endDate;
 

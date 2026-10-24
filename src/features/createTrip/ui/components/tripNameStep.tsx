@@ -3,6 +3,7 @@
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { Button } from '@/shared/ui/button';
+import { countChars, hasVisibleText, sliceChars } from '@/shared/lib/text';
 import { Input } from '@/shared/ui/input';
 
 import type { TripCreateFormValues } from '../../model/types';
@@ -18,10 +19,16 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
   const {
     control,
     register,
+    setValue,
     trigger,
     formState: { errors },
   } = useFormContext<TripCreateFormValues>();
   const tripName = useWatch({ control, name: 'tripName' });
+
+  const capLength = (value: string) => {
+    if (countChars(value) <= TRIP_NAME_MAX_LENGTH) return;
+    setValue('tripName', sliceChars(value, TRIP_NAME_MAX_LENGTH), { shouldValidate: true });
+  };
 
   const moveNext = async () => {
     if (await trigger('tripName')) onNext();
@@ -42,7 +49,7 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
       footer={
         <Button
           className={`w-full ${tripCreateButtonClassName}`}
-          disabled={!tripName.trim()}
+          disabled={!hasVisibleText(tripName)}
           onClick={() => void moveNext()}
         >
           다음
@@ -50,12 +57,19 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
       }
     >
       <Input
-        {...register('tripName', { validate: validateTripName })}
+        {...register('tripName', {
+          validate: validateTripName,
+          onChange: (event: { target: HTMLInputElement; nativeEvent?: Event }) => {
+            const composing = (event.nativeEvent as InputEvent | undefined)?.isComposing;
+            if (!composing) capLength(event.target.value);
+          },
+        })}
+        onCompositionEnd={(event) => capLength(event.currentTarget.value)}
         autoFocus
         autoComplete="off"
         placeholder="예) 제주도 가을 여행"
-        maxLength={TRIP_NAME_MAX_LENGTH}
-        characterCount={tripName.length}
+        characterLimit={TRIP_NAME_MAX_LENGTH}
+        characterCount={countChars(tripName)}
         onKeyDown={(event) => {
           if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
           event.preventDefault();
