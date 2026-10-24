@@ -32,7 +32,7 @@ vi.mock('@/shared/api/browser', () => ({
 }));
 
 vi.mock('@/features/photoList/model/usePhotoOriginal', () => ({
-  usePhotoOriginal: () => null,
+  usePhotoOriginalQuery: () => ({ data: undefined, isError: false }),
 }));
 const photos: UnclassifiedPhoto[] = [1, 2, 3].map((id) => ({
   id,
