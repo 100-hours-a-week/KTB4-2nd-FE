@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
 
-import { usePhotoOriginal } from '../model/usePhotoOriginal';
+import { usePhotoOriginalQuery } from '../model/usePhotoOriginal';
 import { PHOTO_ACCENT_GRADIENT } from '../model/photoAccent';
 import type { PhotoListItem } from '../model/types';
+import { markPhotoViewer, PhotoViewerArtwork } from './photoViewerArtwork';
 
 import {
   ChevronLeftIcon,
@@ -45,8 +46,16 @@ export function PhotoViewer({
   actionsDisabled?: boolean;
   onDelete: () => void;
 }) {
-  const originalUrl = usePhotoOriginal(photo.id);
+  const original = usePhotoOriginalQuery(photo.id);
   const viewerRef = useRef<HTMLElement>(null);
+  const previous = () => {
+    markPhotoViewer('navigation');
+    onPrevious();
+  };
+  const next = () => {
+    markPhotoViewer('navigation');
+    onNext();
+  };
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -74,6 +83,7 @@ export function PhotoViewer({
       } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         if (active?.closest('[role="menu"]')) return;
         event.preventDefault();
+        markPhotoViewer('navigation');
         if (event.key === 'ArrowLeft') onPrevious();
         else onNext();
       } else if (event.key === 'Tab') {
@@ -163,21 +173,26 @@ export function PhotoViewer({
         <button
           type="button"
           aria-label="이전 사진"
-          onClick={onPrevious}
+          onClick={previous}
           className="absolute left-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
         >
           <ChevronLeftIcon strokeWidth="2" size="20" />
         </button>
         <div className="aspect-square w-full overflow-hidden">
-          <PhotoArtwork
-            photo={originalUrl ? { ...photo, thumbnailUrl: originalUrl } : photo}
-            large
+          <PhotoViewerArtwork
+            photoId={photo.id}
+            thumbnailUrl={photo.loadFailed ? null : photo.thumbnailUrl}
+            originalUrl={original.data?.originalUrl ?? null}
+            originalFailed={original.isError || (original.isSuccess && !original.data?.originalUrl)}
+            placeholder={
+              <PhotoArtwork photo={{ ...photo, thumbnailUrl: null, loadFailed: false }} large />
+            }
           />
         </div>
         <button
           type="button"
           aria-label="다음 사진"
-          onClick={onNext}
+          onClick={next}
           className="absolute right-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
         >
           <ChevronRightIcon strokeWidth="2" size="20" />
