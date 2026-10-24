@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { TripDetailPage } from '@/_pages/tripDetail';
 import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { parseRouteId } from '@/shared/lib/route';
 import { getRenewRedirectPath } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
@@ -12,9 +13,9 @@ export const metadata: Metadata = {
 export default async function Page({ params, searchParams }: PageProps<'/trips/[tripId]'>) {
   const { tripId: rawTripId } = await params;
   const { renewed } = await searchParams;
-  const tripId = Number(rawTripId);
+  const tripId = parseRouteId(rawTripId);
 
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
+  if (tripId === null) notFound();
 
   const result = await getTripDetail(tripId);
 

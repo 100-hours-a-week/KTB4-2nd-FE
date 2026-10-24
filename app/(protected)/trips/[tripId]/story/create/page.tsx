@@ -4,6 +4,7 @@ import { StoryCreatePage } from '@/_pages/storyCreate';
 import { getCurrentUser } from '@/entities/user';
 import { isStoryCreateStep } from '@/features/createStory';
 import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { parseRouteId } from '@/shared/lib/route';
 import { getRenewRedirectPath } from '@/shared/lib/url';
 
 export const metadata: Metadata = { title: '여행 스토리 만들기 | 여담' };
@@ -14,8 +15,8 @@ export default async function Page({
 }: PageProps<'/trips/[tripId]/story/create'>) {
   const { tripId: value } = await params;
   const { step: queryStep, renewed } = await searchParams;
-  const tripId = Number(value);
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
+  const tripId = parseRouteId(value);
+  if (tripId === null) notFound();
   const stepValue = Array.isArray(queryStep) ? queryStep[0] : queryStep;
   const initialStep = isStoryCreateStep(stepValue) ? stepValue : 'mood';
   const returnTo = `/trips/${tripId}/story/create?step=${initialStep}`;

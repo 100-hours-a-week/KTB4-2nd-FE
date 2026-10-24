@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionError } from '@/shared/ui/sessionError/sessionError';
+import { PageError } from '@/shared/ui/pageError';
 
 export default function Error({
   reset,
@@ -8,5 +8,5 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <SessionError reset={reset} />;
+  return <PageError reset={reset} />;
 }
