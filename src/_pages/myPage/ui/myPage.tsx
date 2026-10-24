@@ -23,7 +23,7 @@ export type MyPageProps = {
   user: MyPageUser | null;
 };
 
-const APP_VERSION = 'v1.0.0';
+const APP_VERSION = 'v2.0.0';
 
 const navigationItems: BottomNavigationItem[] = [
   { id: 'home', label: '홈', icon: 'home', href: '/' },
