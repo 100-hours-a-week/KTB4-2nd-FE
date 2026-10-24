@@ -114,6 +114,7 @@ function StoryCreateContent({
           onBack={back}
           onView={() => router.replace(`/trips/${trip.id}/story`)}
           onRetry={start}
+          isRetrying={aiGuard.isChecking}
         />
       ) : (
         <>

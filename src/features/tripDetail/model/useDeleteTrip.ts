@@ -4,7 +4,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 
-import { photoListQueries, tripDetailQueries, tripListQueries } from '@/queryFactory';
+import { clearStoryCreateDraft } from '@/features/createStory';
+import { removePendingTripProcessing } from '@/features/createTrip';
+import {
+  invalidateTripData,
+  storyCreateQueries,
+  tripStoryQueries,
+  unclassifiedPhotosQueries,
+} from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { toast } from '@/shared/ui/toast';
 
@@ -29,17 +36,19 @@ export function useDeleteTrip(tripId: number) {
       await deleteTrip(tripId, csrfToken);
     },
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: tripDetailQueries.allKeys() });
-      queryClient.removeQueries({ queryKey: photoListQueries.allKeys() });
-      void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
-      void queryClient.invalidateQueries({ queryKey: ['mainMap'] });
+      clearStoryCreateDraft(tripId);
+      removePendingTripProcessing(tripId);
+      queryClient.removeQueries({ queryKey: tripStoryQueries.detail(tripId).queryKey });
+      queryClient.removeQueries({ queryKey: unclassifiedPhotosQueries.tripKeys(tripId) });
+      queryClient.removeQueries({ queryKey: storyCreateQueries.sourceFolderKeys(tripId) });
+      void invalidateTripData(queryClient);
 
       toast.success('여행을 삭제했어요.');
       router.replace('/trips');
     },
     onError: (error) => {
       if (isAxiosError(error) && error.response?.status === 404) {
-        void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
+        void invalidateTripData(queryClient);
         toast.error(getFailureMessage(error));
         router.replace('/trips');
         return;

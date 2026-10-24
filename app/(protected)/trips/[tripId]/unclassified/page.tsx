@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import { UnclassifiedFolderPage } from '@/_pages/unclassifiedFolder';
-import { getCurrentUser } from '@/entities/user';
+import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { parseRouteId } from '@/shared/lib/route';
+import { getRenewRedirectPath, withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
   title: '미분류 폴더 | 여담',
@@ -14,19 +16,21 @@ export default async function Page({
 }: PageProps<'/trips/[tripId]/unclassified'>) {
   const { tripId: rawTripId } = await params;
   const query = await searchParams;
-  const tripId = Number(rawTripId);
+  const tripId = parseRouteId(rawTripId);
 
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
+  if (tripId === null) notFound();
 
-  const session = await getCurrentUser();
+  const result = await getTripDetail(tripId);
 
-  if (session.status === 'unauthorized') {
-    redirect(`/auth/renew?next=${encodeURIComponent(`/trips/${tripId}/unclassified`)}`);
+  if (result.status === 'unauthorized') {
+    const next = withSearchParams(`/trips/${tripId}/unclassified`, query);
+    redirect(getRenewRedirectPath(next, query.renewed));
   }
 
-  if (session.status === 'notFound') redirect('/login');
+  if (result.status === 'notReady') redirect(`/trips/${tripId}/processing`);
+  if (result.status !== 'ok') notFound();
 
-  const tripName = typeof query.trip === 'string' ? query.trip : '여행';
+  const tripName = typeof query.trip === 'string' ? query.trip : result.trip.name;
 
   return <UnclassifiedFolderPage tripId={tripId} tripName={tripName} />;
 }

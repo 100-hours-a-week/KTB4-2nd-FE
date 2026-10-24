@@ -1,0 +1,46 @@
+import Link from 'next/link';
+
+import {
+  PLACE_FOLDER_ACCENT_GRADIENT,
+  type TripDetail,
+  type TripPlaceFolder,
+} from '@/features/tripDetail';
+
+export function PlaceFolderCard({ trip, folder }: { trip: TripDetail; folder: TripPlaceFolder }) {
+  const href = `/trips/${trip.id}/places/${folder.id}/photos?place=${encodeURIComponent(folder.name)}&trip=${encodeURIComponent(trip.name)}`;
+
+  return (
+    <Link
+      href={href}
+      aria-label={`${folder.name} 사진 ${folder.photoCount}장 보기`}
+      className="focus-visible:outline-brand block w-full cursor-pointer rounded-[14px] text-left transition-transform active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      <FolderThumbnail folder={folder} />
+      <strong className="mt-2 block truncate text-[13px] font-extrabold">{folder.name}</strong>
+      <span className="text-muted mt-0.5 block text-[10px]">{folder.photoCount}장</span>
+    </Link>
+  );
+}
+
+function FolderThumbnail({ folder }: { folder: TripPlaceFolder }) {
+  if (folder.thumbnailUrl) {
+    return (
+      <span
+        aria-hidden="true"
+        className="block aspect-square w-full rounded-[14px] bg-cover bg-center"
+        style={{ backgroundImage: `url(${JSON.stringify(folder.thumbnailUrl)})` }}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative block aspect-square w-full overflow-hidden rounded-[14px] bg-gradient-to-b ${PLACE_FOLDER_ACCENT_GRADIENT[folder.accent]}`}
+    >
+      <span className="absolute right-[14%] top-[16%] size-[18%] rounded-full bg-[#ffe7a6]" />
+      <span className="absolute -right-[8%] bottom-[-8%] h-[42%] w-[80%] rounded-[50%] bg-black/16" />
+      <span className="absolute -left-[12%] bottom-[-10%] h-[48%] w-[90%] rounded-[50%] bg-white/18" />
+    </span>
+  );
+}

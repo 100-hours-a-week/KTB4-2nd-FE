@@ -1,3 +1,5 @@
+import { countChars, hasVisibleText, normalizeText } from '@/shared/lib/text';
+
 import type { TripCreateFormValues, TripCreateStep } from './types';
 
 export const TRIP_NAME_MAX_LENGTH = 10;
@@ -5,8 +7,9 @@ export const TRIP_PLACE_MAX_COUNT = 10;
 export const TRIP_DATE_MAX_DAYS = 92;
 
 export function validateTripName(value: string) {
-  if (!value.trim()) return '여행 폴더 이름을 입력해주세요.';
-  if (value.length > TRIP_NAME_MAX_LENGTH) {
+  const name = normalizeText(value);
+  if (!hasVisibleText(name)) return '여행 폴더 이름을 입력해주세요.';
+  if (countChars(name) > TRIP_NAME_MAX_LENGTH) {
     return `여행 폴더 이름은 ${TRIP_NAME_MAX_LENGTH}자까지 입력할 수 있어요.`;
   }
   return true;

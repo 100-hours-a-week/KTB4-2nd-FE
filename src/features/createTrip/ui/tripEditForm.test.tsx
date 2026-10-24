@@ -243,4 +243,43 @@ describe('TripEditForm', () => {
     expect(await screen.findByDisplayValue('부산 여행')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it('기존 사진 삭제는 성공하고 새 사진 업로드가 실패하면, 지워진 사진을 목록에서 빼고 다시 지우지 않는다', async () => {
+    vi.mocked(uploadAdditionalAttachmentBatch).mockRejectedValueOnce(new Error('network'));
+    const user = userEvent.setup();
+    const { container } = renderForm('images');
+
+    await user.click(await screen.findByRole('button', { name: '1번째 기존 사진 삭제' }));
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]');
+    await user.upload(input!, new File(['photo'], 'new.jpg', { type: 'image/jpeg' }));
+    await user.click(screen.getByRole('button', { name: '수정 완료' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(deletePhoto).toHaveBeenCalledWith(101, 'csrf-token');
+    expect(await screen.findByRole('button', { name: '1번째 기존 사진 삭제' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /삭제 취소/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /번째 기존 사진/ })).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: '수정 완료' }));
+    await waitFor(() => expect(uploadAdditionalAttachmentBatch).toHaveBeenCalledTimes(2));
+    expect(deletePhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it('삭제 표시한 기존 사진을 되살려 200장을 넘게 되면 막는다', async () => {
+    vi.mocked(getTripForEdit).mockResolvedValue({
+      ...trip,
+      photoCount: 200,
+      photos: Array.from({ length: 200 }, (_, index) => ({ id: index + 1, thumbnailUrl: null })),
+    });
+    const user = userEvent.setup();
+    const { container } = renderForm('images');
+
+    await user.click(await screen.findByRole('button', { name: '1번째 기존 사진 삭제' }));
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]');
+    await user.upload(input!, new File(['photo'], 'new.jpg', { type: 'image/jpeg' }));
+    await user.click(screen.getByRole('button', { name: '1번째 기존 사진 삭제 취소' }));
+
+    expect(toast.error).toHaveBeenCalledWith('여행 하나에 사진은 최대 200장까지 올릴 수 있어요.');
+    expect(screen.getByRole('button', { name: '1번째 기존 사진 삭제 취소' })).toBeInTheDocument();
+  });
 });

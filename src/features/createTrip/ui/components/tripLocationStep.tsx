@@ -126,13 +126,16 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
         </div>
 
         {places.length > 0 ? (
-          <ul className="mt-3 flex shrink-0 flex-wrap gap-2" aria-label="선택한 여행지">
+          <ul
+            className="mt-3 flex max-h-32 shrink-0 flex-wrap gap-2 overflow-y-auto overscroll-contain"
+            aria-label="선택한 여행지"
+          >
             {places.map((place) => (
               <li
                 key={place.regionCode}
-                className="bg-surface-subtle border-border-subtle text-brand inline-flex min-h-9 items-center gap-1 rounded-full border pr-1 pl-3.5 text-[13px] font-semibold"
+                className="bg-surface-subtle border-border-subtle text-brand inline-flex max-w-full min-h-9 items-center gap-1 rounded-full border pr-1 pl-3.5 text-[13px] font-semibold"
               >
-                {place.regionName}
+                <span className="min-w-0 truncate">{place.regionName}</span>
                 <button
                   type="button"
                   aria-label={`${place.regionName} 삭제`}

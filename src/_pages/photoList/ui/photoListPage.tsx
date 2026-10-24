@@ -95,7 +95,7 @@ export function PhotoListPage({ tripId, tripPlaceId, tripName, placeName }: Phot
         }
       />
 
-      <p className="text-muted mt-1 text-[11px]">
+      <p className="text-muted mt-1 truncate text-[11px]">
         {tripName}
         {viewState === 'ready' &&
           ` · ${selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장`}`}

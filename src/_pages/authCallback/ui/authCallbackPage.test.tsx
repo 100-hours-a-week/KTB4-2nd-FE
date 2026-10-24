@@ -13,6 +13,7 @@ vi.mock('@/shared/lib/analytics', () => ({
   EVENTS: { LOGIN: 'login' },
   identify: vi.fn(),
   track: vi.fn(),
+  clearIdentity: vi.fn(),
 }));
 
 describe('AuthCallbackPage', () => {

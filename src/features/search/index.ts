@@ -3,6 +3,7 @@ export type { SearchResponse } from './api/searchTrips';
 export {
   SEARCH_QUERY_MAX_LENGTH,
   SEARCH_QUERY_MIN_LENGTH,
+  isSearchableQuery,
   normalizeSearchQuery,
 } from './model/types';
 export type { SearchFolder, SearchPhoto, SearchResult, SearchViewState } from './model/types';

@@ -92,6 +92,26 @@ describe('TripCreateForm', () => {
     expect(window.localStorage.getItem('trip-create-draft-v1')).toBeNull();
   });
 
+  it('보이지 않는 문자만 입력한 여행 이름으로는 다음 단계로 넘어갈 수 없다', async () => {
+    const user = userEvent.setup();
+    renderTripCreateForm();
+
+    await user.type(screen.getByPlaceholderText('예) 제주도 가을 여행'), '\u3164\u3164');
+
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+  });
+
+  it('여행 이름은 이모지를 1자로 세고, 10자를 넘기면 이모지를 깨지 않고 자른다', async () => {
+    const user = userEvent.setup();
+    renderTripCreateForm();
+    const input = screen.getByPlaceholderText('예) 제주도 가을 여행');
+
+    await user.type(input, '제주도가을여행기록🌊🌊');
+
+    expect(input).toHaveValue('제주도가을여행기록🌊');
+    expect(screen.getByText('10/10')).toBeInTheDocument();
+  });
+
   it('첫 단계에 직접 접속해 이전 기록이 없으면 메인으로 이동한다', async () => {
     const user = userEvent.setup();
     const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);

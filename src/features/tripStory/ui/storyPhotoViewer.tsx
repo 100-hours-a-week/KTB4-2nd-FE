@@ -124,13 +124,14 @@ export function StoryPhotoViewer({
         )}
       </div>
       <footer className="px-5 pt-5 pb-[max(24px,env(safe-area-inset-bottom))]">
-        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80">
-          <span aria-hidden="true">⌖</span> {getStoryPhotoLabel(photo)}
+        <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+          <span aria-hidden="true">⌖</span>
+          <span className="min-w-0 truncate">{getStoryPhotoLabel(photo)}</span>
         </span>
-        <p className="mt-2.5 text-xs text-white/55">
+        <p className="mt-2.5 truncate text-xs text-white/55">
           {day.date.slice(5).replace('-', '.')} {day.dayLabel ?? `${day.dayNumber}일째`}
         </p>
-        <p className="mt-1.5 text-sm font-semibold leading-6">{photo.sentence}</p>
+        <p className="mt-1.5 text-sm font-semibold leading-6 wrap-break-word">{photo.sentence}</p>
         <div className="mt-5 flex items-center justify-between">
           <button
             type="button"

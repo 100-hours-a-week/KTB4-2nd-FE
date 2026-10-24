@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { AiUnavailableDialog, useAiReadyGuard } from '@/features/aiStatus';
-import { useSearch } from '@/features/search';
+import { isSearchableQuery, useSearch } from '@/features/search';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 
 import { SearchForm } from './components/searchForm';
@@ -30,12 +31,39 @@ export type SearchPageProps = {
 
 export function SearchPage({ query }: SearchPageProps) {
   const router = useRouter();
-  const { result, viewState, errorMessage, refetch } = useSearch(query);
   const aiGuard = useAiReadyGuard();
+  const { runWhenAiReady } = aiGuard;
+  const [allowedQuery, setAllowedQuery] = useState<string | null>(null);
+  const [blockedQuery, setBlockedQuery] = useState<string | null>(null);
+  const { result, viewState, errorMessage, refetch } = useSearch(query, allowedQuery === query);
+
+  useEffect(() => {
+    if (!isSearchableQuery(query)) return;
+
+    void runWhenAiReady(() => setAllowedQuery(query)).then((outcome) => {
+      if (outcome === 'blocked') setBlockedQuery(query);
+    });
+  }, [query, runWhenAiReady]);
+
+  function searchAgain() {
+    void runWhenAiReady(() => {
+      setBlockedQuery(null);
+      if (allowedQuery === query) void refetch();
+      else setAllowedQuery(query);
+    }).then((outcome) => {
+      if (outcome === 'blocked') setBlockedQuery(query);
+    });
+  }
 
   function search(value: string) {
-    void aiGuard.runWhenAiReady(() => router.push(`/search?q=${encodeURIComponent(value)}`));
+    if (value === query) {
+      searchAgain();
+      return;
+    }
+    router.push(`/search?q=${encodeURIComponent(value)}`);
   }
+
+  const blocked = blockedQuery === query && allowedQuery !== query;
 
   return (
     <main className="text-brand bg-app-background relative mx-auto flex h-[min(100dvh,var(--app-max-height))] w-full max-w-[430px] flex-col overflow-hidden px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(61px+max(8px,env(safe-area-inset-bottom)))]">
@@ -48,15 +76,15 @@ export function SearchPage({ query }: SearchPageProps) {
 
       <SearchForm query={query} onSearch={search} />
 
-      {aiGuard.isChecking ? (
-        <SearchSkeleton showError={false} errorMessage="" onRetry={() => undefined} />
-      ) : viewState === 'idle' ? null : viewState === 'ready' && result ? (
+      {viewState === 'idle' ? null : viewState === 'ready' && result && !aiGuard.isChecking ? (
         <SearchResults key={result.query} result={result} />
       ) : (
         <SearchSkeleton
-          showError={viewState === 'error'}
-          errorMessage={errorMessage}
-          onRetry={() => void refetch()}
+          showError={!aiGuard.isChecking && (blocked || viewState === 'error')}
+          errorMessage={
+            blocked ? '지금은 AI 검색을 사용할 수 없어요. 잠시 후 다시 시도해주세요.' : errorMessage
+          }
+          onRetry={searchAgain}
         />
       )}
 

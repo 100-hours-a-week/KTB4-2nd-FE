@@ -36,6 +36,22 @@ function isTripCreateDraft(value: unknown): value is TripCreateDraft {
   );
 }
 
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidDate(value: string) {
+  if (!DATE_PATTERN.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+function sanitizeDraftDates(draft: TripCreateDraft): TripCreateDraft {
+  const { startDate, endDate } = draft;
+  const empty = startDate === '' && endDate === '';
+  const valid =
+    isValidDate(startDate) && (endDate === '' || (isValidDate(endDate) && startDate <= endDate));
+  return empty || valid ? draft : { ...draft, startDate: '', endDate: '' };
+}
+
 export function readTripCreateDraft(): TripCreateFormValues {
   if (typeof window === 'undefined') return createDefaultValues();
 
@@ -46,7 +62,7 @@ export function readTripCreateDraft(): TripCreateFormValues {
     const parsedDraft: unknown = JSON.parse(storedDraft);
     if (!isTripCreateDraft(parsedDraft)) return createDefaultValues();
 
-    return { ...parsedDraft, attachments: [] };
+    return { ...sanitizeDraftDates(parsedDraft), attachments: [] };
   } catch {
     return createDefaultValues();
   }
@@ -74,7 +90,5 @@ export function clearTripCreateDraft(): void {
 
   try {
     window.localStorage.removeItem(TRIP_CREATE_DRAFT_KEY);
-  } catch {
-    // 저장소 접근이 제한된 환경에서는 메모리의 폼 상태만 사용합니다.
-  }
+  } catch {}
 }
