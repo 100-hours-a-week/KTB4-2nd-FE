@@ -173,7 +173,6 @@ describe('TripDetailPage', () => {
       await screen.findByRole('heading', { name: '장소를 찾은 사진이 없어요' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '미분류 사진 보기' })).toBeInTheDocument();
-    // 상단에는 정리된 사진과 미분류 사진을 나눠 보여줍니다.
     expect(await screen.findByText(/미분류 5장/)).toBeInTheDocument();
     expect(screen.getByText(/정리된 사진 0장/)).toBeInTheDocument();
   });

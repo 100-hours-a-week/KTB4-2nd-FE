@@ -163,7 +163,6 @@ describe('SearchPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('지금은 AI 검색을 사용할 수 없어요.');
 
-    // 준비된 뒤 다시 시도하면 GPU 상태를 다시 확인하고 검색합니다.
     vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
     await waitFor(() => expect(searchTrips).toHaveBeenCalledWith('제주 바다'));

@@ -29,7 +29,6 @@ export default async function Page({
   if (tripId === null) notFound();
   if (tripPlaceId === null) notFound();
 
-  // 여행 조회로 로그인과 여행 존재 여부를 함께 확인합니다. 없는 여행이면 빈 목록 대신 404를 보여줍니다.
   const result = await getTripDetail(tripId);
 
   if (result.status === 'unauthorized') {
