@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import { UnclassifiedPhotoListPage } from '@/_pages/unclassifiedPhotoList';
-import { getCurrentUser } from '@/entities/user';
+import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
 import { parseUnclassifiedIssueSlug } from '@/features/unclassifiedPhotos';
+import { parseRouteId } from '@/shared/lib/route';
 import { getRenewRedirectPath, withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
@@ -16,22 +17,23 @@ export default async function Page({
 }: PageProps<'/trips/[tripId]/unclassified/[issue]'>) {
   const { tripId: rawTripId, issue: rawIssue } = await params;
   const query = await searchParams;
-  const tripId = Number(rawTripId);
+  const tripId = parseRouteId(rawTripId);
   const issue = parseUnclassifiedIssueSlug(rawIssue);
 
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
+  if (tripId === null) notFound();
   if (!issue) notFound();
 
-  const session = await getCurrentUser();
+  const result = await getTripDetail(tripId);
 
-  if (session.status === 'unauthorized') {
+  if (result.status === 'unauthorized') {
     const next = withSearchParams(`/trips/${tripId}/unclassified/${rawIssue}`, query);
     redirect(getRenewRedirectPath(next, query.renewed));
   }
 
-  if (session.status === 'notFound') redirect('/login');
+  if (result.status === 'notReady') redirect(`/trips/${tripId}/processing`);
+  if (result.status !== 'ok') notFound();
 
-  const tripName = typeof query.trip === 'string' ? query.trip : '여행';
+  const tripName = typeof query.trip === 'string' ? query.trip : result.trip.name;
 
   return <UnclassifiedPhotoListPage tripId={tripId} tripName={tripName} issue={issue} />;
 }

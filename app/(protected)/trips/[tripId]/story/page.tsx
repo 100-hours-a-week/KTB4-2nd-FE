@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { TripStoryDetailPage } from '@/_pages/tripStory';
 import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { parseRouteId } from '@/shared/lib/route';
 import { getRenewRedirectPath } from '@/shared/lib/url';
 
 export const metadata: Metadata = { title: '여행 스토리 | 여담' };
@@ -10,8 +11,8 @@ export const metadata: Metadata = { title: '여행 스토리 | 여담' };
 export default async function Page({ params, searchParams }: PageProps<'/trips/[tripId]/story'>) {
   const { tripId: value } = await params;
   const { renewed } = await searchParams;
-  const tripId = Number(value);
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
+  const tripId = parseRouteId(value);
+  if (tripId === null) notFound();
 
   const result = await getTripDetail(tripId);
   if (result.status === 'unauthorized') {

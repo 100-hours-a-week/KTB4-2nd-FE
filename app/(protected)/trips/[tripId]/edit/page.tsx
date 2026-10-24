@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { TripEditPage } from '@/_pages/tripEdit';
 import { isTripCreateStep } from '@/features/createTrip';
 import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { parseRouteId } from '@/shared/lib/route';
 import { getRenewRedirectPath } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
@@ -13,8 +14,8 @@ export const metadata: Metadata = {
 export default async function Page({ params, searchParams }: PageProps<'/trips/[tripId]/edit'>) {
   const { tripId: rawTripId } = await params;
   const { step: queryStep, renewed } = await searchParams;
-  const tripId = Number(rawTripId);
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
+  const tripId = parseRouteId(rawTripId);
+  if (tripId === null) notFound();
 
   const stepValue = Array.isArray(queryStep) ? queryStep[0] : queryStep;
   const initialStep = stepValue && isTripCreateStep(stepValue) ? stepValue : 'name';

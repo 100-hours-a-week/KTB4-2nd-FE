@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import { PhotoListPage } from '@/_pages/photoList';
-import { getCurrentUser } from '@/entities/user';
+import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
+import { parseRouteId } from '@/shared/lib/route';
 import { getRenewRedirectPath, withSearchParams } from '@/shared/lib/url';
 
 export const metadata: Metadata = {
@@ -22,23 +23,25 @@ export default async function Page({
 }) {
   const { tripId: rawTripId, tripPlaceId: rawTripPlaceId } = await params;
   const query = await searchParams;
-  const tripId = Number(rawTripId);
-  const tripPlaceId = Number(rawTripPlaceId);
+  const tripId = parseRouteId(rawTripId);
+  const tripPlaceId = parseRouteId(rawTripPlaceId);
 
-  if (!Number.isSafeInteger(tripId) || tripId < 1) notFound();
-  if (!Number.isSafeInteger(tripPlaceId) || tripPlaceId < 1) notFound();
+  if (tripId === null) notFound();
+  if (tripPlaceId === null) notFound();
 
-  const session = await getCurrentUser();
+  // 여행 조회로 로그인과 여행 존재 여부를 함께 확인합니다. 없는 여행이면 빈 목록 대신 404를 보여줍니다.
+  const result = await getTripDetail(tripId);
 
-  if (session.status === 'unauthorized') {
+  if (result.status === 'unauthorized') {
     const next = withSearchParams(`/trips/${tripId}/places/${tripPlaceId}/photos`, query);
     redirect(getRenewRedirectPath(next, query.renewed));
   }
 
-  if (session.status === 'notFound') redirect('/login');
+  if (result.status === 'notReady') redirect(`/trips/${tripId}/processing`);
+  if (result.status !== 'ok') notFound();
 
   const placeName = typeof query.place === 'string' ? query.place : '장소';
-  const tripName = typeof query.trip === 'string' ? query.trip : '여행';
+  const tripName = typeof query.trip === 'string' ? query.trip : result.trip.name;
 
   return (
     <PhotoListPage
