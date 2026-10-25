@@ -33,10 +33,11 @@ export async function getPlacePhotos(
   tripId: number,
   tripPlaceId: number,
   cursor?: string | null,
+  signal?: AbortSignal,
 ): Promise<PlacePhotoPageResult> {
   const { data } = await apiClient.get<ApiResponse<PlacePhotoListResponse>>(
     `/trips/${tripId}/place-folders/${tripPlaceId}/attachments`,
-    { params: cursor ? { cursor } : undefined },
+    { params: cursor ? { cursor } : undefined, signal },
   );
 
   return {

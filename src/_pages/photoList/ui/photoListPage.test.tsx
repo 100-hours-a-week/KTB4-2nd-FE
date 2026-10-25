@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getPhotoOriginal } from '@/features/photoList/api/getPhotoOriginal';
 import { getPlacePhotos } from '@/features/photoList/api/getPlacePhotos';
@@ -67,6 +67,36 @@ async function findFirstPhoto() {
   return screen.findByRole('button', { name: '1번째 사진 보기' });
 }
 
+type Observed = {
+  callback: IntersectionObserverCallback;
+  options?: IntersectionObserverInit;
+  disconnected: boolean;
+  target?: Element;
+};
+const observed: Observed[] = [];
+function installObserver() {
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      state: Observed;
+      constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        this.state = { callback, options, disconnected: false };
+        observed.push(this.state);
+      }
+      observe(target: Element) {
+        this.state.target = target;
+      }
+      disconnect() {
+        this.state.disconnected = true;
+      }
+    },
+  );
+}
+afterEach(() => {
+  vi.unstubAllGlobals();
+  observed.length = 0;
+});
+
 describe('PhotoListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -83,7 +113,7 @@ describe('PhotoListPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: '제주시' })).toBeInTheDocument();
     expect(await findFirstPhoto()).toBeInTheDocument();
     expect(screen.getByText(/사진 3장/)).toBeInTheDocument();
-    expect(getPlacePhotos).toHaveBeenCalledWith(7, 3, null);
+    expect(getPlacePhotos).toHaveBeenCalledWith(7, 3, null, expect.any(AbortSignal));
   });
 
   it('조회 중에는 시차가 있는 호흡 모션 카드 18개를 보여주고 완료 후 제거한다', async () => {
@@ -133,16 +163,180 @@ describe('PhotoListPage', () => {
     historyLength.mockRestore();
   });
 
-  it('다음 커서가 있으면 사진을 이어서 모두 불러온다', async () => {
+  it('다음 커서가 있어도 첫 페이지를 즉시 보여주고 요청할 때만 추가한다', async () => {
     vi.mocked(getPlacePhotos)
       .mockResolvedValueOnce(page([photo(1), photo(2)], 'cursor-2'))
       .mockResolvedValueOnce(page([photo(3)]));
 
     renderPhotoListPage();
 
+    expect(await findFirstPhoto()).toBeInTheDocument();
+    expect(getPlacePhotos).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/사진 2장 불러옴/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '사진 더 불러오기' }));
     expect(await screen.findByRole('button', { name: '3번째 사진 보기' })).toBeInTheDocument();
-    expect(getPlacePhotos).toHaveBeenLastCalledWith(7, 3, 'cursor-2');
+    expect(getPlacePhotos).toHaveBeenLastCalledWith(7, 3, 'cursor-2', expect.any(AbortSignal));
     expect(screen.getByText(/사진 3장/)).toBeInTheDocument();
+  });
+
+  it('내부 스크롤 영역을 관찰하고 동시에 도착한 관찰 이벤트는 한 번만 요청한다', async () => {
+    installObserver();
+    let finish!: (value: PlacePhotoPageResult) => void;
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1)], 'next'))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+    const view = renderPhotoListPage();
+    view.container.style.overflowY = 'auto';
+    await findFirstPhoto();
+    await waitFor(() => expect(observed.length).toBeGreaterThan(0));
+    const observer = observed.at(-1)!;
+    expect(observer.options?.root).toBe(view.container);
+    expect(observer.options?.rootMargin).toBe('400px');
+    act(() => {
+      observer.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+      observer.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(getPlacePhotos).toHaveBeenCalledTimes(2);
+    expect(await findFirstPhoto()).toBeInTheDocument();
+    const loading = screen.getByRole('status', { name: '사진 추가 로딩 중' });
+    expect(loading).toHaveAttribute('aria-busy', 'true');
+    expect(loading.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(6);
+    expect(screen.getByRole('button', { name: '사진 더 불러오기' })).toBeDisabled();
+    await act(async () => finish(page([photo(2)])));
+    expect(await screen.findByRole('button', { name: '2번째 사진 보기' })).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: '사진 추가 로딩 중' })).not.toBeInTheDocument();
+  });
+
+  it('추가 조회 실패 시 기존 사진을 유지하고 다음 페이지만 다시 시도한다', async () => {
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1)], 'next'))
+      .mockRejectedValueOnce(new Error('failed'))
+      .mockResolvedValueOnce(page([photo(2)]));
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await userEvent.click(screen.getByRole('button', { name: '사진 더 불러오기' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('이미 불러온 사진은 볼 수 있어요');
+    expect(screen.getByRole('button', { name: '1번째 사진 보기' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '사진 추가 로딩 다시 시도' }));
+    expect(await screen.findByRole('button', { name: '2번째 사진 보기' })).toBeInTheDocument();
+    expect(getPlacePhotos).toHaveBeenCalledTimes(3);
+  });
+
+  it('전체 선택을 누른 경우에만 남은 페이지를 모두 가져와 선택한다', async () => {
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1)], 'second'))
+      .mockResolvedValueOnce(page([photo(2)], 'third'))
+      .mockResolvedValueOnce(page([photo(3)]));
+    renderPhotoListPage();
+    await findFirstPhoto();
+    expect(getPlacePhotos).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: '선택' }));
+    await userEvent.click(screen.getByRole('button', { name: '전체 선택' }));
+    expect(await screen.findByRole('heading', { name: '3장 선택됨' })).toBeInTheDocument();
+    expect(getPlacePhotos).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole('button', { name: '전체 해제' })).toBeInTheDocument();
+  });
+
+  it('전체 선택을 취소하면 요청을 중단하고 이전 선택을 유지한다', async () => {
+    let requestedSignal: AbortSignal | undefined;
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1), photo(2)], 'next'))
+      .mockImplementationOnce(
+        (_trip, _place, _cursor, signal) =>
+          new Promise((_resolve, reject) => {
+            requestedSignal = signal;
+            signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          }),
+      );
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await userEvent.click(screen.getByRole('button', { name: '선택' }));
+    await userEvent.click(screen.getByRole('button', { name: '1번째 사진 선택' }));
+    await userEvent.click(screen.getByRole('button', { name: '전체 선택' }));
+    await userEvent.click(await screen.findByRole('button', { name: '전체 선택 취소' }));
+    expect(requestedSignal?.aborted).toBe(true);
+    expect(screen.getByRole('heading', { name: '1장 선택됨' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2번째 사진 선택' })).toBeInTheDocument();
+  });
+
+  it('전체 선택 도중 실패해도 일부만 전체 선택된 것으로 반영하지 않는다', async () => {
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1)], 'second'))
+      .mockResolvedValueOnce(page([photo(2)], 'third'))
+      .mockRejectedValueOnce(new Error('failed'));
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await userEvent.click(screen.getByRole('button', { name: '선택' }));
+    await userEvent.click(screen.getByRole('button', { name: '1번째 사진 선택' }));
+    await userEvent.click(screen.getByRole('button', { name: '전체 선택' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '전체 선택' })).toBeEnabled());
+    expect(screen.getByRole('heading', { name: '1장 선택됨' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2번째 사진 선택' })).toBeInTheDocument();
+  });
+
+  it('뷰어에서 로드된 마지막 사진 다음으로 이동하면 다음 페이지를 받아 이동한다', async () => {
+    let finish!: (value: PlacePhotoPageResult) => void;
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1), photo(2)], 'next'))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+    renderPhotoListPage();
+    await userEvent.click(await findFirstPhoto());
+    expect(screen.getByRole('button', { name: '이전 사진' })).toBeDisabled();
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('1 / 2+');
+    await userEvent.click(screen.getByRole('button', { name: '다음 사진' }));
+    await userEvent.click(screen.getByRole('button', { name: '다음 사진' }));
+    expect(screen.getByLabelText('사진 순서')).toHaveTextContent('2 / 2+');
+    expect(screen.getByRole('button', { name: '다음 사진' })).toBeDisabled();
+    await act(async () => finish(page([photo(3)])));
+    await waitFor(() => expect(screen.getByLabelText('사진 순서')).toHaveTextContent('3 / 3'));
+  });
+
+  it('뷰어를 닫은 뒤 다음 페이지가 도착해도 다시 열지 않는다', async () => {
+    let finish!: (value: PlacePhotoPageResult) => void;
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1)], 'next'))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+    renderPhotoListPage();
+    await userEvent.click(await findFirstPhoto());
+    await userEvent.click(screen.getByRole('button', { name: '다음 사진' }));
+    await userEvent.click(screen.getByRole('button', { name: '원본 보기 닫기' }));
+    await act(async () => finish(page([photo(2)])));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('반복 cursor를 더 요청하지 않고 중복 사진을 제거한다', async () => {
+    vi.mocked(getPlacePhotos)
+      .mockResolvedValueOnce(page([photo(1)], 'repeat'))
+      .mockResolvedValueOnce(page([photo(1), photo(2)], 'repeat'));
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await userEvent.click(screen.getByRole('button', { name: '사진 더 불러오기' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: '사진 목록' })).getAllByRole('button'),
+    ).toHaveLength(2);
+    expect(getPlacePhotos).toHaveBeenCalledTimes(2);
   });
 
   it('목록 조회에 실패하면 다시 시도로 재요청한다', async () => {

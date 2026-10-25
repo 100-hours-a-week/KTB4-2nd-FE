@@ -1,5 +1,26 @@
 import { Skeleton } from '@/shared/ui/skeleton';
 
+export function PhotoGridSkeletonTiles({
+  count = 18,
+  animated = true,
+}: {
+  count?: number;
+  animated?: boolean;
+}) {
+  return (
+    <div aria-hidden="true" className="grid grid-cols-3 gap-1">
+      {Array.from({ length: count }).map((_, index) => (
+        <Skeleton
+          key={index}
+          animation={animated ? 'breathe' : 'none'}
+          delayMs={(index % 3) * 120 + Math.floor(index / 3) * 60}
+          className="aspect-square w-full rounded-[5px]"
+        />
+      ))}
+    </div>
+  );
+}
+
 export function PhotoGridSkeleton({
   showError,
   onRetry,
@@ -13,15 +34,8 @@ export function PhotoGridSkeleton({
       aria-label={showError ? undefined : '사진 불러오는 중'}
       aria-busy={!showError}
     >
-      <div className="mt-3 grid grid-cols-3 gap-1">
-        {Array.from({ length: 18 }).map((_, index) => (
-          <Skeleton
-            key={index}
-            animation={showError ? 'none' : 'breathe'}
-            delayMs={(index % 3) * 120 + Math.floor(index / 3) * 60}
-            className="aspect-square w-full rounded-[5px]"
-          />
-        ))}
+      <div className="mt-3">
+        <PhotoGridSkeletonTiles animated={!showError} />
       </div>
       {showError && (
         <div

@@ -31,6 +31,9 @@ export function PhotoViewer({
   onDownload,
   onRestore,
   actionsDisabled = false,
+  hasMorePhotos = false,
+  previousDisabled = false,
+  navigationPending = false,
   onDelete,
 }: {
   photo: PhotoListItem;
@@ -44,6 +47,9 @@ export function PhotoViewer({
   onDownload?: () => void;
   onRestore?: () => void;
   actionsDisabled?: boolean;
+  hasMorePhotos?: boolean;
+  previousDisabled?: boolean;
+  navigationPending?: boolean;
   onDelete: () => void;
 }) {
   const original = usePhotoOriginalQuery(photo.id);
@@ -84,8 +90,10 @@ export function PhotoViewer({
         if (active?.closest('[role="menu"]')) return;
         event.preventDefault();
         markPhotoViewer('navigation');
-        if (event.key === 'ArrowLeft') onPrevious();
-        else onNext();
+        if (navigationPending) return;
+        if (event.key === 'ArrowLeft') {
+          if (!previousDisabled) onPrevious();
+        } else onNext();
       } else if (event.key === 'Tab') {
         const buttons = viewer.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
         const first = buttons[0];
@@ -104,7 +112,7 @@ export function PhotoViewer({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, onPrevious, onNext]);
+  }, [onClose, onPrevious, onNext, previousDisabled, navigationPending]);
 
   const menuItems: DropdownMenuItem[] = useMemo(
     () => [
@@ -160,7 +168,11 @@ export function PhotoViewer({
           <CloseIcon strokeWidth="2" size="22" />
         </button>
         <p aria-label="사진 순서" className="text-center text-sm font-bold">
-          {current} <span className="text-white/50">/ {total}</span>
+          {current}{' '}
+          <span className="text-white/50">
+            / {total}
+            {hasMorePhotos ? '+' : ''}
+          </span>
         </p>
         <DropdownMenu
           items={menuItems}
@@ -174,6 +186,7 @@ export function PhotoViewer({
           type="button"
           aria-label="이전 사진"
           onClick={previous}
+          disabled={previousDisabled || navigationPending}
           className="absolute left-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
         >
           <ChevronLeftIcon strokeWidth="2" size="20" />
@@ -193,11 +206,18 @@ export function PhotoViewer({
           type="button"
           aria-label="다음 사진"
           onClick={next}
+          disabled={navigationPending}
           className="absolute right-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
         >
           <ChevronRightIcon strokeWidth="2" size="20" />
         </button>
       </div>
+
+      {navigationPending && (
+        <p role="status" className="text-center text-xs text-white/70">
+          다음 사진을 불러오는 중…
+        </p>
+      )}
 
       <footer className="px-5 pt-4 pb-[calc(28px+env(safe-area-inset-bottom))]">
         <strong className="block truncate text-sm">{placeName}</strong>
