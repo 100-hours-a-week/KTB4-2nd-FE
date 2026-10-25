@@ -11,6 +11,7 @@ export function PhotoGridItem({
   selected,
   onActivate,
   onLongPress,
+  disabled = false,
 }: {
   photo: PhotoListItem;
   index: number;
@@ -18,16 +19,18 @@ export function PhotoGridItem({
   selected: boolean;
   onActivate: () => void;
   onLongPress: () => void;
+  disabled?: boolean;
 }) {
   const pressHandlers = useLongPress({
     onLongPress,
     onClick: onActivate,
-    disabled: selectionMode,
+    disabled: selectionMode || disabled,
   });
 
   return (
     <button
       type="button"
+      disabled={disabled}
       aria-label={
         selectionMode
           ? `${index + 1}번째 사진 ${selected ? '선택 해제' : '선택'}`

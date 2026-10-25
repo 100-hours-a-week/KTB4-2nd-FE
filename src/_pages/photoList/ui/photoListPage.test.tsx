@@ -265,7 +265,11 @@ describe('PhotoListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: '선택' }));
     await userEvent.click(screen.getByRole('button', { name: '1번째 사진 선택' }));
     await userEvent.click(screen.getByRole('button', { name: '전체 선택' }));
-    await userEvent.click(await screen.findByRole('button', { name: '전체 선택 취소' }));
+    expect(await screen.findByRole('region', { name: '전체 선택 진행 안내' })).toBeInTheDocument();
+    expect(screen.getByText('전체 선택 중')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1번째 사진 선택 해제' })).toBeDisabled();
+    expect(screen.queryByRole('toolbar', { name: '선택한 사진 작업' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '불러오기 취소' }));
     expect(requestedSignal?.aborted).toBe(true);
     expect(screen.getByRole('heading', { name: '1장 선택됨' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '2번째 사진 선택' })).toBeInTheDocument();

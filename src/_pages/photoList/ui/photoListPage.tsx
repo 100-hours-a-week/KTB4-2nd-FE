@@ -230,7 +230,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
       <p className="text-muted mt-1 truncate text-[11px]">
         {tripName}
         {viewState === 'ready' &&
-          ` · ${selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장${hasNextPage ? ' 불러옴' : ''}`}`}
+          ` · ${isSelectingAll ? '전체 사진을 불러오는 중이에요' : selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장${hasNextPage ? ' 불러옴' : ''}`}`}
       </p>
 
       {viewState !== 'ready' ? (
@@ -240,7 +240,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
       ) : (
         <ul
           aria-label="사진 목록"
-          className={`mt-3 grid grid-cols-3 gap-1 ${selectionMode ? 'pb-20' : ''}`}
+          className={`mt-3 grid grid-cols-3 gap-1 ${isSelectingAll ? 'pb-32' : selectionMode ? 'pb-20' : ''}`}
         >
           {photos.map((photo, index) => {
             const selected = selectedIds.has(photo.id);
@@ -251,6 +251,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
                   index={index}
                   selectionMode={selectionMode}
                   selected={selected}
+                  disabled={isSelectingAll}
                   onActivate={() => (selectionMode ? togglePhoto(photo.id) : openPhoto(photo.id))}
                   onLongPress={() => selectPhotoFromLongPress(photo.id)}
                 />
@@ -286,20 +287,14 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
           </button>
         </div>
       )}
-      {isSelectingAll && (
-        <div role="status" className="my-3 rounded-lg bg-slate-100 p-3 text-sm">
-          전체 선택을 위해 사진 {photos.length}장을 불러왔어요.
-          <button type="button" onClick={cancelSelectAll} className="ml-3 underline">
-            전체 선택 취소
-          </button>
-        </div>
-      )}
-
       {selectionMode && photos.length > 0 && (
         <SelectionActions
           disabled={selectedCount === 0 || isDownloading || isDeleting || isSelectingAll}
           downloadLimitExceeded={selectedCount > BULK_DOWNLOAD_LIMIT}
           isDownloading={isDownloading}
+          selectingAll={
+            isSelectingAll ? { loadedCount: photos.length, onCancel: cancelSelectAll } : undefined
+          }
           onDownload={() => requestDownload([...selectedIds])}
           onDelete={() => setPendingDeleteIds([...selectedIds])}
         />
