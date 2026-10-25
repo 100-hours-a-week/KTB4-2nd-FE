@@ -10,9 +10,12 @@ export const photoListQueries = {
   placePhotos: (tripId: number, tripPlaceId: number) =>
     infiniteQueryOptions({
       queryKey: photoListQueries.placePhotoKeys(tripId, tripPlaceId),
-      queryFn: ({ pageParam }) => getPlacePhotos(tripId, tripPlaceId, pageParam),
+      queryFn: ({ pageParam, signal }) => getPlacePhotos(tripId, tripPlaceId, pageParam, signal),
       initialPageParam: null as string | null,
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      getNextPageParam: (lastPage, _pages, _lastParam, params) =>
+        lastPage.hasNext && lastPage.nextCursor && !params.includes(lastPage.nextCursor)
+          ? lastPage.nextCursor
+          : undefined,
     }),
   originalKeys: (photoId: number) => [...photoListQueries.allKeys(), 'original', photoId] as const,
   original: (photoId: number) =>

@@ -10,6 +10,7 @@ export function PhotoListHeader({
   onEnterSelection,
   onCancelSelection,
   onToggleAll,
+  selectionDisabled = false,
 }: {
   placeName: string;
   selectionMode: boolean;
@@ -20,6 +21,7 @@ export function PhotoListHeader({
   onEnterSelection: () => void;
   onCancelSelection: () => void;
   onToggleAll: () => void;
+  selectionDisabled?: boolean;
 }) {
   return (
     <header className="bg-surface/95 sticky top-0 z-20 -mx-4 grid min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] grid-cols-[64px_1fr_64px] items-center px-4 pt-[max(20px,env(safe-area-inset-top))] backdrop-blur-sm">
@@ -50,6 +52,7 @@ export function PhotoListHeader({
         <button
           type="button"
           onClick={selectionMode ? onToggleAll : onEnterSelection}
+          disabled={selectionDisabled}
           className="focus-visible:outline-brand justify-self-end rounded px-1 py-2 text-sm font-bold focus-visible:outline-2"
         >
           {selectionMode ? (allSelected ? '전체 해제' : '전체 선택') : '선택'}
