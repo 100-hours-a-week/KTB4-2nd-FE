@@ -13,7 +13,6 @@ import {
 } from '@/features/photoList/api/photoDownload';
 import { triggerDownload } from '@/features/photoList/lib/triggerDownload';
 import type { PhotoListItem } from '@/features/photoList/model/types';
-import skeletonStyles from '@/shared/ui/skeleton/skeleton.module.css';
 
 import { PhotoListPage } from './photoListPage';
 
@@ -116,7 +115,7 @@ describe('PhotoListPage', () => {
     expect(getPlacePhotos).toHaveBeenCalledWith(7, 3, null, expect.any(AbortSignal));
   });
 
-  it('조회 중에는 시차가 있는 호흡 모션 카드 18개를 보여주고 완료 후 제거한다', async () => {
+  it('조회 중에는 단일 SVG 배경으로 6행 스켈레톤을 보여주고 완료 후 제거한다', async () => {
     let finish!: (result: PlacePhotoPageResult) => void;
     vi.mocked(getPlacePhotos).mockReturnValue(
       new Promise((resolve) => {
@@ -127,12 +126,12 @@ describe('PhotoListPage', () => {
 
     const loading = screen.getByRole('status', { name: '사진 불러오는 중' });
     expect(loading).toHaveAttribute('aria-busy', 'true');
-    const cards = loading.querySelectorAll('span[aria-hidden="true"]');
-    expect(cards).toHaveLength(18);
-    cards.forEach((card) => expect(card).toHaveClass(skeletonStyles.breathe));
-    expect(cards[0]).toHaveStyle({ animationDelay: '0ms' });
-    expect(cards[1]).toHaveStyle({ animationDelay: '120ms' });
-    expect(cards[3]).toHaveStyle({ animationDelay: '60ms' });
+    const background = loading.querySelector('div[aria-hidden="true"]');
+    expect(background).toHaveStyle({
+      backgroundRepeat: 'repeat',
+      paddingBottom: 'calc((100% + 4px) / 3 * 6 - 4px)',
+    });
+    expect(background?.childElementCount).toBe(0);
 
     await act(async () => {
       finish(page([photo(1)]));
@@ -211,7 +210,9 @@ describe('PhotoListPage', () => {
     expect(await findFirstPhoto()).toBeInTheDocument();
     const loading = screen.getByRole('status', { name: '사진 추가 로딩 중' });
     expect(loading).toHaveAttribute('aria-busy', 'true');
-    expect(loading.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(6);
+    expect(loading.querySelector('div[aria-hidden="true"]')).toHaveStyle({
+      paddingBottom: 'calc((100% + 4px) / 3 * 2 - 4px)',
+    });
     expect(screen.getByRole('button', { name: '사진 더 불러오기' })).toBeDisabled();
     await act(async () => finish(page([photo(2)])));
     expect(await screen.findByRole('button', { name: '2번째 사진 보기' })).toBeInTheDocument();
@@ -345,7 +346,7 @@ describe('PhotoListPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('사진을 가져오지 못했어요.');
     expect(screen.queryByRole('status', { name: '사진 불러오는 중' })).not.toBeInTheDocument();
-    expect(document.querySelectorAll(`.${skeletonStyles.breathe}`)).toHaveLength(0);
+    expect(screen.queryByRole('status', { name: '사진 불러오는 중' })).not.toBeInTheDocument();
 
     vi.mocked(getPlacePhotos).mockResolvedValue(page([photo(1)]));
     await userEvent.click(screen.getByRole('button', { name: '다시 시도' }));

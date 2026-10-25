@@ -1,23 +1,19 @@
-import { Skeleton } from '@/shared/ui/skeleton';
+const TILE = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect rx="5" fill="#e2e8f0" style="width:calc(100% - 4px);height:calc(100% - 4px)"/></svg>',
+)}")`;
 
-export function PhotoGridSkeletonTiles({
-  count = 18,
-  animated = true,
-}: {
-  count?: number;
-  animated?: boolean;
-}) {
+export function PhotoGridSkeletonTiles({ count = 18 }: { count?: number }) {
+  const rows = Math.ceil(count / 3);
   return (
-    <div aria-hidden="true" className="grid grid-cols-3 gap-1">
-      {Array.from({ length: count }).map((_, index) => (
-        <Skeleton
-          key={index}
-          animation={animated ? 'breathe' : 'none'}
-          delayMs={(index % 3) * 120 + Math.floor(index / 3) * 60}
-          className="aspect-square w-full rounded-[5px]"
-        />
-      ))}
-    </div>
+    <div
+      aria-hidden="true"
+      style={{
+        backgroundImage: TILE,
+        backgroundRepeat: 'repeat',
+        backgroundSize: 'calc((100% + 4px) / 3) auto',
+        paddingBottom: `calc((100% + 4px) / 3 * ${rows} - 4px)`,
+      }}
+    />
   );
 }
 
@@ -35,7 +31,7 @@ export function PhotoGridSkeleton({
       aria-busy={!showError}
     >
       <div className="mt-3">
-        <PhotoGridSkeletonTiles animated={!showError} />
+        <PhotoGridSkeletonTiles />
       </div>
       {showError && (
         <div
