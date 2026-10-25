@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { PhotoArtwork, PhotoViewer } from '@/features/photoList';
@@ -18,7 +18,14 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { ChevronLeftIcon, ImageIcon, RestoreIcon, TrashIcon } from '@/shared/ui/icons';
-import { Skeleton } from '@/shared/ui/skeleton';
+import { toast } from '@/shared/ui/toast';
+import { PhotoSelectionProgress } from '@/features/photoList/ui/photoSelectionProgress';
+import {
+  PhotoGridSkeleton,
+  PhotoGridSkeletonTiles,
+} from '@/_pages/photoList/ui/components/photoGridSkeleton';
+
+import { usePhotoListPosition } from '../lib/usePhotoListPosition';
 
 export type UnclassifiedPhotoListPageProps = {
   tripId: number;
@@ -26,13 +33,27 @@ export type UnclassifiedPhotoListPageProps = {
   issue: UnclassifiedIssue;
 };
 
-export function UnclassifiedPhotoListPage({
-  tripId,
-  tripName,
-  issue,
-}: UnclassifiedPhotoListPageProps) {
+export function UnclassifiedPhotoListPage(props: UnclassifiedPhotoListPageProps) {
+  return <UnclassifiedPhotoListContent key={`${props.tripId}:${props.issue}`} {...props} />;
+}
+
+function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedPhotoListPageProps) {
   const router = useRouter();
-  const { photos, viewState, refetch } = useUnclassifiedPhotos(tripId, issue);
+  const {
+    photos,
+    viewState,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    isRefreshing,
+    refreshError,
+    nextPageError,
+    invalidCursor,
+    autoLoadEnabled,
+    pageCount,
+    loadNextPage,
+    loadAllPhotos,
+  } = useUnclassifiedPhotos(tripId, issue);
   const { mutate: requestRestore, isPending: isRestoring } = useRestoreUnclassifiedPhotos(tripId);
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteUnclassifiedPhotos();
   const [selectionMode, setSelectionMode] = useState(false);
@@ -43,6 +64,24 @@ export function UnclassifiedPhotoListPage({
     photos: UnclassifiedPhoto[];
     photoCount: number;
   } | null>(null);
+  const [isSelectingAll, setIsSelectingAll] = useState(false);
+  const [navigationPending, setNavigationPending] = useState(false);
+  const selectionRequest = useRef<AbortController | null>(null);
+  const navigationRequest = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { mainRef, capture } = usePhotoListPosition(
+    photos,
+    isRestoring || isDeleting || isRefreshing,
+  );
+
+  useEffect(
+    () => () => {
+      selectionRequest.current?.abort();
+      navigationRequest.current++;
+    },
+    [],
+  );
+
   const activeIndex = photos.findIndex((photo) => photo.id === activePhotoId);
   const activePhoto = photos[activeIndex];
 
@@ -50,10 +89,116 @@ export function UnclassifiedPhotoListPage({
     .filter((photo) => selectedIds.has(photo.id))
     .map((photo) => photo.id);
   const selectedCount = visibleSelectedIds.length;
-  const allSelected = photos.length > 0 && selectedCount === photos.length;
+  const allSelected = !hasNextPage && photos.length > 0 && selectedCount === photos.length;
   const label = UNCLASSIFIED_ISSUE_LABEL[issue];
 
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (
+      !sentinel ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      nextPageError ||
+      !autoLoadEnabled ||
+      isSelectingAll ||
+      isRestoring ||
+      isDeleting ||
+      activePhotoId !== null ||
+      typeof IntersectionObserver === 'undefined'
+    )
+      return;
+    let root = sentinel.parentElement;
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY))
+      root = root.parentElement;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void loadNextPage().catch(() => {});
+      },
+      { root, rootMargin: '400px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    hasNextPage,
+    isFetchingNextPage,
+    nextPageError,
+    autoLoadEnabled,
+    isSelectingAll,
+    isRestoring,
+    isDeleting,
+    activePhotoId,
+    pageCount,
+    loadNextPage,
+  ]);
+
+  function cancelSelectAll() {
+    selectionRequest.current?.abort();
+    selectionRequest.current = null;
+    setIsSelectingAll(false);
+  }
+
+  async function toggleAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    if (!hasNextPage) {
+      setSelectedIds(new Set(photos.map((photo) => photo.id)));
+      return;
+    }
+    if (selectionRequest.current) return;
+    const controller = new AbortController();
+    selectionRequest.current = controller;
+    setIsSelectingAll(true);
+    try {
+      const allPhotos = await loadAllPhotos(controller.signal);
+      if (!controller.signal.aborted) setSelectedIds(new Set(allPhotos.map((photo) => photo.id)));
+    } catch {
+      if (!controller.signal.aborted)
+        toast.error('전체 사진을 불러오지 못했어요. 기존 선택은 유지됩니다.');
+    } finally {
+      if (selectionRequest.current === controller) {
+        selectionRequest.current = null;
+        setIsSelectingAll(false);
+      }
+    }
+  }
+
+  function openPhoto(id: number | null) {
+    navigationRequest.current++;
+    setNavigationPending(false);
+    setActivePhotoId(id);
+  }
+
+  async function nextPhoto() {
+    if (navigationPending || activePhotoId === null) return;
+    if (activeIndex < photos.length - 1) {
+      openPhoto(photos[activeIndex + 1].id);
+      return;
+    }
+    if (!hasNextPage) {
+      openPhoto(photos[0].id);
+      return;
+    }
+    const token = ++navigationRequest.current;
+    const currentId = activePhotoId;
+    setNavigationPending(true);
+    try {
+      const nextPhotos = await loadNextPage();
+      if (navigationRequest.current !== token) return;
+      const index = nextPhotos.findIndex((photo) => photo.id === currentId);
+      const next = nextPhotos[index + 1];
+      if (index >= 0 && next) setActivePhotoId(next.id);
+    } catch {
+      if (navigationRequest.current === token)
+        toast.error('다음 사진을 불러오지 못했어요. 다시 시도해주세요.');
+    } finally {
+      if (navigationRequest.current === token) setNavigationPending(false);
+    }
+  }
+
   function leaveSelectionMode() {
+    cancelSelectAll();
     setSelectionMode(false);
     setSelectedIds(new Set());
   }
@@ -77,12 +222,13 @@ export function UnclassifiedPhotoListPage({
   }
 
   function restorePhotos(targets: UnclassifiedPhoto[], fallbackPlaceId?: number) {
+    capture(targets.map((photo) => photo.id));
     requestRestore(
       { photos: targets, fallbackPlaceId },
       {
         onSuccess: () => {
           setPlaceRequest(null);
-          setActivePhotoId(null);
+          openPhoto(null);
           leaveSelectionMode();
         },
         onError: (error) => {
@@ -95,9 +241,10 @@ export function UnclassifiedPhotoListPage({
   }
 
   function confirmDelete() {
+    capture(pendingDeleteIds);
     requestDelete(pendingDeleteIds, {
       onSuccess: () => {
-        setActivePhotoId(null);
+        openPhoto(null);
         leaveSelectionMode();
       },
       onSettled: () => setPendingDeleteIds([]),
@@ -105,7 +252,11 @@ export function UnclassifiedPhotoListPage({
   }
 
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-4 pb-8">
+    <main
+      ref={mainRef}
+      aria-busy={isRestoring || isDeleting || isRefreshing}
+      className="page-enter text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-4 pb-8"
+    >
       <header className="bg-surface/95 sticky top-0 z-20 -mx-4 grid min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] grid-cols-[64px_1fr_64px] items-center px-4 pt-[max(20px,env(safe-area-inset-top))] backdrop-blur-sm">
         {selectionMode ? (
           <button
@@ -134,12 +285,8 @@ export function UnclassifiedPhotoListPage({
         {photos.length > 0 && (
           <button
             type="button"
-            onClick={() =>
-              selectionMode
-                ? setSelectedIds(allSelected ? new Set() : new Set(photos.map((photo) => photo.id)))
-                : setSelectionMode(true)
-            }
-            disabled={isRestoring || isDeleting}
+            onClick={() => (selectionMode ? void toggleAll() : setSelectionMode(true))}
+            disabled={isRestoring || isDeleting || isSelectingAll}
             className="focus-visible:outline-brand justify-self-end rounded px-1 py-2 text-sm font-bold focus-visible:outline-2"
           >
             {selectionMode ? (allSelected ? '전체 해제' : '전체 선택') : '선택'}
@@ -150,26 +297,44 @@ export function UnclassifiedPhotoListPage({
       <p className="text-muted mt-1 truncate text-[11px]">
         {tripName}
         {viewState === 'ready' &&
-          ` · ${selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장`}`}
+          ` · ${isSelectingAll ? '전체 사진을 불러오는 중이에요' : selectionMode ? '사진을 눌러 선택하세요' : `사진 ${photos.length}장${hasNextPage ? ' 불러옴' : ''}`}`}
       </p>
+
+      {isRefreshing && (isRestoring || isDeleting || photos.length === 0) && (
+        <p role="status" className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          남은 사진을 확인하고 있어요.
+        </p>
+      )}
+      {refreshError && (
+        <div role="alert" className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+          남은 사진을 확인하지 못했어요.
+          <button type="button" className="ml-2 underline" onClick={() => void refetch()}>
+            다시 확인
+          </button>
+        </div>
+      )}
 
       {viewState !== 'ready' ? (
         <PhotoGridSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
-      ) : photos.length === 0 ? (
+      ) : photos.length === 0 && (isRefreshing || isRestoring || isDeleting) ? (
+        <div className="mt-3">
+          <PhotoGridSkeletonTiles count={6} />
+        </div>
+      ) : photos.length === 0 && !hasNextPage && !refreshError ? (
         <EmptyPhotoList />
       ) : (
         <ul
           aria-label={`${label} 목록`}
-          className={`mt-3 grid grid-cols-3 gap-1 ${selectionMode ? 'pb-20' : ''}`}
+          className={`mt-3 grid grid-cols-3 gap-1 ${isSelectingAll ? 'pb-32' : selectionMode ? 'pb-20' : ''}`}
         >
           {photos.map((photo, index) => {
             const selected = selectedIds.has(photo.id);
             return (
-              <li key={photo.id}>
+              <li key={photo.id} data-photo-id={photo.id}>
                 {selectionMode ? (
                   <button
                     type="button"
-                    disabled={isRestoring || isDeleting}
+                    disabled={isRestoring || isDeleting || isSelectingAll}
                     aria-label={`${index + 1}번째 사진 ${selected ? '선택 해제' : '선택'}`}
                     aria-pressed={selected}
                     onClick={() => togglePhoto(photo.id)}
@@ -182,7 +347,7 @@ export function UnclassifiedPhotoListPage({
                   <button
                     type="button"
                     aria-label={`${index + 1}번째 사진 상세보기`}
-                    onClick={() => setActivePhotoId(photo.id)}
+                    onClick={() => openPhoto(photo.id)}
                     className="focus-visible:outline-brand relative block aspect-square w-full cursor-pointer overflow-hidden rounded-[5px] focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1"
                   >
                     <PhotoArtwork photo={photo} />
@@ -194,7 +359,36 @@ export function UnclassifiedPhotoListPage({
         </ul>
       )}
 
-      {selectionMode && viewState === 'ready' && photos.length > 0 && (
+      {viewState === 'ready' && hasNextPage && (
+        <div ref={sentinelRef} className="mt-1 pb-4 text-center">
+          {nextPageError && (
+            <p role="alert" className="mb-2 text-sm text-red-700">
+              사진을 더 불러오지 못했어요. 이미 불러온 사진은 볼 수 있어요.
+            </p>
+          )}
+          {isFetchingNextPage && (
+            <div role="status" aria-label="사진 추가 로딩 중" aria-busy="true">
+              <PhotoGridSkeletonTiles count={6} />
+              <p className="my-2 text-sm text-slate-500">사진을 더 불러오는 중…</p>
+            </div>
+          )}
+          <button
+            type="button"
+            disabled={isFetchingNextPage || isSelectingAll || isRestoring || isDeleting}
+            className="mt-3 rounded-lg bg-slate-100 px-4 py-3 text-sm disabled:opacity-50"
+            onClick={() => {
+              if (invalidCursor) void refetch();
+              else void loadNextPage().catch(() => {});
+            }}
+          >
+            {nextPageError ? '사진 추가 로딩 다시 시도' : '사진 더 불러오기'}
+          </button>
+        </div>
+      )}
+      {isSelectingAll && (
+        <PhotoSelectionProgress loadedCount={photos.length} onCancel={cancelSelectAll} />
+      )}
+      {selectionMode && !isSelectingAll && viewState === 'ready' && photos.length > 0 && (
         <SelectionActions
           disabled={selectedCount === 0 || isRestoring || isDeleting}
           isRestoring={isRestoring}
@@ -208,13 +402,14 @@ export function UnclassifiedPhotoListPage({
           photo={activePhoto}
           current={activeIndex + 1}
           total={photos.length}
+          hasMorePhotos={hasNextPage}
+          previousDisabled={hasNextPage && activeIndex === 0}
+          navigationPending={navigationPending}
           tripName={tripName}
           placeName={label}
-          onClose={() => setActivePhotoId(null)}
-          onPrevious={() =>
-            setActivePhotoId(photos[(activeIndex - 1 + photos.length) % photos.length].id)
-          }
-          onNext={() => setActivePhotoId(photos[(activeIndex + 1) % photos.length].id)}
+          onClose={() => openPhoto(null)}
+          onPrevious={() => openPhoto(photos[(activeIndex - 1 + photos.length) % photos.length].id)}
+          onNext={() => void nextPhoto()}
           actionsDisabled={isRestoring || isDeleting}
           onRestore={() => restorePhotos([activePhoto])}
           onDelete={() => setPendingDeleteIds([activePhoto.id])}
@@ -301,42 +496,6 @@ function SelectionActions({
       </Button>
     </div>,
     document.body,
-  );
-}
-
-function PhotoGridSkeleton({ showError, onRetry }: { showError: boolean; onRetry: () => void }) {
-  return (
-    <div
-      role={showError ? undefined : 'status'}
-      aria-label={showError ? undefined : '사진 불러오는 중'}
-      aria-busy={!showError}
-    >
-      <div className="mt-3 grid grid-cols-3 gap-1">
-        {Array.from({ length: 18 }).map((_, index) => (
-          <Skeleton
-            key={index}
-            animation={showError ? 'none' : 'breathe'}
-            delayMs={(index % 3) * 120 + Math.floor(index / 3) * 60}
-            className="aspect-square w-full rounded-[5px]"
-          />
-        ))}
-      </div>
-      {showError && (
-        <div
-          role="alert"
-          className="bg-brand fixed right-4 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-4 z-30 mx-auto flex max-w-[398px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
-        >
-          <span className="flex-1">사진 로드에 실패했어요.</span>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="cursor-pointer font-bold text-[#a9c8ff] hover:underline"
-          >
-            다시 시도
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 
