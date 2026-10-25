@@ -13,6 +13,7 @@ import {
   type RestoreAttachmentItem,
 } from '../api/restoreUnclassifiedPhotos';
 import { BULK_RESTORE_LIMIT, type UnclassifiedPhoto } from './types';
+import { removeCachedUnclassifiedPhotos } from './removeCachedUnclassifiedPhotos';
 
 export type RestoreUnclassifiedInput = {
   photos: UnclassifiedPhoto[];
@@ -70,7 +71,12 @@ export function useRestoreUnclassifiedPhotos(tripId: number) {
       if (error instanceof RestorePlaceRequiredError) return;
       await invalidateTripData(queryClient);
     },
-    onSuccess: () => {
+    onSuccess: (_data, input) => {
+      removeCachedUnclassifiedPhotos(
+        queryClient,
+        input.photos.map((photo) => photo.id),
+        tripId,
+      );
       toast.success('사진을 원래 폴더로 되돌렸어요.');
     },
     onError: (error) => {

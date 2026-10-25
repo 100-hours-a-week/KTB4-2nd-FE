@@ -7,6 +7,8 @@ import { invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
 import { toast } from '@/shared/ui/toast';
 
+import { removeCachedUnclassifiedPhotos } from './removeCachedUnclassifiedPhotos';
+
 export function useDeleteUnclassifiedPhotos() {
   const queryClient = useQueryClient();
 
@@ -21,7 +23,8 @@ export function useDeleteUnclassifiedPhotos() {
 
       await deletePhotos(photoIds, csrfToken);
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, photoIds) => {
+      removeCachedUnclassifiedPhotos(queryClient, photoIds);
       await invalidateTripData(queryClient);
       toast.success('사진이 삭제됐어요.');
     },

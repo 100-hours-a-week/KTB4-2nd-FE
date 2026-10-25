@@ -38,10 +38,11 @@ export async function getUnclassifiedPhotos(
   tripId: number,
   issue: UnclassifiedIssue,
   cursor?: string | null,
+  signal?: AbortSignal,
 ): Promise<UnclassifiedPhotoPageResult> {
   const { data } = await apiClient.get<ApiResponse<UnclassifiedAttachmentListResponse>>(
     `/trips/${tripId}/unclassified-folders/${issue}/attachments`,
-    { params: cursor ? { cursor } : undefined },
+    { params: cursor ? { cursor } : undefined, signal },
   );
 
   return {
