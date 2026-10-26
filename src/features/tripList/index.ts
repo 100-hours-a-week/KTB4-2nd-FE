@@ -12,3 +12,4 @@ export type {
 } from './model/types';
 export { useTripFavorite } from './model/useTripFavorite';
 export { useTripList } from './model/useTripList';
+export { TripCard } from './ui/tripCard';
