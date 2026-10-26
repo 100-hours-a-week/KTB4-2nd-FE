@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getTrips } from '@/features/tripList/api/getTrips';
 import type { TripListPageResult } from '@/features/tripList/api/getTrips';
 import { registerTripFavorite, removeTripFavorite } from '@/features/tripList/api/tripFavorite';
 import type { TripListItem } from '@/features/tripList/model/types';
+
+import { tripListQueries } from '@/queryFactory';
 
 import { TripListPage } from './tripListPage';
 
@@ -54,16 +56,27 @@ function renderTripListPage() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <TripListPage />
     </QueryClientProvider>,
   );
+  return { ...view, queryClient };
 }
+
+const originalDecode = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'decode');
+afterAll(() => {
+  if (originalDecode) Object.defineProperty(HTMLImageElement.prototype, 'decode', originalDecode);
+  else Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
+});
 
 describe('TripListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    });
     vi.mocked(getTrips).mockResolvedValue(page(trips));
   });
 
@@ -229,6 +242,62 @@ describe('TripListPage', () => {
     expect(screen.getByText(/지금까지/).parentElement).toHaveTextContent(
       '3개의 여행을 기록했어요.',
     );
+  });
+
+  it('다음 페이지 응답을 기다리는 동안 이미 받은 여행 카드를 유지한다', async () => {
+    let finishNext!: (value: TripListPageResult) => void;
+    let finishDecode!: () => void;
+    vi.mocked(HTMLImageElement.prototype.decode).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishDecode = resolve;
+        }),
+    );
+    vi.mocked(getTrips)
+      .mockResolvedValueOnce({
+        trips: [{ ...trips[0], thumbnailUrl: 'https://cdn.test/1.jpg' }, trips[1]],
+        hasNext: true,
+        nextCursor: 'cursor-2',
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishNext = resolve;
+          }),
+      );
+    renderTripListPage();
+
+    expect(await screen.findByRole('heading', { name: '파리 & 런던' })).toBeInTheDocument();
+    const card = screen.getByRole('heading', { name: '파리 & 런던' }).closest('article');
+    expect(screen.queryByRole('status', { name: '여행 목록 불러오는 중' })).not.toBeInTheDocument();
+    expect(card?.querySelector('img')).not.toBeInTheDocument();
+    await act(async () => finishDecode());
+    const image = card?.querySelector('img');
+    expect(image).toBeInTheDocument();
+    await act(async () => finishNext(page(trips.slice(2))));
+    await screen.findByRole('heading', { name: '제주 한 바퀴' });
+    expect(screen.getByRole('heading', { name: '파리 & 런던' }).closest('article')).toBe(card);
+    expect(card?.querySelector('img')).toBe(image);
+    expect(HTMLImageElement.prototype.decode).toHaveBeenCalledTimes(1);
+  });
+
+  it('백그라운드 갱신이 실패해도 표시 중인 여행 카드를 스켈레톤으로 교체하지 않는다', async () => {
+    const { queryClient } = renderTripListPage();
+    const heading = await screen.findByRole('heading', { name: '파리 & 런던' });
+    const card = heading.closest('article');
+    vi.mocked(getTrips).mockRejectedValue(new Error('network'));
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: tripListQueries.allKeys() });
+    });
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryState(tripListQueries.listKeys({ sort: 'LATEST', favorite: false }))
+          ?.status,
+      ).toBe('error'),
+    );
+    expect(screen.getByRole('heading', { name: '파리 & 런던' }).closest('article')).toBe(card);
+    expect(screen.queryByRole('status', { name: '여행 목록 불러오는 중' })).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('여행 목록을 갱신하지 못했어요.');
   });
 
   it('즐겨찾기만 켠 채로 열면 즐겨찾기 여행만 요청한다', async () => {
