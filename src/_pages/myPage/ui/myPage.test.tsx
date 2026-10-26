@@ -218,11 +218,11 @@ describe('MyPage', () => {
     );
   });
 
-  it('즐겨찾기한 여행은 즐겨찾기만 켠 여행 목록으로 이동한다', async () => {
+  it('즐겨찾기한 여행은 즐겨찾기 페이지로 이동한다', async () => {
     renderMyPage();
 
     const link = await screen.findByRole('link', { name: /즐겨찾기한 여행/ });
-    expect(link).toHaveAttribute('href', '/trips?favorite=1');
+    expect(link).toHaveAttribute('href', '/mypage/favorites');
     expect(await within(link).findByText('3개')).toBeInTheDocument();
   });
 });

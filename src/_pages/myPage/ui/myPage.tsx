@@ -68,7 +68,7 @@ export function MyPage({ user }: MyPageProps) {
       <div className="mt-7 flex flex-col gap-6">
         <MenuGroup title="내 여행">
           <MenuRow
-            href="/trips?favorite=1"
+            href="/mypage/favorites"
             icon={
               <StarIcon strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" size="20" />
             }
