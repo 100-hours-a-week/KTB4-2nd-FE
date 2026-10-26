@@ -5,7 +5,6 @@ const INVISIBLE_PATTERN = new RegExp(`[\\s${INVISIBLE}]`, 'g');
 const LONE_SURROGATE_PATTERN =
   /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
 
-
 export function normalizeText(value: string) {
   return value.replace(LONE_SURROGATE_PATTERN, '').replace(EDGE_BLANK_PATTERN, '');
 }

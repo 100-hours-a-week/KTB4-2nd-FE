@@ -230,4 +230,18 @@ describe('TripListPage', () => {
       '3개의 여행을 기록했어요.',
     );
   });
+
+  it('즐겨찾기만 켠 채로 열면 즐겨찾기 여행만 요청한다', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <TripListPage initialFavoriteOnly />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(getTrips).toHaveBeenCalledWith({ sort: 'LATEST', favorite: true, cursor: null }),
+    );
+    expect(await screen.findByRole('switch', { name: '즐겨찾기만 보기' })).toBeChecked();
+  });
 });

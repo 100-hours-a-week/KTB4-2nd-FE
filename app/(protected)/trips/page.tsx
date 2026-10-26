@@ -11,19 +11,20 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ renewed?: string | string[] }>;
+  searchParams: Promise<{ renewed?: string | string[]; favorite?: string | string[] }>;
 }) {
-  const { renewed } = await searchParams;
+  const { renewed, favorite } = await searchParams;
 
   const session = await getCurrentUser();
 
   if (session.status === 'unauthorized') {
-    redirect(renewed === '1' ? '/login' : '/auth/renew?next=%2Ftrips');
+    const next = favorite === '1' ? '/trips?favorite=1' : '/trips';
+    redirect(renewed === '1' ? '/login' : `/auth/renew?next=${encodeURIComponent(next)}`);
   }
 
   if (session.status === 'notFound') {
     redirect('/login');
   }
 
-  return <TripListPage />;
+  return <TripListPage initialFavoriteOnly={favorite === '1'} />;
 }
