@@ -22,11 +22,20 @@ export function useTripList(filter: TripListFilter) {
     [data],
   );
 
-  const viewState: TripListViewState = isError
-    ? 'error'
-    : isPending || hasNextPage || isFetchingNextPage
-      ? 'loading'
-      : 'ready';
+  const viewState: TripListViewState =
+    trips.length > 0
+      ? 'ready'
+      : isError
+        ? 'error'
+        : isPending || hasNextPage || isFetchingNextPage
+          ? 'loading'
+          : 'ready';
 
-  return { trips, viewState, refetch };
+  return {
+    trips,
+    viewState,
+    refetch,
+    isFetchingNextPage,
+    hasListError: trips.length > 0 && isError,
+  };
 }

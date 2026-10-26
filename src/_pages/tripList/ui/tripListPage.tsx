@@ -44,7 +44,7 @@ export function TripListPage({ onTripSelect, initialFavoriteOnly = false }: Trip
     () => ({ sort: toTripListSort(sortOrder), favorite: favoriteOnly }),
     [favoriteOnly, sortOrder],
   );
-  const { trips, viewState, refetch } = useTripList(filter);
+  const { trips, viewState, refetch, isFetchingNextPage, hasListError } = useTripList(filter);
   const { mutate: changeFavorite } = useTripFavorite(filter);
   const visibleTrips = favoriteOnly ? trips.filter((trip) => trip.favorite) : trips;
   const favoriteTrips = favoriteOnly ? visibleTrips : visibleTrips.filter((trip) => trip.favorite);
@@ -109,6 +109,26 @@ export function TripListPage({ onTripSelect, initialFavoriteOnly = false }: Trip
             </div>
           )}
         </>
+      )}
+      {isFetchingNextPage && viewState === 'ready' && (
+        <p role="status" className="text-muted mt-4 text-center text-xs">
+          여행을 더 불러오는 중이에요.
+        </p>
+      )}
+      {hasListError && (
+        <div
+          role="alert"
+          className="text-muted mt-4 flex items-center justify-center gap-2 text-xs"
+        >
+          <span>여행 목록을 갱신하지 못했어요.</span>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="text-brand cursor-pointer font-bold underline"
+          >
+            다시 시도
+          </button>
+        </div>
       )}
       <BottomNavigation items={navigationItems} activeId="list" />
     </main>
