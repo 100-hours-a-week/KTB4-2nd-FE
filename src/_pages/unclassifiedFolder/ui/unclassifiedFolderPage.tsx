@@ -13,6 +13,7 @@ import {
 import { CheckIcon, TrashIcon, WarningIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { DecodedThumbnail } from '@/shared/ui/decodedThumbnail';
 
 export type UnclassifiedFolderPageProps = {
   tripId: number;
@@ -35,7 +36,7 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
   }
 
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-5 pb-10">
+    <main className="text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-5 pb-10">
       <PageHeader
         className="-mx-5 min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] px-5 pt-[max(20px,env(safe-area-inset-top))]"
         title="미분류 폴더"
@@ -72,6 +73,7 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
               <li key={folder.issue}>
                 <UnclassifiedFolderCard
                   folder={folder}
+                  tripId={tripId}
                   href={`/trips/${tripId}/unclassified/${toUnclassifiedIssueSlug(folder.issue)}?trip=${encodeURIComponent(tripName)}`}
                 />
               </li>
@@ -83,7 +85,15 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
   );
 }
 
-function UnclassifiedFolderCard({ folder, href }: { folder: UnclassifiedFolder; href: string }) {
+function UnclassifiedFolderCard({
+  folder,
+  href,
+  tripId,
+}: {
+  folder: UnclassifiedFolder;
+  href: string;
+  tripId: number;
+}) {
   const label = UNCLASSIFIED_ISSUE_LABEL[folder.issue];
 
   return (
@@ -93,7 +103,7 @@ function UnclassifiedFolderCard({ folder, href }: { folder: UnclassifiedFolder; 
         aria-label={`${label} ${folder.photoCount}장 보기`}
         className="focus-visible:outline-brand block w-full cursor-pointer overflow-hidden rounded-[14px] transition-transform active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        <FolderThumbnail folder={folder} />
+        <FolderThumbnail folder={folder} tripId={tripId} />
         <span className="absolute top-2.5 left-2.5 max-w-[calc(100%-20px)] truncate rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
           {label} · {folder.photoCount}장
         </span>
@@ -102,26 +112,22 @@ function UnclassifiedFolderCard({ folder, href }: { folder: UnclassifiedFolder; 
   );
 }
 
-function FolderThumbnail({ folder }: { folder: UnclassifiedFolder }) {
-  if (folder.thumbnailUrl) {
-    return (
-      <span
-        aria-hidden="true"
-        className="block aspect-square w-full bg-slate-100 bg-cover bg-center"
-        style={{ backgroundImage: `url(${JSON.stringify(folder.thumbnailUrl)})` }}
-      />
-    );
-  }
-
+function FolderThumbnail({ folder, tripId }: { folder: UnclassifiedFolder; tripId: number }) {
   return (
-    <span
-      aria-hidden="true"
-      className={`relative block aspect-square w-full overflow-hidden bg-gradient-to-b ${PHOTO_ACCENT_GRADIENT[folder.accent]}`}
-    >
-      <span className="absolute top-[16%] right-[14%] size-[18%] rounded-full bg-[#ffe7a6]" />
-      <span className="absolute -right-[8%] bottom-[-8%] h-[42%] w-[80%] rounded-[50%] bg-black/16" />
-      <span className="absolute bottom-[-10%] -left-[12%] h-[48%] w-[90%] rounded-[50%] bg-white/18" />
-    </span>
+    <DecodedThumbnail
+      imageKey={`${tripId}:${folder.issue}`}
+      src={folder.thumbnailUrl}
+      className="aspect-square w-full"
+      fallback={
+        <span
+          className={`relative block size-full overflow-hidden bg-gradient-to-b ${PHOTO_ACCENT_GRADIENT[folder.accent]}`}
+        >
+          <span className="absolute top-[16%] right-[14%] size-[18%] rounded-full bg-[#ffe7a6]" />
+          <span className="absolute -right-[8%] bottom-[-8%] h-[42%] w-[80%] rounded-[50%] bg-black/16" />
+          <span className="absolute bottom-[-10%] -left-[12%] h-[48%] w-[90%] rounded-[50%] bg-white/18" />
+        </span>
+      }
+    />
   );
 }
 
@@ -134,12 +140,7 @@ function FolderSkeleton({ showError, onRetry }: { showError: boolean; onRetry: (
     >
       <div className="grid grid-cols-2 gap-2.5">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton
-            key={index}
-            animation={showError ? 'none' : 'breathe'}
-            delayMs={index * 120}
-            className="aspect-square w-full rounded-[14px]"
-          />
+          <Skeleton key={index} animation="none" className="aspect-square w-full rounded-[14px]" />
         ))}
       </div>
       {showError && (

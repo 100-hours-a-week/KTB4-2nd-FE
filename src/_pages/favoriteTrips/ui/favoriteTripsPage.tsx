@@ -89,7 +89,7 @@ function FavoritesSkeleton({ showError, onRetry }: { showError: boolean; onRetry
     >
       <div className="space-y-2.5">
         {Array.from({ length: 4 }, (_, index) => (
-          <Skeleton key={index} className="h-[106px] w-full rounded-[18px]" />
+          <Skeleton animation="none" key={index} className="h-[106px] w-full rounded-[18px]" />
         ))}
       </div>
       {showError && (
