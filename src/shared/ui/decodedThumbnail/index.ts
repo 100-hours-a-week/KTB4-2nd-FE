@@ -1,0 +1,1 @@
+export { DecodedThumbnail } from './decodedThumbnail';

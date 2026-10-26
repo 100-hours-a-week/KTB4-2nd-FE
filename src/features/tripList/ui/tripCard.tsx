@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { getThumbnailFallbackGradient } from '@/shared/config/thumbnailGradient';
+import { DecodedThumbnail } from '@/shared/ui/decodedThumbnail';
 import { ImageIcon, StarIcon } from '@/shared/ui/icons';
 import { toast } from '@/shared/ui/toast';
 
@@ -95,53 +96,34 @@ export function TripCard({
 }
 
 function TripThumbnail({ trip, colorIndex }: { trip: TripListItem; colorIndex: number }) {
-  if (trip.processingStatus === 'updating') {
-    return (
-      <div
-        className="relative grid h-[82px] w-[82px] shrink-0 place-items-center overflow-hidden rounded-[13px] bg-slate-100 bg-cover bg-center"
-        style={
-          trip.thumbnailUrl
-            ? { backgroundImage: `url(${JSON.stringify(trip.thumbnailUrl)})` }
-            : undefined
-        }
-      >
-        {trip.thumbnailUrl && <span aria-hidden="true" className="absolute inset-0 bg-white/60" />}
-        <span
-          aria-label="여행 수정 중"
-          role="status"
-          className="relative size-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand"
-        />
-      </div>
-    );
-  }
-  if (trip.thumbnailUrl) {
-    return (
-      <div
-        aria-hidden="true"
-        className="h-[82px] w-[82px] shrink-0 rounded-[13px] bg-cover bg-center"
-        style={{ backgroundImage: `url(${JSON.stringify(trip.thumbnailUrl)})` }}
-      />
-    );
-  }
-  if (trip.processingStatus === 'processing') {
-    return (
-      <div className="grid h-[82px] w-[82px] shrink-0 place-items-center rounded-[13px] bg-slate-100">
-        <span
-          aria-label="사진 정리 중"
-          role="status"
-          className="size-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand"
-        />
-      </div>
-    );
-  }
+  const updating = trip.processingStatus === 'updating';
+  const processing = trip.processingStatus === 'processing' && !trip.thumbnailUrl;
   return (
-    <div
-      aria-hidden="true"
-      className={`relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[13px] bg-gradient-to-br ${getThumbnailFallbackGradient(colorIndex)}`}
+    <DecodedThumbnail
+      imageKey={trip.id}
+      src={trip.thumbnailUrl}
+      className="h-[82px] w-[82px] shrink-0 rounded-[13px]"
+      fallback={
+        <div
+          className={`relative size-full overflow-hidden bg-gradient-to-br ${getThumbnailFallbackGradient(colorIndex)}`}
+        >
+          <span className="absolute right-[-10px] bottom-[-18px] size-16 rounded-full bg-white/20" />
+          <span className="absolute bottom-3 left-3 h-1.5 w-12 rounded-full bg-white/30" />
+        </div>
+      }
     >
-      <span className="absolute right-[-10px] bottom-[-18px] size-16 rounded-full bg-white/20" />
-      <span className="absolute bottom-3 left-3 h-1.5 w-12 rounded-full bg-white/30" />
-    </div>
+      {(updating || processing) && (
+        <div
+          className={`absolute inset-0 grid place-items-center ${trip.thumbnailUrl ? 'bg-white/60' : 'bg-slate-100'}`}
+        >
+          <span
+            aria-label={updating ? '여행 수정 중' : '사진 정리 중'}
+            role="status"
+            className="size-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand motion-reduce:animate-none"
+          />
+        </div>
+      )}
+    </DecodedThumbnail>
   );
 }
 

@@ -13,9 +13,9 @@ export function PlaceFolderSkeleton({
       <div className="grid grid-cols-2 gap-x-2.5 gap-y-4">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index}>
-            <Skeleton className="aspect-square w-full rounded-[14px]" />
-            <Skeleton className="mt-2 h-3 w-16" />
-            <Skeleton className="mt-1.5 h-2.5 w-9" />
+            <Skeleton animation="none" className="aspect-square w-full rounded-[14px]" />
+            <Skeleton animation="none" className="mt-2 h-3 w-16" />
+            <Skeleton animation="none" className="mt-1.5 h-2.5 w-9" />
           </div>
         ))}
       </div>

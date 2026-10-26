@@ -10,8 +10,6 @@ import {
   type TripDetail,
 } from '@/features/tripDetail';
 import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
-import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
-import { EditIcon, LinkIcon, TrashIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { toast } from '@/shared/ui/toast';
 
@@ -20,6 +18,7 @@ import { EmptyPlaceFolders } from './components/emptyPlaceFolders';
 import { PlaceFolderCard } from './components/placeFolderCard';
 import { PlaceFolderSkeleton } from './components/placeFolderSkeleton';
 import { StoryEmptyDialog } from './components/storyEmptyDialog';
+import { TripDetailMenu } from './components/tripDetailMenu';
 import { TripMeta } from './components/tripMeta';
 import { TripShortcuts } from './components/tripShortcuts';
 import { ViewModeToggle } from './components/viewModeToggle';
@@ -57,39 +56,20 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
     setStoryEmptyOpen(true);
   }
 
-  const menuItems: DropdownMenuItem[] = [
-    {
-      id: 'edit',
-      label: '여행 수정',
-      icon: <EditIcon size="20" />,
-      onSelect: () => router.push(`/trips/${trip.id}/edit?step=name`),
-    },
-    {
-      id: 'share-link',
-      label: '링크로 공유하기',
-      icon: <LinkIcon size="20" />,
-      badge: '준비 중',
-      disabled: true,
-      onSelect: showUnsupportedToast,
-    },
-    {
-      id: 'delete',
-      label: '여행 삭제',
-      icon: <TrashIcon size="20" />,
-      destructive: true,
-      dividerBefore: true,
-      onSelect: () => setDeleteOpen(true),
-    },
-  ];
-
   return (
-    <main className="page-enter text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-5 pb-10">
+    <main className="text-brand bg-surface relative mx-auto min-h-full w-full max-w-[430px] px-5 pb-10">
       <PageHeader
         className="-mx-5 min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] px-5 pt-[max(20px,env(safe-area-inset-top))]"
         title={trip.name}
         onBack={handleBack}
         backLabel="여행 목록으로 돌아가기"
-        action={<DropdownMenu items={menuItems} label="여행 더보기 메뉴" />}
+        action={
+          <TripDetailMenu
+            onEdit={() => router.push(`/trips/${trip.id}/edit?step=name`)}
+            onShare={showUnsupportedToast}
+            onDelete={() => setDeleteOpen(true)}
+          />
+        }
       />
 
       <TripMeta trip={trip} unclassifiedCount={unclassifiedCount} />
