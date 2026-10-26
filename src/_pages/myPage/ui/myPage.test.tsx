@@ -21,6 +21,16 @@ vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 vi.mock('@/shared/lib/analytics', () => ({ clearIdentity: vi.fn() }));
+vi.mock('@/features/userStats/api/getUserStats', () => ({
+  getUserStats: vi.fn().mockResolvedValue({
+    tripCount: 4,
+    photoCount: 853,
+    storyCount: 2,
+    favoriteTripCount: 3,
+    storageUsedBytes: 12_400_000_000,
+    storageLimitBytes: 30_000_000_000,
+  }),
+}));
 
 const user: MyPageUser = { nickname: '여행하는 혜준', oauthConnected: true };
 
@@ -193,5 +203,26 @@ describe('MyPage', () => {
 
     await waitFor(() => expect(redirectToLogin).toHaveBeenCalledOnce());
     expect(useToastStore.getState().toasts).toEqual([]);
+  });
+
+  it('여행·사진·스토리 수와 저장 공간 사용량을 보여준다', async () => {
+    renderMyPage();
+
+    const records = await screen.findByLabelText('내 기록');
+    expect(await within(records).findByText('853')).toBeInTheDocument();
+    expect(within(records).getByText('사진')).toBeInTheDocument();
+    expect(screen.getByText('12.4GB')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: '저장 공간 사용량' })).toHaveAttribute(
+      'aria-valuenow',
+      '41',
+    );
+  });
+
+  it('즐겨찾기한 여행은 즐겨찾기만 켠 여행 목록으로 이동한다', async () => {
+    renderMyPage();
+
+    const link = await screen.findByRole('link', { name: /즐겨찾기한 여행/ });
+    expect(link).toHaveAttribute('href', '/trips?favorite=1');
+    expect(await within(link).findByText('3개')).toBeInTheDocument();
   });
 });

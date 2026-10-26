@@ -20,6 +20,8 @@ import { toast } from '@/shared/ui/toast';
 
 export type TripListPageProps = {
   onTripSelect?: (tripId: number) => void;
+  /** 마이페이지의 "즐겨찾기한 여행"처럼 즐겨찾기만 켠 채로 열 때 씁니다. */
+  initialFavoriteOnly?: boolean;
 };
 
 const navigationItems: BottomNavigationItem[] = [
@@ -36,9 +38,9 @@ const navigationItems: BottomNavigationItem[] = [
   { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 
-export function TripListPage({ onTripSelect }: TripListPageProps) {
+export function TripListPage({ onTripSelect, initialFavoriteOnly = false }: TripListPageProps) {
   const [sortOrder, setSortOrder] = useState<TripSortOrder>('newest');
-  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [favoriteOnly, setFavoriteOnly] = useState(initialFavoriteOnly);
 
   const filter = useMemo<TripListFilter>(
     () => ({ sort: toTripListSort(sortOrder), favorite: favoriteOnly }),
