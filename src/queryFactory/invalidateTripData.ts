@@ -6,6 +6,7 @@ import { storyCreateQueries } from './storyCreateQueries';
 import { tripDetailQueries } from './tripDetailQueries';
 import { tripListQueries } from './tripListQueries';
 import { unclassifiedPhotosQueries } from './unclassifiedPhotosQueries';
+import { userStatsQueries } from './userStatsQueries';
 
 export function invalidateTripData(queryClient: QueryClient) {
   return Promise.all([
@@ -17,5 +18,6 @@ export function invalidateTripData(queryClient: QueryClient) {
     queryClient.invalidateQueries({
       queryKey: [...storyCreateQueries.allKeys(), 'sourceFolders'],
     }),
+    queryClient.invalidateQueries({ queryKey: userStatsQueries.allKeys() }),
   ]);
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import {
@@ -8,18 +7,19 @@ import {
   useTripFavorite,
   useTripList,
   type TripListFilter,
-  type TripListItem,
   type TripSortOrder,
 } from '@/features/tripList';
-import { getThumbnailFallbackGradient } from '@/shared/config/thumbnailGradient';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
-import { AlertCircleIcon, ImageIcon, MapIcon, StarIcon } from '@/shared/ui/icons';
-import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
-import { toast } from '@/shared/ui/toast';
+
+import { TripListToolbar } from './components/tripListToolbar';
+import { TripGroup } from './components/tripGroup';
+import { EmptyTripList } from './components/emptyTripList';
+import { TripListSkeleton } from './components/tripListSkeleton';
 
 export type TripListPageProps = {
   onTripSelect?: (tripId: number) => void;
+  initialFavoriteOnly?: boolean;
 };
 
 const navigationItems: BottomNavigationItem[] = [
@@ -36,15 +36,15 @@ const navigationItems: BottomNavigationItem[] = [
   { id: 'profile', label: '마이페이지', icon: 'profile', href: '/mypage' },
 ];
 
-export function TripListPage({ onTripSelect }: TripListPageProps) {
+export function TripListPage({ onTripSelect, initialFavoriteOnly = false }: TripListPageProps) {
   const [sortOrder, setSortOrder] = useState<TripSortOrder>('newest');
-  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [favoriteOnly, setFavoriteOnly] = useState(initialFavoriteOnly);
 
   const filter = useMemo<TripListFilter>(
     () => ({ sort: toTripListSort(sortOrder), favorite: favoriteOnly }),
     [favoriteOnly, sortOrder],
   );
-  const { trips, viewState, refetch } = useTripList(filter);
+  const { trips, viewState, refetch, isFetchingNextPage, hasListError } = useTripList(filter);
   const { mutate: changeFavorite } = useTripFavorite(filter);
   const visibleTrips = favoriteOnly ? trips.filter((trip) => trip.favorite) : trips;
   const favoriteTrips = favoriteOnly ? visibleTrips : visibleTrips.filter((trip) => trip.favorite);
@@ -65,7 +65,7 @@ export function TripListPage({ onTripSelect }: TripListPageProps) {
           나의 여행 목록
         </h1>
         {viewState === 'loading' || viewState === 'error' ? (
-          <Skeleton className="mt-2 h-3 w-44" />
+          <Skeleton animation="none" className="mt-2 h-3 w-44" />
         ) : (
           <p className="text-muted mt-1.5 text-xs">
             지금까지 <strong className="text-brand font-bold">{trips.length}개</strong>의 여행을
@@ -110,290 +110,27 @@ export function TripListPage({ onTripSelect }: TripListPageProps) {
           )}
         </>
       )}
-      <BottomNavigation items={navigationItems} activeId="list" />
-    </main>
-  );
-}
-
-function TripListToolbar({
-  sortOrder,
-  favoriteOnly,
-  onSortChange,
-  onFavoriteOnlyChange,
-}: {
-  sortOrder: TripSortOrder;
-  favoriteOnly: boolean;
-  onSortChange: (sortOrder: TripSortOrder) => void;
-  onFavoriteOnlyChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className="mt-4 flex items-center justify-between gap-4">
-      <SelectDropdown
-        label="여행 정렬"
-        value={sortOrder}
-        onChange={onSortChange}
-        options={[
-          { value: 'newest', label: '최신순' },
-          { value: 'oldest', label: '오래된순' },
-        ]}
-      />
-      <label className="flex min-h-9 cursor-pointer items-center gap-2 text-xs font-bold">
-        <span>즐겨찾기만</span>
-        <input
-          type="checkbox"
-          role="switch"
-          aria-label="즐겨찾기만 보기"
-          checked={favoriteOnly}
-          onChange={(event) => onFavoriteOnlyChange(event.target.checked)}
-          className="peer sr-only"
-        />
-        <span className="peer-checked:bg-brand peer-checked:[&>span]:translate-x-4 peer-focus-visible:ring-brand/50 relative h-6 w-10 rounded-full bg-slate-300 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2">
-          <span className="absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform" />
-        </span>
-      </label>
-    </div>
-  );
-}
-
-function TripGroup({
-  label,
-  trips,
-  onFavoriteChange,
-  onTripSelect,
-}: {
-  label?: string;
-  trips: TripListItem[];
-  onFavoriteChange: (tripId: number) => void;
-  onTripSelect?: (tripId: number) => void;
-}) {
-  return (
-    <section aria-label={label ?? '여행'}>
-      {label && <h2 className="text-muted mb-2 px-1 text-xs font-bold">{label}</h2>}
-      <ul className="space-y-2.5">
-        {trips.map((trip, index) => (
-          <li key={trip.id}>
-            <TripCard
-              trip={trip}
-              colorIndex={trip.id + index}
-              onFavoriteChange={onFavoriteChange}
-              onTripSelect={onTripSelect}
-            />
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function TripCard({
-  trip,
-  colorIndex,
-  onFavoriteChange,
-  onTripSelect,
-}: {
-  trip: TripListItem;
-  colorIndex: number;
-  onFavoriteChange: (tripId: number) => void;
-  onTripSelect?: (tripId: number) => void;
-}) {
-  const updating = trip.processingStatus === 'updating';
-
-  return (
-    <article className="border-border-subtle bg-surface relative flex min-h-[106px] overflow-hidden rounded-[18px] border p-3 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-transform active:scale-[0.99]">
-      {updating ? (
-        <button
-          type="button"
-          aria-label={`${trip.name} 여행 수정 중`}
-          aria-disabled="true"
-          onClick={() => toast.info('여행을 수정하고 있어요. 끝나면 다시 열어주세요.')}
-          className="absolute inset-0 cursor-not-allowed rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
-        />
-      ) : onTripSelect ? (
-        <button
-          type="button"
-          aria-label={`${trip.name} 여행 상세 보기`}
-          onClick={() => onTripSelect(trip.id)}
-          className="absolute inset-0 cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
-        />
-      ) : (
-        <Link
-          href={
-            trip.processingStatus === 'processing'
-              ? `/trips/${trip.id}/processing`
-              : `/trips/${trip.id}`
-          }
-          aria-label={`${trip.name} 여행 상세 보기`}
-          className="absolute inset-0 cursor-pointer rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
-        />
-      )}
-      <TripThumbnail trip={trip} colorIndex={colorIndex} />
-      <div className="pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 pr-7">
-        <h3 className="truncate text-sm font-extrabold tracking-[-0.01em]">{trip.name}</h3>
-        <p className="text-muted mt-1 truncate text-[11px]">
-          {trip.locations.slice(0, 3).join(', ')}
+      {isFetchingNextPage && viewState === 'ready' && (
+        <p role="status" className="text-muted mt-4 text-center text-xs">
+          여행을 더 불러오는 중이에요.
         </p>
-        <p className="text-muted mt-1 truncate text-[11px]">
-          {formatShortDate(trip.startDate)} - {formatShortDate(trip.endDate)} · {trip.nights}박
-        </p>
-        {trip.processingStatus === 'processing' ? (
-          <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-[#3973b9]">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-[#3973b9]" />
-            여담이 사진을 정리하고 있어요
-          </p>
-        ) : updating ? (
-          <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-[#3973b9]">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-[#3973b9]" />
-            여담이 여행을 수정하고 있어요
-          </p>
-        ) : (
-          <p className="text-muted mt-1 flex items-center gap-1 text-[11px]">
-            <ImageIcon size="12" /> 사진 {trip.photoCount}장
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        aria-label={`${trip.name} ${trip.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}`}
-        aria-pressed={trip.favorite}
-        onClick={() => onFavoriteChange(trip.id)}
-        className="focus-visible:outline-brand absolute top-3 right-3 z-20 grid size-7 cursor-pointer place-items-center rounded-full focus-visible:outline-2"
-      >
-        <StarIcon
-          fill={trip.favorite ? '#f7b51d' : 'none'}
-          stroke={trip.favorite ? '#f7b51d' : '#a5b0be'}
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          size="20"
-        />
-      </button>
-    </article>
-  );
-}
-
-function TripThumbnail({ trip, colorIndex }: { trip: TripListItem; colorIndex: number }) {
-  if (trip.processingStatus === 'updating') {
-    return (
-      <div
-        className="relative grid h-[82px] w-[82px] shrink-0 place-items-center overflow-hidden rounded-[13px] bg-slate-100 bg-cover bg-center"
-        style={
-          trip.thumbnailUrl
-            ? { backgroundImage: `url(${JSON.stringify(trip.thumbnailUrl)})` }
-            : undefined
-        }
-      >
-        {trip.thumbnailUrl && <span aria-hidden="true" className="absolute inset-0 bg-white/60" />}
-        <span
-          aria-label="여행 수정 중"
-          role="status"
-          className="relative size-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand"
-        />
-      </div>
-    );
-  }
-  if (trip.thumbnailUrl) {
-    return (
-      <div
-        aria-hidden="true"
-        className="h-[82px] w-[82px] shrink-0 rounded-[13px] bg-cover bg-center"
-        style={{ backgroundImage: `url(${JSON.stringify(trip.thumbnailUrl)})` }}
-      />
-    );
-  }
-  if (trip.processingStatus === 'processing') {
-    return (
-      <div className="grid h-[82px] w-[82px] shrink-0 place-items-center rounded-[13px] bg-slate-100">
-        <span
-          aria-label="사진 정리 중"
-          role="status"
-          className="size-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand"
-        />
-      </div>
-    );
-  }
-  return (
-    <div
-      aria-hidden="true"
-      className={`relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[13px] bg-gradient-to-br ${getThumbnailFallbackGradient(colorIndex)}`}
-    >
-      <span className="absolute right-[-10px] bottom-[-18px] size-16 rounded-full bg-white/20" />
-      <span className="absolute bottom-3 left-3 h-1.5 w-12 rounded-full bg-white/30" />
-    </div>
-  );
-}
-
-function EmptyTripList({ favoriteOnly }: { favoriteOnly: boolean }) {
-  return (
-    <section className="flex min-h-[58vh] flex-col items-center justify-center text-center">
-      <span className="grid size-16 place-items-center rounded-full bg-slate-200/55 text-slate-500">
-        <MapIcon strokeLinecap="round" strokeLinejoin="round" size="30" />
-      </span>
-      <h2 className="mt-5 text-[15px] font-extrabold">
-        {favoriteOnly ? '즐겨찾기한 여행이 없어요.' : '아직 기록된 여행이 없어요.'}
-      </h2>
-      <p className="text-muted mt-1 text-xs">
-        {favoriteOnly ? '마음에 드는 여행에 별을 눌러보세요!' : '여행을 만들고 사진을 올려보세요!'}
-      </p>
-      {!favoriteOnly && (
-        <Link
-          href="/trips/create?step=name"
-          className="bg-brand hover:bg-brand-hover focus-visible:outline-brand mt-5 inline-flex min-h-11 items-center gap-1 rounded-full px-5 text-sm font-bold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          <span aria-hidden="true">＋</span> 첫 여행 만들기
-        </Link>
       )}
-    </section>
-  );
-}
-
-function TripListSkeleton({ showError, onRetry }: { showError: boolean; onRetry?: () => void }) {
-  return (
-    <section className="mt-4" aria-label="여행 목록 불러오는 중" role="status">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-20 rounded-full" />
-        <Skeleton className="h-6 w-24 rounded-full" />
-      </div>
-      <div className="mt-4 space-y-2.5">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={index}
-            className="border-border-subtle bg-surface flex min-h-[106px] rounded-[18px] border p-3"
-          >
-            <Skeleton className="h-[82px] w-[82px] shrink-0 rounded-[13px]" />
-            <div className="flex-1 py-1 pl-3">
-              <Skeleton className="h-3.5 w-28" />
-              <Skeleton className="mt-2.5 h-2.5 w-20" />
-              <Skeleton className="mt-2.5 h-2.5 w-36" />
-            </div>
-          </div>
-        ))}
-      </div>
-      {showError && (
+      {hasListError && (
         <div
           role="alert"
-          className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
+          className="text-muted mt-4 flex items-center justify-center gap-2 text-xs"
         >
-          <AlertCircleIcon
-            stroke="#ffb3a8"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            size="18"
-          />
-          <span className="flex-1">여행을 가져오지 못했어요.</span>
+          <span>여행 목록을 갱신하지 못했어요.</span>
           <button
             type="button"
-            onClick={onRetry}
-            className="cursor-pointer font-bold text-[#a9c8ff] underline-offset-2 hover:underline"
+            onClick={() => void refetch()}
+            className="text-brand cursor-pointer font-bold underline"
           >
             다시 시도
           </button>
         </div>
       )}
-    </section>
+      <BottomNavigation items={navigationItems} activeId="list" />
+    </main>
   );
-}
-
-function formatShortDate(date: string) {
-  return date.slice(2).replaceAll('-', '.');
 }

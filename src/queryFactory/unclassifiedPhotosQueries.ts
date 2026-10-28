@@ -19,8 +19,11 @@ export const unclassifiedPhotosQueries = {
   photos: (tripId: number, issue: UnclassifiedIssue) =>
     infiniteQueryOptions({
       queryKey: unclassifiedPhotosQueries.photoKeys(tripId, issue),
-      queryFn: ({ pageParam }) => getUnclassifiedPhotos(tripId, issue, pageParam),
+      queryFn: ({ pageParam, signal }) => getUnclassifiedPhotos(tripId, issue, pageParam, signal),
       initialPageParam: null as string | null,
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      getNextPageParam: (lastPage, _pages, _lastParam, params) =>
+        lastPage.hasNext && lastPage.nextCursor && !params.includes(lastPage.nextCursor)
+          ? lastPage.nextCursor
+          : undefined,
     }),
 };

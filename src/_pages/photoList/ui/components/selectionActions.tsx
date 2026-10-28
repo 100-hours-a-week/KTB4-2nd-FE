@@ -3,6 +3,7 @@
 import { createPortal } from 'react-dom';
 
 import { BULK_DOWNLOAD_LIMIT } from '@/features/photoList';
+import { PhotoSelectionProgress } from '@/features/photoList/ui/photoSelectionProgress';
 import { Button } from '@/shared/ui/button';
 import { DownloadIcon, TrashIcon } from '@/shared/ui/icons';
 
@@ -12,14 +13,18 @@ export function SelectionActions({
   isDownloading,
   onDownload,
   onDelete,
+  selectingAll,
 }: {
   disabled: boolean;
   downloadLimitExceeded: boolean;
   isDownloading: boolean;
   onDownload: () => void;
   onDelete: () => void;
+  selectingAll?: { loadedCount: number; onCancel: () => void };
 }) {
   if (typeof document === 'undefined') return null;
+
+  if (selectingAll) return <PhotoSelectionProgress {...selectingAll} />;
 
   return createPortal(
     <div

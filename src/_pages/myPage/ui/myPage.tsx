@@ -3,21 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useLogout, useWithdraw } from '@/features/manageAccount';
-import { Avatar } from '@/shared/ui/avatar';
+import { useUserStats } from '@/features/userStats';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 import { Button } from '@/shared/ui/button';
-import { Card } from '@/shared/ui/card';
-import { Dialog, DialogActions } from '@/shared/ui/dialog';
-import { DocumentIcon, KakaoIcon, ShieldIcon } from '@/shared/ui/icons';
-import { ListRow } from '@/shared/ui/listRow';
-import { Skeleton } from '@/shared/ui/skeleton';
+import { DocumentIcon, ShieldIcon, StarIcon } from '@/shared/ui/icons';
 import { toast } from '@/shared/ui/toast';
 
-export type MyPageUser = {
-  nickname: string;
-  oauthConnected: boolean;
-  profileImageUrl?: string | null;
-};
+import { MenuGroup, MenuRow } from './components/menuGroup';
+import { ProfileCard, ProfileCardSkeleton, type MyPageUser } from './components/profileCard';
+import { StatsSummary } from './components/statsSummary';
+import { StorageCard } from './components/storageCard';
+import { WithdrawDialog } from './components/withdrawDialog';
+
+export type { MyPageUser };
 
 export type MyPageProps = {
   user: MyPageUser | null;
@@ -44,6 +42,7 @@ export function MyPage({ user }: MyPageProps) {
   const failureNotifiedRef = useRef(false);
   const { mutate: requestLogout, isPending: isLoggingOut } = useLogout();
   const { mutate: requestWithdraw, isPending: isWithdrawing } = useWithdraw();
+  const { stats } = useUserStats();
 
   useEffect(() => {
     if (user) {
@@ -60,30 +59,46 @@ export function MyPage({ user }: MyPageProps) {
     <main className="page-enter text-brand bg-surface relative mx-auto flex h-full w-full max-w-107.5 flex-col overflow-y-auto px-5 pt-[max(32px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))]">
       <h1 className="text-[26px] leading-tight font-extrabold tracking-[-0.03em]">마이페이지</h1>
 
-      <section aria-label="계정 정보" className="mt-7 flex flex-col gap-2.5">
+      <div className="mt-7 flex flex-col gap-2.5">
         {user ? <ProfileCard user={user} /> : <ProfileCardSkeleton />}
+        <StatsSummary stats={stats} />
+        <StorageCard stats={stats} />
+      </div>
 
-        <ListRow
-          href="/terms/service"
-          icon={<DocumentIcon strokeLinecap="round" strokeLinejoin="round" size="20" />}
-          label="이용약관"
-        />
+      <div className="mt-7 flex flex-col gap-6">
+        <MenuGroup title="내 여행">
+          <MenuRow
+            href="/mypage/favorites"
+            icon={
+              <StarIcon strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" size="20" />
+            }
+            label="즐겨찾기한 여행"
+            value={stats ? `${stats.favoriteTripCount}개` : undefined}
+          />
+        </MenuGroup>
 
-        <ListRow
-          href="/terms/privacy"
-          icon={<ShieldIcon strokeLinecap="round" strokeLinejoin="round" size="20" />}
-          label="개인정보처리방침"
-        />
+        <MenuGroup title="정보">
+          <MenuRow
+            href="/terms/service"
+            icon={<DocumentIcon strokeLinecap="round" strokeLinejoin="round" size="20" />}
+            label="이용약관"
+          />
+          <MenuRow
+            href="/terms/privacy"
+            icon={<ShieldIcon strokeLinecap="round" strokeLinejoin="round" size="20" />}
+            label="개인정보처리방침"
+          />
+        </MenuGroup>
 
         <Button
           variant="secondary"
           onClick={() => requestLogout()}
           isLoading={isLoggingOut}
-          className="rounded-row mt-1 w-full text-[15px]"
+          className="rounded-row w-full text-[15px]"
         >
           로그아웃
         </Button>
-      </section>
+      </div>
 
       <div className="mt-8 flex flex-col items-center gap-2.5">
         <button
@@ -96,81 +111,14 @@ export function MyPage({ user }: MyPageProps) {
         <p className="text-muted/70 text-[11px] font-medium">여담 · {APP_VERSION}</p>
       </div>
 
-      <Dialog
-        destructive
+      <WithdrawDialog
         open={withdrawOpen}
+        isWithdrawing={isWithdrawing}
         onClose={() => setWithdrawOpen(false)}
-        title="정말 탈퇴하시겠어요?"
-        description={
-          <>
-            탈퇴하면 모든 여행과 사진이 삭제되며
-            <br />
-            다시 복구할 수 없어요.
-          </>
-        }
-      >
-        <DialogActions>
-          <Button
-            variant="secondary"
-            onClick={() => setWithdrawOpen(false)}
-            disabled={isWithdrawing}
-            className="min-h-11 w-full px-0 text-sm"
-          >
-            취소
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => requestWithdraw(undefined, { onError: () => setWithdrawOpen(false) })}
-            isLoading={isWithdrawing}
-            className="min-h-11 w-full px-0 text-sm"
-          >
-            탈퇴하기
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={() => requestWithdraw(undefined, { onError: () => setWithdrawOpen(false) })}
+      />
 
       <BottomNavigation items={navigationItems} activeId="profile" />
     </main>
-  );
-}
-
-function ProfileCard({ user }: { user: MyPageUser }) {
-  return (
-    <Card className="flex items-center gap-3.5 px-4 py-4">
-      <Avatar src={user.profileImageUrl} alt={`${user.nickname} 프로필 사진`} />
-      <div className="min-w-0">
-        <p className="truncate text-[15px] leading-6 font-bold tracking-[-0.01em]">
-          {user.nickname}
-        </p>
-        <p className="text-muted mt-1 flex items-center gap-1.5 text-xs font-medium">
-          <KakaoAccountBadge />
-          {user.oauthConnected ? '카카오 계정으로 연결됨' : '카카오 계정 연결 필요'}
-        </p>
-      </div>
-    </Card>
-  );
-}
-
-function ProfileCardSkeleton() {
-  return (
-    <Card
-      className="flex items-center gap-3.5 px-4 py-4"
-      role="status"
-      aria-label="프로필 불러오는 중"
-    >
-      <Skeleton circle className="size-12" />
-      <div className="min-w-0 flex-1">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="mt-2 h-3 w-40" />
-      </div>
-    </Card>
-  );
-}
-
-function KakaoAccountBadge() {
-  return (
-    <span className="grid size-4 shrink-0 place-items-center rounded-full bg-[#FEE500] text-[#191919]">
-      <KakaoIcon fill="currentColor" size="10" variant="badge" />
-    </span>
   );
 }
