@@ -2,6 +2,7 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
+import { getTripPlaceMap } from '@/features/tripDetail/api/getTripPlaceMap';
 
 export const tripDetailQueries = {
   allKeys: () => ['tripDetail'] as const,
@@ -20,5 +21,11 @@ export const tripDetailQueries = {
       queryFn: ({ pageParam }) => getTripPlaceFolders(tripId, pageParam),
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }),
+  placeMap: (tripId: number) =>
+    queryOptions({
+      queryKey: [...tripDetailQueries.allKeys(), 'placeMap', tripId] as const,
+      queryFn: () => getTripPlaceMap(tripId),
+      retry: false,
     }),
 };

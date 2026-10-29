@@ -1,9 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import {
+  TripPlaceMap,
   useDeleteTrip,
   useTripPlaceFolders,
   useTripSummary,
@@ -21,7 +22,7 @@ import { StoryEmptyDialog } from './components/storyEmptyDialog';
 import { TripDetailMenu } from './components/tripDetailMenu';
 import { TripMeta } from './components/tripMeta';
 import { TripShortcuts } from './components/tripShortcuts';
-import { ViewModeToggle } from './components/viewModeToggle';
+import { type TripDetailViewMode, ViewModeToggle } from './components/viewModeToggle';
 
 export type TripDetailPageProps = {
   trip: TripDetail;
@@ -29,6 +30,9 @@ export type TripDetailPageProps = {
 
 export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const viewMode: TripDetailViewMode = searchParams.get('view') === 'map' ? 'map' : 'list';
   const trip = useTripSummary(initialTrip);
   const { folders, viewState, refetch } = useTripPlaceFolders(trip.id);
   const unclassified = useUnclassifiedFolders(trip.id);
@@ -46,6 +50,12 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   };
 
   const showUnsupportedToast = () => toast.warning('아직 지원하지 않는 기능이에요.');
+
+  // 사진 목록에서 돌아왔을 때 보던 형태를 유지하도록 URL에 남긴다.
+  function changeViewMode(mode: TripDetailViewMode) {
+    if (mode === viewMode) return;
+    router.replace(mode === 'map' ? `${pathname}?view=map` : pathname, { scroll: false });
+  }
 
   function openStory() {
     if (trip.hasStory) {
@@ -76,10 +86,12 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
 
       <TripShortcuts tripId={trip.id} tripName={trip.name} onOpenStory={openStory} />
 
-      <ViewModeToggle onMapClick={showUnsupportedToast} />
+      <ViewModeToggle mode={viewMode} onChange={changeViewMode} />
 
       <section aria-label="장소별 사진" className="mt-5">
-        {viewState !== 'ready' ? (
+        {viewMode === 'map' ? (
+          <TripPlaceMap tripId={trip.id} tripName={trip.name} />
+        ) : viewState !== 'ready' ? (
           <PlaceFolderSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
         ) : folders.length === 0 ? (
           <EmptyPlaceFolders

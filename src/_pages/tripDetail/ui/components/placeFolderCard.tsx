@@ -4,12 +4,13 @@ import { DecodedThumbnail } from '@/shared/ui/decodedThumbnail';
 
 import {
   PLACE_FOLDER_ACCENT_GRADIENT,
+  placePhotosHref,
   type TripDetail,
   type TripPlaceFolder,
 } from '@/features/tripDetail';
 
 export function PlaceFolderCard({ trip, folder }: { trip: TripDetail; folder: TripPlaceFolder }) {
-  const href = `/trips/${trip.id}/places/${folder.id}/photos?place=${encodeURIComponent(folder.name)}&trip=${encodeURIComponent(trip.name)}`;
+  const href = placePhotosHref(trip, folder);
 
   return (
     <Link

@@ -24,6 +24,8 @@ vi.mock('next/navigation', () => ({
     },
     back: () => window.history.back(),
   }),
+  usePathname: () => window.location.pathname,
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),

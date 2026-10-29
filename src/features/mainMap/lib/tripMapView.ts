@@ -1,14 +1,12 @@
 import type { KakaoMap, KakaoMaps } from './kakaoMaps';
-import {
-  getTripMarkerThumbnail,
-  type TripMapMarker,
-  type TripMarkerGroup,
-} from '../model/tripMapMarker';
+import { getTripMarkerThumbnail, type TripMarkerGroup } from '../model/tripMapMarker';
 
 export const KOREA_BOUNDS = { south: 33.05, west: 124.55, north: 38.65, east: 131.9 };
 export const KOREA_CENTER = { latitude: 35.85, longitude: 128.2 };
 
-export function isValidPosition(trip: TripMapMarker) {
+type MapPosition = { latitude: number; longitude: number };
+
+export function isValidPosition(trip: MapPosition) {
   return (
     Number.isFinite(trip.latitude) &&
     Number.isFinite(trip.longitude) &&
@@ -19,7 +17,17 @@ export function isValidPosition(trip: TripMapMarker) {
   );
 }
 
-export function fitMap(map: KakaoMap, maps: KakaoMaps, trips: TripMapMarker[]) {
+export type FitMapOptions = {
+  padding?: [top: number, right: number, bottom: number, left: number];
+  singleLevel?: number;
+};
+
+export function fitMap(
+  map: KakaoMap,
+  maps: KakaoMaps,
+  trips: MapPosition[],
+  { padding = [16, 16, 112, 16], singleLevel = 13 }: FitMapOptions = {},
+) {
   if (
     trips.length === 1 ||
     (trips.length > 1 &&
@@ -28,7 +36,7 @@ export function fitMap(map: KakaoMap, maps: KakaoMaps, trips: TripMapMarker[]) {
       ))
   ) {
     map.setCenter(new maps.LatLng(trips[0].latitude, trips[0].longitude));
-    map.setLevel(13);
+    map.setLevel(singleLevel);
     return;
   }
   const bounds =
@@ -39,7 +47,7 @@ export function fitMap(map: KakaoMap, maps: KakaoMaps, trips: TripMapMarker[]) {
         )
       : new maps.LatLngBounds();
   trips.forEach((trip) => bounds.extend(new maps.LatLng(trip.latitude, trip.longitude)));
-  map.setBounds(bounds, 16, 16, 112, 16);
+  map.setBounds(bounds, ...padding);
 }
 
 // Kakao CustomOverlay는 React 요소가 아닌 DOM content를 받는다.
@@ -67,10 +75,6 @@ export function makeMarkerContent(group: TripMarkerGroup, onClick: (marker: HTML
     pin.append(image);
   }
   button.append(pin);
-  const label = document.createElement('span');
-  label.className = 'trip-map-region';
-  label.textContent = group.regionName;
-  button.append(label);
   if (group.tripCount > 1) {
     const count = document.createElement('span');
     count.className = 'trip-map-count';

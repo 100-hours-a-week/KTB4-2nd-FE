@@ -8,6 +8,15 @@ export type TripPlaceFolder = {
   accent: TripPlaceFolderAccent;
 };
 
+export type TripPlaceMarker = {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  photoCount: number;
+  thumbnailUrl: string | null;
+};
+
 export type TripDetail = {
   id: number;
   name: string;

@@ -87,8 +87,7 @@ body {
   background: linear-gradient(145deg, #e4e9e8, #7c8c8c);
   box-shadow: 0 3px 10px #02173055;
   transform: rotate(-45deg);
-  /* 아래를 향한 꼭짓점이 지역 라벨과 맞닿지 않도록 회전 여유분만큼 띄웁니다. */
-  margin-bottom: calc(var(--trip-map-pin-overflow) + 6px);
+  margin-bottom: var(--trip-map-pin-overflow);
 }
 
 .trip-map-pin img {
@@ -96,20 +95,6 @@ body {
   height: 100%;
   object-fit: cover;
   transform: rotate(45deg) scale(1.35);
-}
-
-.trip-map-region {
-  max-width: 110px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: white;
-  padding: 2px 8px;
-  color: var(--brand);
-  font-size: 11px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  box-shadow: 0 2px 6px #02173033;
 }
 
 .trip-map-count {
@@ -127,6 +112,20 @@ body {
   color: white;
   font-size: 11px;
   font-weight: 700;
+}
+
+.trip-map-pin.is-loading {
+  animation: trip-map-pin-loading 1.2s ease-in-out infinite;
+}
+
+.trip-map-pin.is-loading img {
+  opacity: 0;
+}
+
+@keyframes trip-map-pin-loading {
+  50% {
+    filter: brightness(1.12);
+  }
 }
 
 @keyframes page-enter {
