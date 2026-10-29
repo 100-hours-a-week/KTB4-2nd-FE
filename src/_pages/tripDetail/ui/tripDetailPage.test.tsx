@@ -248,33 +248,17 @@ describe('TripDetailPage', () => {
     expect(await screen.findByRole('link', { name: /서귀포/ })).toBeInTheDocument();
   });
 
-  it('링크 공유는 준비 중으로 표시하고 모달 진입을 막는다', async () => {
+  it('더보기 메뉴에서 공유하기를 누르면 공유 모달을 연다', async () => {
     const user = userEvent.setup();
     renderTripDetailPage();
 
     await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
-    const shareItem = screen.getByRole('menuitem', { name: /링크로 공유하기/ });
+    await user.click(screen.getByRole('menuitem', { name: '공유하기' }));
 
-    expect(within(shareItem).getByText('준비 중')).toBeInTheDocument();
-    expect(shareItem).toBeDisabled();
-    await user.click(shareItem);
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: '공유할 이메일' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/공유할 사람/)).not.toBeInTheDocument();
-  });
-
-  it('키보드 메뉴 탐색에서도 준비 중인 링크 공유를 건너뛴다', async () => {
-    const user = userEvent.setup();
-    renderTripDetailPage();
-
-    screen.getByRole('button', { name: '여행 더보기 메뉴' }).focus();
-    await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: /여행 수정/ })).toHaveFocus();
-
-    await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: '여행 삭제' })).toHaveFocus();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: '공유할 이메일을 입력해주세요' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '공유할 이메일' })).toBeInTheDocument();
   });
 
   it('더보기 메뉴에서 여행 삭제를 누르면 확인 창을 표시한다', async () => {
