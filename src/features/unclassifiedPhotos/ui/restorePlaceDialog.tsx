@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { useTripPlaceFolders } from '@/features/tripDetail';
 import { Button } from '@/shared/ui/button';
-import { Dialog } from '@/shared/ui/dialog';
+import { Dialog, DialogActions } from '@/shared/ui/dialog';
 import { Skeleton } from '@/shared/ui/skeleton';
 
 type RestorePlaceDialogProps = {
@@ -48,7 +48,7 @@ function RestorePlaceDialogContent({
       ) : viewState === 'error' ? (
         <div role="alert" className="py-4 text-center">
           <p className="text-muted mb-3 text-xs">장소 폴더를 불러오지 못했어요.</p>
-          <Button variant="secondary" onClick={() => void refetch()} className="text-sm">
+          <Button variant="secondary" size="sm" onClick={() => void refetch()}>
             다시 시도
           </Button>
         </div>
@@ -73,6 +73,7 @@ function RestorePlaceDialogContent({
                 name="restore-place"
                 value={folder.id}
                 checked={selectedId === folder.id}
+                disabled={isRestoring}
                 onChange={() => setSelectedId(folder.id)}
                 className="checked:border-brand focus-visible:outline-brand size-5 shrink-0 appearance-none rounded-full border-2 border-slate-300 bg-white checked:border-[6px] focus-visible:outline-2 focus-visible:outline-offset-2"
               />
@@ -80,18 +81,19 @@ function RestorePlaceDialogContent({
           ))}
         </fieldset>
       )}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Button variant="secondary" onClick={onClose} disabled={isRestoring} className="w-full">
-          취소
-        </Button>
-        <Button
-          disabled={selectedId === null}
-          isLoading={isRestoring}
-          onClick={() => selectedId !== null && onConfirm(selectedId)}
-          className="w-full"
-        >
-          되돌리기
-        </Button>
+      <div className="mt-4">
+        <DialogActions>
+          <Button variant="secondary" onClick={onClose} disabled={isRestoring}>
+            취소
+          </Button>
+          <Button
+            disabled={selectedId === null}
+            isLoading={isRestoring}
+            onClick={() => selectedId !== null && onConfirm(selectedId)}
+          >
+            되돌리기
+          </Button>
+        </DialogActions>
       </div>
     </Dialog>
   );

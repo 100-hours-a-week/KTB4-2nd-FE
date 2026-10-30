@@ -122,6 +122,58 @@ describe('UnclassifiedPhotoListPage', () => {
     await waitFor(() => expect(deletePhotos).toHaveBeenCalledWith([1, 2, 3], 'csrf-token'));
   });
 
+  it('해제 중에는 처리 상태를 표시하고 선택 변경과 중복 작업을 막는다', async () => {
+    let finish!: () => void;
+    vi.mocked(restoreAttachment).mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finish = resolve)),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: '선택' }));
+    await user.click(screen.getByRole('button', { name: '1번째 사진 선택' }));
+    const toolbar = screen.getByRole('toolbar', { name: '선택한 사진 작업' });
+    await user.click(within(toolbar).getByRole('button', { name: '해제' }));
+
+    const restoringButton = within(toolbar).getByRole('button', { name: '해제 중…' });
+    expect(restoringButton).toBeDisabled();
+    expect(restoringButton).toHaveAttribute('aria-busy', 'true');
+    expect(within(toolbar).getByRole('button', { name: '삭제' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '취소' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '전체 선택' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '1번째 사진 선택 해제' })).toBeDisabled();
+    await user.click(restoringButton);
+    expect(restoreAttachment).toHaveBeenCalledTimes(1);
+
+    await act(async () => finish());
+    await waitFor(() => expect(screen.queryByRole('toolbar')).not.toBeInTheDocument());
+  });
+
+  it('삭제 확인 후 처리 중에는 확인 버튼과 하단 작업을 비활성화한다', async () => {
+    let finish!: () => void;
+    vi.mocked(deletePhotos).mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finish = resolve)),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: '선택' }));
+    await user.click(screen.getByRole('button', { name: '전체 선택' }));
+    const toolbar = screen.getByRole('toolbar', { name: '선택한 사진 작업' });
+    await user.click(within(toolbar).getByRole('button', { name: '삭제' }));
+    const dialog = screen.getByRole('alertdialog', { name: '사진 3장을 삭제하시겠습니까?' });
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    const deletingButton = within(toolbar).getByRole('button', { name: '삭제 중…' });
+    expect(deletingButton).toBeDisabled();
+    expect(deletingButton).toHaveAttribute('aria-busy', 'true');
+    expect(within(toolbar).getByRole('button', { name: '해제' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: '처리 중…' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: '취소' })).toBeDisabled();
+    expect(deletePhotos).toHaveBeenCalledTimes(1);
+
+    await act(async () => finish());
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  });
+
   it('처음에는 일반 보기이고 취소 후 다시 진입하면 선택이 초기화된다', async () => {
     const user = userEvent.setup();
     renderPage();
