@@ -9,7 +9,7 @@ export function EmptyPhotoList({ onAdd }: { onAdd: () => void }) {
       </span>
       <h2 className="mt-4 text-base font-extrabold">폴더에 사진이 없어요</h2>
       <p className="text-muted mt-1 text-xs">사진을 추가해보세요!</p>
-      <Button onClick={onAdd} className="mt-5 min-h-10 rounded-full px-5 text-sm">
+      <Button size="sm" onClick={onAdd} className="mt-5">
         ＋ 사진 추가
       </Button>
     </section>

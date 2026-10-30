@@ -213,7 +213,9 @@ describe('PhotoListPage', () => {
     expect(loading.querySelector('div[aria-hidden="true"]')).toHaveStyle({
       paddingBottom: 'calc((100% + 4px) / 3 * 2 - 4px)',
     });
-    expect(screen.getByRole('button', { name: '사진 더 불러오기' })).toBeDisabled();
+    const loadingButton = screen.getByRole('button', { name: '사진 불러오는 중…' });
+    expect(loadingButton).toBeDisabled();
+    expect(loadingButton).toHaveAttribute('aria-busy', 'true');
     await act(async () => finish(page([photo(2)])));
     expect(await screen.findByRole('button', { name: '2번째 사진 보기' })).toBeInTheDocument();
     expect(screen.queryByRole('status', { name: '사진 추가 로딩 중' })).not.toBeInTheDocument();
@@ -469,6 +471,9 @@ describe('PhotoListPage', () => {
 
     const download = screen.getByRole('button', { name: /다운로드/ });
     expect(download).toBeDisabled();
+    expect(download).toHaveAccessibleDescription(
+      '한 번에 200장까지 받을 수 있어요. 선택한 사진 수를 줄여주세요.',
+    );
     expect(screen.getByRole('button', { name: /삭제/ })).toBeEnabled();
     expect(screen.getByRole('status')).toHaveTextContent('한 번에 200장까지 받을 수 있어요.');
     await user.click(download);
@@ -477,6 +482,81 @@ describe('PhotoListPage', () => {
     await user.click(screen.getByRole('button', { name: '1번째 사진 선택 해제' }));
     expect(download).toBeEnabled();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('다운로드 중에는 중복 요청과 선택 변경을 막고 완료 후 다시 활성화한다', async () => {
+    let finish!: (value: { downloadUrl: string; fileName: string }) => void;
+    vi.mocked(issueBulkPhotoDownloadUrl).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(screen.getByRole('button', { name: '전체 선택' }));
+    await user.click(screen.getByRole('button', { name: '다운로드' }));
+
+    const downloading = screen.getByRole('button', { name: '다운로드 중…' });
+    expect(downloading).toBeDisabled();
+    expect(downloading).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: '삭제' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '취소' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '전체 해제' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '1번째 사진 선택 해제' })).toBeDisabled();
+    await user.click(downloading);
+    expect(issueBulkPhotoDownloadUrl).toHaveBeenCalledTimes(1);
+
+    await act(async () =>
+      finish({ downloadUrl: 'https://cdn.test/photos.zip', fileName: 'photos.zip' }),
+    );
+    expect(await screen.findByRole('button', { name: '다운로드' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '취소' })).toBeEnabled();
+    expect(screen.getByRole('heading', { name: '3장 선택됨' })).toBeInTheDocument();
+  });
+
+  it('삭제 중에는 확인창을 유지하고 실패해도 선택한 사진으로 다시 시도할 수 있다', async () => {
+    let fail!: (error: Error) => void;
+    vi.mocked(deletePhotos)
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            fail = reject;
+          }),
+      )
+      .mockResolvedValueOnce(undefined);
+    const user = userEvent.setup();
+    renderPhotoListPage();
+    await findFirstPhoto();
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(screen.getByRole('button', { name: '전체 선택' }));
+    const toolbar = screen.getByRole('toolbar', { name: '선택한 사진 작업' });
+    await user.click(within(toolbar).getByRole('button', { name: '삭제' }));
+    const dialog = screen.getByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: '삭제하기' }));
+
+    const deleting = within(dialog).getByRole('button', { name: '삭제 중…' });
+    expect(deleting).toBeDisabled();
+    expect(deleting).toHaveAttribute('aria-busy', 'true');
+    expect(within(dialog).getByRole('button', { name: '취소' })).toBeDisabled();
+    expect(within(toolbar).getByRole('button', { name: '다운로드' })).toBeDisabled();
+    expect(within(toolbar).getByRole('button', { name: '삭제 중…' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(deletePhotos).toHaveBeenCalledTimes(1);
+
+    await act(async () => fail(new Error('failed')));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: '3장 선택됨' })).toBeInTheDocument();
+    await user.click(within(toolbar).getByRole('button', { name: '삭제' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '삭제하기' }),
+    );
+    await waitFor(() => expect(deletePhotos).toHaveBeenCalledTimes(2));
+    expect(deletePhotos).toHaveBeenLastCalledWith([1, 2, 3], 'csrf-token');
+    await waitFor(() => expect(screen.queryByRole('toolbar')).not.toBeInTheDocument());
   });
 
   it('선택한 사진을 확인 후 일괄 삭제 API로 지운다', async () => {
