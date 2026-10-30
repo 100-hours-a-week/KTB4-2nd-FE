@@ -18,7 +18,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '라벨, 안내 또는 오류 문구를 표시하는 입력창입니다. 오류는 안내 문구보다 우선합니다.',
+          '기본 높이 48px의 한 줄 입력창입니다. 두 형태 모두 글자 수를 오른쪽에 표시하며, 오류는 안내 문구보다 우선합니다.',
       },
     },
   },
@@ -59,4 +59,12 @@ export const CharacterCount: Story = {
       />
     );
   },
+};
+
+export const BoxedCharacterCount: Story = {
+  ...CharacterCount,
+  args: { ...CharacterCount.args, variant: 'boxed' },
+};
+export const BoxedWithError: Story = {
+  args: { variant: 'boxed', error: '여행 이름을 입력해주세요.' },
 };

@@ -13,9 +13,10 @@ const meta = {
       },
     },
   },
-  args: { children: '확인', onClick: fn() },
+  args: { children: '확인', size: 'md', onClick: fn() },
   argTypes: {
     variant: { control: 'select', options: ['primary', 'secondary', 'destructive', 'ghost'] },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
     children: { control: 'text' },
     disabled: { control: 'boolean' },
     isLoading: { control: 'boolean' },
@@ -33,3 +34,22 @@ export const Ghost: Story = { args: { variant: 'ghost', children: '나중에' } 
 export const Disabled: Story = { args: { disabled: true } };
 export const Loading: Story = { args: { isLoading: true } };
 export const CustomLoadingText: Story = { args: { isLoading: true, loadingText: '저장 중…' } };
+
+export const Sizes: Story = {
+  render: (args) => (
+    <div className="flex flex-wrap items-center gap-4">
+      <Button {...args} size="sm">
+        작은 버튼
+      </Button>
+      <Button {...args} size="md">
+        기본 버튼
+      </Button>
+      <Button {...args} size="lg">
+        큰 버튼
+      </Button>
+    </div>
+  ),
+};
+export const LongLabel: Story = {
+  args: { children: '선택한 사진을 여행에 추가하고 계속 진행하기', className: 'w-48' },
+};

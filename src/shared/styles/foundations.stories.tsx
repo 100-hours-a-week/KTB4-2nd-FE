@@ -84,8 +84,8 @@ export const Overview: Story = {
         </ul>
       </section>
       <aside className="rounded-card border border-border-subtle p-5 text-description text-muted">
-        후속 정리: Boxed Input은 현재 최소 96px이며, 한 줄 컨트롤의 기본 높이와 차이가 있습니다.
-        기존 구현은 이 PR에서 변경하지 않습니다.
+        Button은 sm·md·lg 크기를 지원하고, Input은 두 형태 모두 기본 48px입니다. 화면별 개별 스타일
+        전환은 단계적으로 진행합니다.
       </aside>
     </Page>
   ),
@@ -215,7 +215,7 @@ export const ControlSizes: Story = {
   render: () => (
     <Page
       title="컨트롤 높이"
-      description="한 줄 버튼과 입력의 공통 높이 기준입니다. 현재 컴포넌트에 size props를 추가하거나 기존 높이를 일괄 변경하지는 않습니다."
+      description="한 줄 버튼과 입력의 공통 높이 기준입니다. Button의 size props는 sm·md·lg를 지원하며 기본은 md입니다. Input의 기본 높이는 md입니다."
     >
       <ul className="grid items-start gap-4 sm:grid-cols-3">
         {(['sm', 'md', 'lg'] as const).map((size) => (
