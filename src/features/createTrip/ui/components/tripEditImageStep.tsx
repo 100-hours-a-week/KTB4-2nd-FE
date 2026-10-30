@@ -9,7 +9,7 @@ import type { TripEditPhoto } from '../../api/getTripForEdit';
 import { TRIP_IMAGE_MAX_COUNT, validateImageSelection } from '../../model/imageValidation';
 import type { TripCreateFormValues } from '../../model/types';
 import { ImageUploadField } from './imageUploadField';
-import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
+import { TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripEditImageStepProps = {
   existingPhotos: TripEditPhoto[];
@@ -67,7 +67,7 @@ export function TripEditImageStep({
       footer={
         <Button
           type="submit"
-          className={`w-full ${tripCreateButtonClassName}`}
+          className="w-full"
           isLoading={isSubmitting}
           loadingText="저장하는 중…"
         >

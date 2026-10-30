@@ -9,7 +9,7 @@ const preview: Preview = {
     layout: 'centered',
     nextjs: { appDirectory: true },
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
-    options: { storySort: { order: ['Foundations', 'Components'] } },
+    options: { storySort: { order: ['Foundations', 'Components', 'Patterns'] } },
   },
 };
 
