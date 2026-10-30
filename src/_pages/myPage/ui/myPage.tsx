@@ -94,20 +94,16 @@ export function MyPage({ user }: MyPageProps) {
           variant="secondary"
           onClick={() => requestLogout()}
           isLoading={isLoggingOut}
-          className="rounded-row w-full text-[15px]"
+          className="w-full"
         >
           로그아웃
         </Button>
       </div>
 
       <div className="mt-8 flex flex-col items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setWithdrawOpen(true)}
-          className="text-muted hover:text-brand focus-visible:outline-brand cursor-pointer text-[13px] font-medium underline underline-offset-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setWithdrawOpen(true)}>
           탈퇴하기
-        </button>
+        </Button>
         <p className="text-muted/70 text-[11px] font-medium">여담 · {APP_VERSION}</p>
       </div>
 

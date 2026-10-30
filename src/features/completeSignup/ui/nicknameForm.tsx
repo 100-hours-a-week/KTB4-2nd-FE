@@ -82,10 +82,11 @@ export function NicknameForm() {
 
       <Button
         type="submit"
+        size="lg"
         disabled={!isValid}
         isLoading={signupMutation.isPending}
         loadingText="저장 중…"
-        className="mt-auto min-h-14 w-full text-lg"
+        className="mt-auto w-full"
       >
         확인
       </Button>
