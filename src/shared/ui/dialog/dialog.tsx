@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 const FOCUSABLE_SELECTOR =
-  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export type DialogProps = {
   open: boolean;
@@ -44,7 +44,11 @@ export function Dialog({
       const focusable = Array.from(
         panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
       );
-      if (focusable.length === 0) return;
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panelRef.current.focus();
+        return;
+      }
 
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -54,7 +58,7 @@ export function Dialog({
       if (event.shiftKey && (active === first || !panelRef.current.contains(active))) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && active === last) {
+      } else if (!event.shiftKey && (active === last || !panelRef.current.contains(active))) {
         event.preventDefault();
         first.focus();
       }
@@ -70,7 +74,8 @@ export function Dialog({
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', handleKeyDown);
 
-    panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+    const panel = panelRef.current;
+    (panel?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ?? panel)?.focus();
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -82,7 +87,7 @@ export function Dialog({
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-(--layer-overlay) flex items-center justify-center overflow-y-auto px-6 py-6">
       <div
         aria-hidden="true"
         onClick={onClose}
@@ -90,11 +95,12 @@ export function Dialog({
       />
       <div
         ref={panelRef}
+        tabIndex={-1}
         role={destructive ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`bg-surface rounded-sheet relative w-full px-5 pt-6 pb-5 text-center shadow-[0_20px_48px_rgb(2_23_48_/_0.28)] ${size === 'wide' ? 'max-w-[380px]' : 'max-w-[300px]'}`}
+        className={`bg-surface rounded-sheet shadow-dialog relative max-h-[calc(100dvh-48px)] w-full overflow-y-auto px-5 pt-6 pb-5 text-center outline-none ${size === 'wide' ? 'max-w-[380px]' : 'max-w-[300px]'}`}
       >
         {icon && (
           <span
@@ -104,17 +110,11 @@ export function Dialog({
             {icon}
           </span>
         )}
-        <h2
-          id={titleId}
-          className="text-brand text-base font-bold tracking-[-0.01em] wrap-break-word"
-        >
+        <h2 id={titleId} className="text-brand text-section-title wrap-break-word">
           {title}
         </h2>
         {description && (
-          <p
-            id={descriptionId}
-            className="text-muted mt-2 text-[13px] leading-relaxed wrap-break-word"
-          >
+          <p id={descriptionId} className="text-muted text-description mt-2 wrap-break-word">
             {description}
           </p>
         )}
@@ -126,5 +126,9 @@ export function Dialog({
 }
 
 export function DialogActions({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-2">{children}</div>;
+  return (
+    <div className="grid grid-cols-2 gap-2 [&>button]:min-w-0 [&>button]:w-full [&>button]:px-3">
+      {children}
+    </div>
+  );
 }

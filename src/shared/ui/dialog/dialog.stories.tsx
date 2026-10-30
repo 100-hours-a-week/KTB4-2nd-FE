@@ -43,7 +43,7 @@ const meta = {
       <>
         <Button onClick={() => updateArgs({ open: true })}>다이얼로그 열기</Button>
         <Dialog {...args} onClose={close}>
-          <div className="mb-5 text-sm text-muted">{args.children}</div>
+          <div className="text-description text-muted mb-5">{args.children}</div>
           {args.destructive ? (
             <DialogActions>
               <Button variant="secondary" onClick={close}>
@@ -89,5 +89,16 @@ export const Wide: Story = {
     size: 'wide',
     title: '공유 전에 확인해주세요',
     children: '여행에 포함된 사진과 이야기가 공유됩니다. 공개할 내용을 확인한 뒤 진행해주세요.',
+  },
+};
+
+export const LongContent: Story = {
+  args: {
+    size: 'wide',
+    title: '여행에 포함된 사진과 이야기를 확인해주세요',
+    description: '내용이 길면 패널 내부에서 스크롤할 수 있습니다.',
+    children: '여행 사진과 이야기가 함께 공유됩니다. 공개할 내용을 확인한 뒤 진행해주세요. '.repeat(
+      30,
+    ),
   },
 };

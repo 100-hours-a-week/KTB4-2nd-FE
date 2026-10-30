@@ -432,7 +432,7 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
             variant="secondary"
             onClick={() => setPendingDeleteIds([])}
             disabled={isDeleting}
-            className="min-h-11 w-full px-0 text-sm"
+            className="w-full"
           >
             취소
           </Button>
@@ -440,7 +440,7 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
             variant="destructive"
             onClick={confirmDelete}
             isLoading={isDeleting}
-            className="min-h-11 w-full px-0 text-sm"
+            className="w-full"
           >
             삭제하기
           </Button>

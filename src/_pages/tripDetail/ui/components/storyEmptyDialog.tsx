@@ -26,14 +26,10 @@ export function StoryEmptyDialog({
       }
     >
       <div className="flex flex-col gap-1">
-        <Button onClick={onCreate} className="min-h-11 w-full px-0 text-sm">
+        <Button onClick={onCreate} className="w-full">
           스토리 만들기
         </Button>
-        <Button
-          variant="ghost"
-          onClick={onClose}
-          className="min-h-10 w-full px-0 text-[13px] font-medium"
-        >
+        <Button variant="ghost" onClick={onClose} className="w-full">
           나중에 할게요
         </Button>
       </div>
