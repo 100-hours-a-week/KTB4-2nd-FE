@@ -81,19 +81,14 @@ function RestorePlaceDialogContent({
         </fieldset>
       )}
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <Button
-          variant="secondary"
-          onClick={onClose}
-          disabled={isRestoring}
-          className="min-h-11 w-full px-0 text-sm"
-        >
+        <Button variant="secondary" onClick={onClose} disabled={isRestoring} className="w-full">
           취소
         </Button>
         <Button
           disabled={selectedId === null}
           isLoading={isRestoring}
           onClick={() => selectedId !== null && onConfirm(selectedId)}
-          className="min-h-11 w-full px-0 text-sm"
+          className="w-full"
         >
           되돌리기
         </Button>

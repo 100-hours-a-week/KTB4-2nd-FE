@@ -26,11 +26,11 @@ export function StoryCancelDialog({
           variant="secondary"
           disabled={!canCancel || isCanceling}
           onClick={onConfirm}
-          className="w-full min-h-11 px-0 text-sm"
+          className="w-full"
         >
           취소하기
         </Button>
-        <Button onClick={onClose} className="w-full min-h-11 px-0 text-sm">
+        <Button onClick={onClose} className="w-full">
           이어서 만들기
         </Button>
       </DialogActions>

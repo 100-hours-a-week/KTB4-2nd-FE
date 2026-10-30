@@ -19,10 +19,10 @@ export function PhotoDeleteDialog({
       description="삭제 후에는 되돌릴 수 없습니다."
     >
       <DialogActions>
-        <Button variant="secondary" onClick={onCancel} className="min-h-11 w-full px-0 text-sm">
+        <Button variant="secondary" onClick={onCancel} className="w-full">
           취소
         </Button>
-        <Button variant="destructive" onClick={onConfirm} className="min-h-11 w-full px-0 text-sm">
+        <Button variant="destructive" onClick={onConfirm} className="w-full">
           삭제하기
         </Button>
       </DialogActions>
