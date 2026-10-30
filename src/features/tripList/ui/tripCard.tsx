@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getThumbnailFallbackGradient } from '@/shared/config/thumbnailGradient';
 import { DecodedThumbnail } from '@/shared/ui/decodedThumbnail';
 import { ImageIcon, StarIcon } from '@/shared/ui/icons';
+import { IconButton } from '@/shared/ui/iconButton';
 import { toast } from '@/shared/ui/toast';
 
 import type { TripListItem } from '../model/types';
@@ -51,7 +52,7 @@ export function TripCard({
         />
       )}
       <TripThumbnail trip={trip} colorIndex={colorIndex} />
-      <div className="pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 pr-7">
+      <div className="pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 pr-11">
         <h3 className="truncate text-sm font-extrabold tracking-[-0.01em]">{trip.name}</h3>
         <p className="text-muted mt-1 truncate text-[11px]">
           {trip.locations.slice(0, 3).join(', ')}
@@ -75,14 +76,14 @@ export function TripCard({
           </p>
         )}
       </div>
-      <button
-        type="button"
+      <IconButton
         aria-label={`${trip.name} ${trip.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}`}
         aria-pressed={trip.favorite}
         onClick={() => onFavoriteChange(trip.id)}
-        className="focus-visible:outline-brand absolute top-3 right-3 z-20 grid size-7 cursor-pointer place-items-center rounded-full focus-visible:outline-2"
+        className="absolute top-1 right-1 z-20"
       >
         <StarIcon
+          aria-hidden="true"
           fill={trip.favorite ? '#f7b51d' : 'none'}
           stroke={trip.favorite ? '#f7b51d' : '#a5b0be'}
           strokeWidth="1.7"
@@ -90,7 +91,7 @@ export function TripCard({
           strokeLinejoin="round"
           size="20"
         />
-      </button>
+      </IconButton>
     </article>
   );
 }

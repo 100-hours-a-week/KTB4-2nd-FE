@@ -40,3 +40,18 @@ export const InverseDisabled: Story = {
     ),
   ],
 };
+
+export const Favorite: Story = {
+  args: {
+    'aria-label': '즐겨찾기 추가',
+    'aria-pressed': false,
+    children: <StarIcon size="20" stroke="#a5b0be" fill="none" />,
+  },
+};
+export const FavoriteSelected: Story = {
+  args: {
+    'aria-label': '즐겨찾기 해제',
+    'aria-pressed': true,
+    children: <StarIcon size="20" stroke="#f7b51d" fill="#f7b51d" />,
+  },
+};
