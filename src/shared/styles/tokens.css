@@ -1,0 +1,111 @@
+/* 기존 색상·모서리 값은 호환을 위해 유지합니다. */
+:root {
+  --app-background: #f4f6f8;
+  --app-backdrop: #dbe2eb;
+  --foreground: #171717;
+  --brand: #021730;
+  --brand-hover: #132c49;
+  --brand-active: #010e1e;
+  --surface: #ffffff;
+  --field-border: #596b83;
+  --muted: #64748b;
+  --danger: #ff5257;
+  --danger-strong: #b64541;
+  --danger-strong-hover: #a03b37;
+  --danger-strong-active: #8d3430;
+  --success: #15803d;
+  --warning: #d97706;
+  --surface-subtle: #f5f7f9;
+  --surface-subtle-hover: #eef1f5;
+  --border-subtle: #e5e9ef;
+  --control-radius: 8px;
+  --row-radius: 12px;
+  --card-radius: 16px;
+  --sheet-radius: 20px;
+  --pill-radius: 999px;
+
+  /* Tailwind의 기본 간격 단위를 그대로 사용합니다. */
+  --space-1: calc(var(--spacing) * 1);
+  --space-2: calc(var(--spacing) * 2);
+  --space-3: calc(var(--spacing) * 3);
+  --space-4: calc(var(--spacing) * 4);
+  --space-6: calc(var(--spacing) * 6);
+  --space-8: calc(var(--spacing) * 8);
+  --space-12: calc(var(--spacing) * 12);
+
+  /* 후속 컴포넌트 표준화에서 적용할 컨트롤 높이입니다. */
+  --control-height-sm: 40px;
+  --control-height-md: 48px;
+  --control-height-lg: 56px;
+
+  --layer-base: 0;
+  --layer-header: 20;
+  --layer-navigation: 40;
+  --layer-overlay: 50;
+  --layer-toast: 100;
+
+  --motion-fast: 150ms;
+  --motion-normal: 200ms;
+  --motion-enter: 240ms;
+  --motion-ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+@theme static inline {
+  --color-app-background: var(--app-background);
+  --color-app-backdrop: var(--app-backdrop);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-active: var(--brand-active);
+  --color-surface: var(--surface);
+  --color-field-border: var(--field-border);
+  --color-muted: var(--muted);
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-strong-hover: var(--danger-strong-hover);
+  --color-danger-strong-active: var(--danger-strong-active);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-subtle-hover: var(--surface-subtle-hover);
+  --color-border-subtle: var(--border-subtle);
+  --radius-control: var(--control-radius);
+  --radius-row: var(--row-radius);
+  --radius-card: var(--card-radius);
+  --radius-sheet: var(--sheet-radius);
+  --radius-pill: var(--pill-radius);
+  --font-sans: var(--font-suit);
+
+  --spacing-control-sm: var(--control-height-sm);
+  --spacing-control-md: var(--control-height-md);
+  --spacing-control-lg: var(--control-height-lg);
+
+  --shadow-menu: 0 10px 30px rgb(2 23 48 / 0.14);
+  --shadow-dialog: 0 20px 48px rgb(2 23 48 / 0.28);
+  --shadow-navigation: 0 -4px 20px rgb(2 23 48 / 0.05);
+
+  --text-page-title: 1.5rem;
+  --text-page-title--line-height: 1.35;
+  --text-page-title--font-weight: 800;
+  --text-page-title--letter-spacing: -0.04em;
+  --text-section-title: 1.0625rem;
+  --text-section-title--line-height: 1.4;
+  --text-section-title--font-weight: 800;
+  --text-section-title--letter-spacing: -0.02em;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 400;
+  --text-body--letter-spacing: 0;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.5;
+  --text-label--font-weight: 600;
+  --text-label--letter-spacing: 0;
+  --text-description: 0.8125rem;
+  --text-description--line-height: 1.6;
+  --text-description--font-weight: 400;
+  --text-description--letter-spacing: 0;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.5;
+  --text-caption--font-weight: 500;
+  --text-caption--letter-spacing: 0;
+}
