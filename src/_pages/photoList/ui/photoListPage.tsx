@@ -10,6 +10,7 @@ import {
   usePhotoDownload,
   usePlacePhotos,
 } from '@/features/photoList';
+import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
 import { EmptyPhotoList } from './components/emptyPhotoList';
@@ -199,8 +200,8 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
         openPhoto(null);
         leaveSelectionMode();
       },
+      onSettled: () => setPendingDeleteIds([]),
     });
-    setPendingDeleteIds([]);
   }
 
   function handleBack() {
@@ -224,7 +225,8 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
         onEnterSelection={() => setSelectionMode(true)}
         onCancelSelection={leaveSelectionMode}
         onToggleAll={() => void toggleAll()}
-        selectionDisabled={isSelectingAll}
+        selectionDisabled={isSelectingAll || isDownloading || isDeleting}
+        cancelDisabled={isDownloading || isDeleting}
       />
 
       <p className="text-muted mt-1 truncate text-[11px]">
@@ -251,7 +253,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
                   index={index}
                   selectionMode={selectionMode}
                   selected={selected}
-                  disabled={isSelectingAll}
+                  disabled={isSelectingAll || isDownloading || isDeleting}
                   onActivate={() => (selectionMode ? togglePhoto(photo.id) : openPhoto(photo.id))}
                   onLongPress={() => selectPhotoFromLongPress(photo.id)}
                 />
@@ -274,17 +276,20 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
               <p className="my-2 text-sm text-slate-500">사진을 더 불러오는 중…</p>
             </div>
           )}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={isFetchingNextPage || isSelectingAll}
-            className="mt-3 rounded-lg bg-slate-100 px-4 py-3 text-sm disabled:opacity-50"
+            isLoading={isFetchingNextPage}
+            loadingText="사진 불러오는 중…"
+            className="mt-3"
             onClick={() => {
               if (invalidCursor) void refetch();
               else void loadNextPage().catch(() => {});
             }}
           >
             {nextPageError ? '사진 추가 로딩 다시 시도' : '사진 더 불러오기'}
-          </button>
+          </Button>
         </div>
       )}
       {selectionMode && photos.length > 0 && (
@@ -292,6 +297,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
           disabled={selectedCount === 0 || isDownloading || isDeleting || isSelectingAll}
           downloadLimitExceeded={selectedCount > BULK_DOWNLOAD_LIMIT}
           isDownloading={isDownloading}
+          isDeleting={isDeleting}
           selectingAll={
             isSelectingAll ? { loadedCount: photos.length, onCancel: cancelSelectAll } : undefined
           }
@@ -310,6 +316,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
           hasMorePhotos={hasNextPage}
           previousDisabled={hasNextPage && activeIndex === 0}
           navigationPending={navigationPending}
+          actionsDisabled={isDownloading || isDeleting}
           onClose={() => openPhoto(null)}
           onPrevious={() => openPhoto(photos[(activeIndex - 1 + photos.length) % photos.length].id)}
           onNext={() => void nextPhoto()}
@@ -320,6 +327,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
 
       <PhotoDeleteDialog
         count={pendingDeleteIds.length}
+        isDeleting={isDeleting}
         onCancel={() => setPendingDeleteIds([])}
         onConfirm={confirmDelete}
       />
