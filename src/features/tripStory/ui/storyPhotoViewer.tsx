@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 
 import { photoListQueries } from '@/queryFactory';
 import { toast } from '@/shared/ui/toast';
+import { IconButton } from '@/shared/ui/iconButton';
 
 import { getStoryPhotoLabel, type StoryDay, type StoryPhoto } from '../model/types';
 
@@ -91,14 +92,14 @@ export function StoryPhotoViewer({
       className="fixed top-[var(--app-vertical-offset)] right-0 bottom-[var(--app-vertical-offset)] left-0 z-40 mx-auto flex w-full max-w-[430px] flex-col bg-[#070a0d] text-white"
     >
       <header className="flex min-h-16 items-center justify-between px-4 pt-[env(safe-area-inset-top)]">
-        <button
-          type="button"
+        <IconButton
+          tone="inverse"
           aria-label="사진 상세보기 닫기"
           onClick={onClose}
-          className="grid size-11 cursor-pointer place-items-center rounded-xl bg-white/10 text-2xl hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="bg-white/10 text-2xl hover:bg-white/20"
         >
           <span aria-hidden="true">×</span>
-        </button>
+        </IconButton>
         <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white/75">
           원본 화질
         </span>
@@ -133,15 +134,15 @@ export function StoryPhotoViewer({
         </p>
         <p className="mt-1.5 text-sm font-semibold leading-6 wrap-break-word">{photo.sentence}</p>
         <div className="mt-5 flex items-center justify-between">
-          <button
-            type="button"
+          <IconButton
+            tone="inverse"
             aria-label="이전 사진"
             disabled={total <= 1}
             onClick={onPrevious}
-            className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/10 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white disabled:opacity-30"
+            className="bg-white/10 hover:bg-white/20 disabled:opacity-30"
           >
-            ←
-          </button>
+            <span aria-hidden="true">←</span>
+          </IconButton>
           <p
             aria-live="polite"
             aria-label="사진 순서"
@@ -149,15 +150,15 @@ export function StoryPhotoViewer({
           >
             {current} / {total}
           </p>
-          <button
-            type="button"
+          <IconButton
+            tone="inverse"
             aria-label="다음 사진"
             disabled={total <= 1}
             onClick={onNext}
-            className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/10 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white disabled:opacity-30"
+            className="bg-white/10 hover:bg-white/20 disabled:opacity-30"
           >
-            →
-          </button>
+            <span aria-hidden="true">→</span>
+          </IconButton>
         </div>
       </footer>
     </section>,

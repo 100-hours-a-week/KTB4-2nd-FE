@@ -1,4 +1,5 @@
 import { ChevronLeftIcon } from '@/shared/ui/icons';
+import { IconButton } from '@/shared/ui/iconButton';
 
 export function PhotoListHeader({
   placeName,
@@ -34,14 +35,9 @@ export function PhotoListHeader({
           취소
         </button>
       ) : (
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="여행 상세로 돌아가기"
-          className="hover:bg-brand/5 focus-visible:outline-brand grid size-10 place-items-center rounded-full transition-colors focus-visible:outline-2"
-        >
-          <ChevronLeftIcon strokeWidth="2" size="22" />
-        </button>
+        <IconButton onClick={onBack} aria-label="여행 상세로 돌아가기" className="hover:bg-brand/5">
+          <ChevronLeftIcon aria-hidden="true" strokeWidth="2" size="22" />
+        </IconButton>
       )}
 
       <h1 className="truncate text-center text-[17px] font-extrabold">
