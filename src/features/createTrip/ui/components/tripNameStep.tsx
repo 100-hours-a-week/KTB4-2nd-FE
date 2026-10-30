@@ -8,7 +8,7 @@ import { Input } from '@/shared/ui/input';
 
 import type { TripCreateFormValues } from '../../model/types';
 import { TRIP_NAME_MAX_LENGTH, validateTripName } from '../../model/validation';
-import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
+import { TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripNameStepProps = {
   onBack: () => void;
@@ -48,7 +48,7 @@ export function TripNameStep({ onBack, onNext }: TripNameStepProps) {
       onBack={onBack}
       footer={
         <Button
-          className={`w-full ${tripCreateButtonClassName}`}
+          className="w-full"
           disabled={!hasVisibleText(tripName)}
           onClick={() => void moveNext()}
         >

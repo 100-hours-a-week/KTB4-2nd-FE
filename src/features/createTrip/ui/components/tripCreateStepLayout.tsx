@@ -5,9 +5,6 @@ import { PageHeader } from '@/shared/ui/pageHeader';
 import { TRIP_CREATE_STEPS, type TripCreateStep } from '../../model/types';
 import { TripFormModeContext } from './tripFormMode';
 
-export const tripCreateButtonClassName =
-  'rounded-[16px] disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100';
-
 type TripCreateStepLayoutProps = {
   step: TripCreateStep;
   title: ReactNode;
@@ -63,8 +60,8 @@ export function TripCreateStepLayout({
       </div>
 
       <header className="mt-7 shrink-0">
-        <h2 className="text-[23px] leading-[1.35] font-extrabold tracking-[-0.04em]">{title}</h2>
-        {description && <p className="text-muted mt-2 text-[13px]">{description}</p>}
+        <h2 className="text-page-title">{title}</h2>
+        {description && <p className="text-description text-muted mt-2">{description}</p>}
       </header>
 
       <section

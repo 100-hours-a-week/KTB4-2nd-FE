@@ -8,7 +8,6 @@ import { MapIcon, PinIcon, SearchIcon, UploadIcon, type IconProps } from '@/shar
 import { PageHeader } from '@/shared/ui/pageHeader';
 
 import type { TripProcessingStatusResponse } from '../../api/getTripProcessingStatus';
-import { tripCreateButtonClassName } from './tripCreateStepLayout';
 import { TripFormModeContext } from './tripFormMode';
 
 type TripProcessingViewProps = {
@@ -126,11 +125,7 @@ export function TripProcessingView(props: TripProcessingViewProps) {
             : '화면을 닫지 말고 잠시만 기다려주세요.'}
         </p>
         {onContinueElsewhere && (
-          <Button
-            onClick={onContinueElsewhere}
-            disabled={!canLeave}
-            className={`w-full ${tripCreateButtonClassName}`}
-          >
+          <Button onClick={onContinueElsewhere} disabled={!canLeave} className="w-full">
             다른 작업 이어하기
           </Button>
         )}
@@ -138,9 +133,10 @@ export function TripProcessingView(props: TripProcessingViewProps) {
         {onCancel && (
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => setCancelDialogOpen(true)}
             disabled={!canLeave || isCanceling}
-            className="mt-2 min-h-10 w-full text-sm font-medium"
+            className="mt-2 w-full"
           >
             {isCanceling ? '취소하는 중...' : '여행 생성 취소하기'}
           </Button>
