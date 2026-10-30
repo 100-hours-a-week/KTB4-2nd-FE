@@ -81,6 +81,7 @@ export function TripCard({
         aria-pressed={trip.favorite}
         onClick={() => onFavoriteChange(trip.id)}
         className="absolute top-1 right-1 z-20"
+        style={{ backgroundColor: 'transparent' }}
       >
         <StarIcon
           aria-hidden="true"
