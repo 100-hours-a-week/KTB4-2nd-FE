@@ -19,3 +19,24 @@ export const Selected: Story = {
     children: <StarIcon size="20" fill="currentColor" />,
   },
 };
+
+export const Inverse: Story = {
+  args: { tone: 'inverse', 'aria-label': '원본 보기 닫기' },
+  decorators: [
+    (Story) => (
+      <div className="rounded-card bg-[#070c11] p-6">
+        <Story />
+      </div>
+    ),
+  ],
+};
+export const InverseDisabled: Story = {
+  args: { tone: 'inverse', disabled: true, 'aria-label': '이전 사진' },
+  decorators: [
+    (Story) => (
+      <div className="rounded-card bg-[#070c11] p-6">
+        <Story />
+      </div>
+    ),
+  ],
+};
