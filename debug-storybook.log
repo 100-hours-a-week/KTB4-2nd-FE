@@ -1,0 +1,19 @@
+[13:41:09.196] [INFO] storybook v10.6.5
+[13:41:09.928] [DEBUG] Getting package.json info for /Users/hyejun/Desktop/KTB4-2nd-FE/package.json...
+[13:41:10.448] [DEBUG] Could not determine @babel/preset-env version in use. In case of runtime errors with @babel/preset-env, you may need to set the babelRemoveBugfixes feature flag in your `main.ts` file.
+[13:41:10.702] [DEBUG] Serving static files from [36mpublic[39m at [36m/[39m
+[13:41:10.709] [INFO] Starting...
+[13:41:10.729] [DEBUG] readDependencyManifest: could not resolve "@next/third-parties"
+[13:41:10.892] [DEBUG] Starting preview..
+[13:41:11.717] [DEBUG] Change detection enabled.
+[13:41:11.718] [DEBUG] Change detection: snapshotting Vite resolve config (restart required if vite.config.ts changes)
+[13:41:11.719] [DEBUG] Change detection: ignored 28 regex alias(es); related modules tracked as opaque-leaf.
+[13:41:11.719] [DEBUG] ChangeDetectionResolverFactory: skipped regex aliases [/^react$/, /^react\/jsx-runtime$/, /^react\/jsx-dev-runtime$/, /^react-dom$/, /^react-dom\/server$/, /^react-dom\/test-utils$/, /^react-dom\/client$/, /^react-dom\/cjs\/react-dom\.development\.js$/, /^@storybook\/global$/, /^storybook\/test$/, /^storybook\/actions$/, /^storybook\/preview-api$/, /^storybook\/internal\/channels$/, /^storybook\/internal\/client-logger$/, /^storybook\/internal\/core-events$/, /^storybook\/internal\/preview-errors$/, /^storybook\/internal\/types$/, /^storybook\/internal\/preview-api$/, /^react$/, /^react\/jsx-runtime$/, /^react\/jsx-dev-runtime$/, /^react-dom$/, /^react-dom\/server$/, /^react-dom\/test-utils$/, /^react-dom\/client$/, /^react-dom\/cjs\/react-dom\.development\.js$/, /^\/?@vite\/env/, /^\/?@vite\/client/]
+[13:41:11.731] [ERROR] [38;2;241;97;97mError: listen EADDRINUSE: address already in use 127.0.0.1:6006[39m
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+[13:41:11.733] [WARN] Broken build, fix the error above.
+You may need to refresh the browser.
+[13:41:11.835] [DEBUG] Change detection graph built: 3 stories, 11 deps tracked, 116ms

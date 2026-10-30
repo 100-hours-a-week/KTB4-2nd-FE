@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:watch": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@next/third-parties": "^16.3.8",
@@ -30,6 +32,9 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "10.6.5",
+    "@storybook/addon-docs": "10.6.5",
+    "@storybook/nextjs-vite": "10.6.5",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",
@@ -44,6 +49,7 @@
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.6",
+    "storybook": "10.6.5",
     "tailwindcss": "^4",
     "typescript": "6.0.3",
     "vitest": "^4.1.11"

@@ -1,0 +1,80 @@
+/* 앱과 동일한 로컬 폰트를 사용하되 Next.js 루트 레이아웃은 실행하지 않습니다. */
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUIT';
+  src: url('../src/_app/assets/fonts/SUIT-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-suit: 'SUIT';
+}
+
+body {
+  background: var(--surface);
+}
