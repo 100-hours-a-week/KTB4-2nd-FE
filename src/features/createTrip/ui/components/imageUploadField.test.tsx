@@ -168,7 +168,7 @@ it('화면 밖의 대기 사진도 스켈레톤을 보여주고 이미지가 준
     pending.resolve(previewBitmap());
   });
   await screen.findByRole('img', { name: 'first.heic' });
-  expect(cards[0].querySelector('span[aria-hidden="true"]')).toBeNull();
+  expect(cards[0].querySelector(`.${skeletonStyles.breathe}`)).toBeNull();
 });
 
 it('Wasm 경로도 설정된 동시 처리 수를 지키고 기존 썸네일과 URL 정리 흐름을 유지한다', async () => {
