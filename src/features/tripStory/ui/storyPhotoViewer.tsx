@@ -89,7 +89,7 @@ export function StoryPhotoViewer({
       role="dialog"
       aria-modal="true"
       aria-label="스토리 사진 상세보기"
-      className="fixed top-[var(--app-vertical-offset)] right-0 bottom-[var(--app-vertical-offset)] left-0 z-40 mx-auto flex w-full max-w-[430px] flex-col bg-[#070a0d] text-white"
+      className="fixed top-[var(--app-vertical-offset,0px)] right-0 bottom-[var(--app-vertical-offset,0px)] left-0 z-40 mx-auto flex w-full max-w-[430px] flex-col bg-[#070a0d] text-white"
     >
       <header className="flex min-h-16 items-center justify-between px-4 pt-[env(safe-area-inset-top)]">
         <IconButton
