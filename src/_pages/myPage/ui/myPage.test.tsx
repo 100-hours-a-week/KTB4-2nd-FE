@@ -26,10 +26,12 @@ vi.mock('@/features/userStats/api/getUserStats', () => ({
     tripCount: 4,
     photoCount: 853,
     storyCount: 2,
-    favoriteTripCount: 3,
     storageUsedBytes: 12_400_000_000,
     storageLimitBytes: 30_000_000_000,
   }),
+}));
+vi.mock('@/features/userStats/api/getFavoriteTripCount', () => ({
+  getFavoriteTripCount: vi.fn().mockResolvedValue(3),
 }));
 
 const user: MyPageUser = { nickname: '여행하는 혜준', oauthConnected: true };
