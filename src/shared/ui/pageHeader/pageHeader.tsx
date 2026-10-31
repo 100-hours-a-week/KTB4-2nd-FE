@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { ChevronLeftIcon } from '@/shared/ui/icons';
+import { IconButton } from '@/shared/ui/iconButton';
 
 type PageHeaderBaseProps = {
   title?: ReactNode;
@@ -25,7 +26,7 @@ type PageHeaderNavigation =
 export type PageHeaderProps = PageHeaderBaseProps & PageHeaderNavigation;
 
 const navigationClassName =
-  'hover:bg-brand/5 focus-visible:outline-brand -ml-2 inline-flex size-11 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-30';
+  'text-muted hover:text-brand hover:bg-brand/5 focus-visible:outline-brand -ml-2 inline-grid size-11 place-items-center rounded-full motion-safe:transition-colors motion-safe:duration-(--motion-normal) focus-visible:outline-2 focus-visible:outline-offset-2';
 
 export function PageHeader({
   title,
@@ -37,18 +38,27 @@ export function PageHeader({
   const backControl =
     navigation.backHref !== undefined ? (
       <Link href={navigation.backHref} aria-label={backLabel} className={navigationClassName}>
-        <ChevronLeftIcon strokeLinecap="round" strokeLinejoin="round" size="25" />
+        <ChevronLeftIcon
+          aria-hidden="true"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          size="25"
+        />
       </Link>
     ) : (
-      <button
-        type="button"
+      <IconButton
         aria-label={backLabel}
         disabled={navigation.backDisabled}
         onClick={navigation.onBack}
-        className={navigationClassName}
+        className="-ml-2 hover:bg-brand/5"
       >
-        <ChevronLeftIcon strokeLinecap="round" strokeLinejoin="round" size="25" />
-      </button>
+        <ChevronLeftIcon
+          aria-hidden="true"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          size="25"
+        />
+      </IconButton>
     );
 
   return (
@@ -59,9 +69,7 @@ export function PageHeader({
       {title === undefined ? (
         <span aria-hidden="true" />
       ) : (
-        <h1 className="text-brand truncate px-2 text-center text-[17px] font-extrabold tracking-[-0.02em]">
-          {title}
-        </h1>
+        <h1 className="text-brand text-section-title truncate px-2 text-center">{title}</h1>
       )}
       <div className="flex min-w-11 justify-end">{action}</div>
     </header>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Button } from '@/shared/ui/button';
 import { useRouter } from 'next/navigation';
 
 import { TripCard, useTripFavorite, useTripList, type TripListFilter } from '@/features/tripList';
@@ -95,13 +96,9 @@ function FavoritesSkeleton({ showError, onRetry }: { showError: boolean; onRetry
       {showError && (
         <div role="alert" className="mt-6 text-center">
           <p className="text-muted text-xs">즐겨찾기를 불러오지 못했어요.</p>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="text-brand mt-2 cursor-pointer text-sm font-bold underline underline-offset-4"
-          >
+          <Button variant="secondary" size="sm" onClick={onRetry} className="mt-2">
             다시 시도
-          </button>
+          </Button>
         </div>
       )}
     </div>

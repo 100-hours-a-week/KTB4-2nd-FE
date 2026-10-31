@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { PhotoViewer } from '@/features/photoList';
+import { Button } from '@/shared/ui/button';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
   RestorePlaceDialog,
@@ -156,9 +157,9 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
       {refreshError && (
         <div role="alert" className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
           남은 사진을 확인하지 못했어요.
-          <button type="button" className="ml-2 underline" onClick={() => void refetch()}>
+          <Button variant="ghost" size="sm" className="ml-2" onClick={() => void refetch()}>
             다시 확인
-          </button>
+          </Button>
         </div>
       )}
 

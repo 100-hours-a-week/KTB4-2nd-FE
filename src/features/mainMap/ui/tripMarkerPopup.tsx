@@ -1,5 +1,8 @@
 import type { Ref, UIEventHandler } from 'react';
 
+import { IconButton } from '@/shared/ui/iconButton';
+import { CloseIcon } from '@/shared/ui/icons';
+
 import type { OpenTripMarkerGroup } from '../model/useTripMarkerPopup';
 
 type TripMarkerPopupProps = {
@@ -45,17 +48,14 @@ export function TripMarkerPopup({
     >
       <div className="flex items-center justify-between pl-2">
         <h2 className="text-brand text-xs font-bold">여행 목록</h2>
-        <button
+        <IconButton
           ref={closeButtonRef}
-          type="button"
           aria-label="여행 목록 닫기"
           onClick={onClose}
-          className="text-muted hover:bg-slate-100 focus-visible:outline-brand grid size-11 shrink-0 cursor-pointer place-items-center rounded-lg focus-visible:outline-2"
+          className="hover:bg-surface-subtle"
         >
-          <span aria-hidden="true" className="text-lg">
-            ×
-          </span>
-        </button>
+          <CloseIcon aria-hidden="true" size="18" />
+        </IconButton>
       </div>
       <div
         className={`overflow-y-auto ${openGroup.group.trips.length > visibleCount ? 'h-40' : 'max-h-44'}`}
