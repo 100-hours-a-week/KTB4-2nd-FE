@@ -6,5 +6,13 @@ import { userStatsQueries } from '@/queryFactory';
 
 export function useUserStats() {
   const { data, isPending, isError, refetch } = useQuery(userStatsQueries.stats());
-  return { stats: data ?? null, isPending, isError, refetch };
+  const { data: favoriteTripCount } = useQuery(userStatsQueries.favoriteTripCount());
+
+  return {
+    stats: data ?? null,
+    favoriteTripCount: favoriteTripCount ?? null,
+    isPending,
+    isError,
+    refetch,
+  };
 }
