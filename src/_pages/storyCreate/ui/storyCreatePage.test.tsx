@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -223,11 +223,14 @@ describe('StoryCreatePage', () => {
         'csrf-token',
       ),
     );
-    expect(await screen.findByRole('progressbar', { name: '스토리 생성 진행률' })).toHaveAttribute(
-      'aria-valuenow',
-      '40',
+    expect(await screen.findByRole('status', { name: '스토리 생성 중' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '스토리 생성 중…' })).toHaveAttribute(
+      'aria-busy',
+      'true',
     );
-    expect(getStoryGenerationStatus).toHaveBeenCalledWith(31);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+%/)).not.toBeInTheDocument();
+    await waitFor(() => expect(getStoryGenerationStatus).toHaveBeenCalledWith(31));
     expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
       generationId: 31,
     });
@@ -246,6 +249,35 @@ describe('StoryCreatePage', () => {
     await user.click(within(dialog).getByRole('button', { name: '확인' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '생성' })).toBeEnabled();
+  });
+
+  it('AI 준비 확인 중에는 로딩을 표시하고 생성 요청을 중복 실행하지 않는다', async () => {
+    let finish!: () => void;
+    vi.mocked(getAiStatus).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ running: true, ready: true });
+        }),
+    );
+    const { user } = setup();
+    await chooseMoodAndFolders(user, [2, 0]);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+
+    const checking = screen.getByRole('button', { name: 'AI 준비 확인 중…' });
+    expect(checking).toBeDisabled();
+    expect(checking).toHaveAttribute('aria-busy', 'true');
+    await user.click(checking);
+    expect(getAiStatus).toHaveBeenCalledTimes(1);
+    expect(createStoryGeneration).not.toHaveBeenCalled();
+
+    await act(async () => finish());
+    await screen.findByRole('status', { name: '스토리 생성 중' });
+    expect(createStoryGeneration).toHaveBeenCalledTimes(1);
+    expect(createStoryGeneration).toHaveBeenCalledWith(
+      7,
+      { mood: 'PLAIN', tripPlaceIds: [3, 1] },
+      'csrf-token',
+    );
   });
 
   it('AI 서버가 꺼져 있으면 사용할 수 없다고 안내한다', async () => {
@@ -267,12 +299,8 @@ describe('StoryCreatePage', () => {
     );
     setup();
 
-    await waitFor(() =>
-      expect(screen.getByRole('progressbar', { name: '스토리 생성 진행률' })).toHaveAttribute(
-        'aria-valuenow',
-        '40',
-      ),
-    );
+    await waitFor(() => expect(getStoryGenerationStatus).toHaveBeenCalledWith(31));
+    expect(screen.getByRole('status', { name: '스토리 생성 중' })).toBeInTheDocument();
     expect(createStoryGeneration).not.toHaveBeenCalled();
   });
 
@@ -392,11 +420,41 @@ describe('StoryCreatePage', () => {
     const { user } = setup();
     await chooseMoodAndFolders(user);
     await user.click(screen.getByRole('button', { name: '생성' }));
-    await screen.findByRole('progressbar', { name: '스토리 생성 진행률' });
+    await screen.findByRole('status', { name: '스토리 생성 중' });
 
     await user.click(screen.getByRole('button', { name: '다른 작업 이어하기' }));
     expect(replace).toHaveBeenCalledWith('/trips/7');
     expect(cancelStoryGeneration).not.toHaveBeenCalled();
     expect(screen.getByRole('status', { name: '스토리 생성 중' })).toBeInTheDocument();
+  });
+
+  it('취소 요청 중에는 확인창을 유지하고 완료 후 선택한 폴더로 돌아간다', async () => {
+    let finish!: () => void;
+    vi.mocked(cancelStoryGeneration).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { user } = setup();
+    await chooseMoodAndFolders(user);
+    await user.click(screen.getByRole('button', { name: '생성' }));
+    await screen.findByRole('status', { name: '스토리 생성 중' });
+    await user.click(screen.getByRole('button', { name: '스토리 생성에서 돌아가기' }));
+    const dialog = screen.getByRole('dialog', { name: '스토리 생성을 취소할까요?' });
+    await user.click(within(dialog).getByRole('button', { name: '취소하기' }));
+
+    const canceling = within(dialog).getByRole('button', { name: '취소 중…' });
+    expect(canceling).toBeDisabled();
+    expect(canceling).toHaveAttribute('aria-busy', 'true');
+    expect(within(dialog).getByRole('button', { name: '이어서 만들기' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: '스토리 생성을 취소할까요?' })).toBeInTheDocument();
+    await user.click(canceling);
+    expect(cancelStoryGeneration).toHaveBeenCalledTimes(1);
+
+    await act(async () => finish());
+    expect(await screen.findByRole('checkbox', { name: '장소 1 사진 3장 선택' })).toBeChecked();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

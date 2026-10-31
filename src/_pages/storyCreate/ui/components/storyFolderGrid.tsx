@@ -101,7 +101,13 @@ export function StoryFolderGrid({
           ) : query.isError ? (
             <div role="alert" className="py-8 text-center">
               <p className="text-muted mb-3 text-xs">폴더를 불러오지 못했어요.</p>
-              <Button variant="secondary" onClick={() => void query.refetch()} className="text-sm">
+              <Button
+                variant="secondary"
+                size="sm"
+                isLoading={query.isFetching}
+                loadingText="폴더 불러오는 중…"
+                onClick={() => void query.refetch()}
+              >
                 다시 시도
               </Button>
             </div>
@@ -116,14 +122,15 @@ export function StoryFolderGrid({
             <div ref={sentinel} className="pt-4 text-center">
               <Button
                 variant="ghost"
-                disabled={query.isFetchingNextPage}
+                size="sm"
+                isLoading={query.isFetchingNextPage}
+                loadingText="폴더 불러오는 중…"
                 onClick={() => {
                   if (visibleCount < folders.length) setVisibleCount((count) => count + 6);
                   else void query.fetchNextPage();
                 }}
-                className="text-xs"
               >
-                {query.isFetchingNextPage ? '불러오는 중...' : '폴더 더 보기'}
+                폴더 더 보기
               </Button>
             </div>
           )}
