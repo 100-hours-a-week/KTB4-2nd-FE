@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconButton } from '@/shared/ui/iconButton';
+import { Button } from '@/shared/ui/button';
 import { CloseIcon } from '@/shared/ui/icons';
 import type { TripPlaceMarker } from '../model/types';
 
@@ -115,13 +116,9 @@ export function TripPlaceMap({ tripId, tripName }: { tripId: number; tripName: s
         <div className="bg-surface absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-muted text-sm">지도를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
           {isError && (
-            <button
-              type="button"
-              onClick={() => void refetch()}
-              className="bg-surface-subtle text-brand rounded-full px-4 py-2 text-sm font-bold"
-            >
+            <Button variant="secondary" size="sm" onClick={() => void refetch()}>
               다시 시도
-            </button>
+            </Button>
           )}
         </div>
       )}

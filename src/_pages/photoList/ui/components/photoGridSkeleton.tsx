@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui/button';
+import { RetryNotice } from '@/shared/ui/retryNotice';
 
 const TILE = `url("data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect rx="5" fill="#e2e8f0" style="width:calc(100% - 4px);height:calc(100% - 4px)"/></svg>',
@@ -36,15 +36,11 @@ export function PhotoGridSkeleton({
         <PhotoGridSkeletonTiles />
       </div>
       {showError && (
-        <div
-          role="alert"
-          className="bg-brand fixed right-4 bottom-[calc(var(--app-vertical-offset,0px)+20px+env(safe-area-inset-bottom))] left-4 z-30 mx-auto flex max-w-[398px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
-        >
-          <span className="flex-1">사진을 가져오지 못했어요.</span>
-          <Button variant="secondary" size="sm" onClick={onRetry}>
-            다시 시도
-          </Button>
-        </div>
+        <RetryNotice
+          message="사진을 가져오지 못했어요."
+          onRetry={onRetry}
+          className="fixed right-4 bottom-[calc(var(--app-vertical-offset,0px)+20px+env(safe-area-inset-bottom))] left-4 z-30 mx-auto max-w-[398px]"
+        />
       )}
     </div>
   );

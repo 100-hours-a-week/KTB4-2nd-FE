@@ -13,6 +13,7 @@ import {
 import { CheckIcon, TrashIcon, WarningIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { RetryNotice } from '@/shared/ui/retryNotice';
 import { DecodedThumbnail } from '@/shared/ui/decodedThumbnail';
 
 export type UnclassifiedFolderPageProps = {
@@ -144,20 +145,12 @@ function FolderSkeleton({ showError, onRetry }: { showError: boolean; onRetry: (
         ))}
       </div>
       {showError && (
-        <div
-          role="alert"
-          className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
-        >
-          <WarningIcon stroke="#ffb1a9" size="17" />
-          <span className="flex-1">사진 로드에 실패했어요.</span>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="cursor-pointer font-bold text-[#a9c8ff] hover:underline"
-          >
-            다시 시도
-          </button>
-        </div>
+        <RetryNotice
+          message="사진 로드에 실패했어요."
+          onRetry={onRetry}
+          icon={<WarningIcon stroke="#ffb1a9" size="17" />}
+          className="fixed right-5 bottom-[calc(var(--app-vertical-offset,0px)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto max-w-[390px]"
+        />
       )}
     </div>
   );
