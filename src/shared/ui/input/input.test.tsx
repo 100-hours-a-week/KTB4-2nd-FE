@@ -7,7 +7,13 @@ import { Input } from './input';
 
 type FormValues = { nickname: string };
 
-function TestForm({ onSubmit = () => {} }: { onSubmit?: (data: FormValues) => void }) {
+function TestForm({
+  onSubmit = () => {},
+  variant,
+}: {
+  onSubmit?: (data: FormValues) => void;
+  variant?: 'underline' | 'boxed';
+}) {
   const {
     register,
     control,
@@ -21,6 +27,7 @@ function TestForm({ onSubmit = () => {} }: { onSubmit?: (data: FormValues) => vo
   return (
     <form noValidate onSubmit={handleSubmit(onSubmit)}>
       <Input
+        variant={variant}
         {...register('nickname', {
           required: '닉네임을 입력해주세요.',
           maxLength: { value: 10, message: '10자 이하로 입력해주세요.' },
@@ -42,11 +49,11 @@ function TestForm({ onSubmit = () => {} }: { onSubmit?: (data: FormValues) => vo
   );
 }
 
-describe('Input with React Hook Form', () => {
+describe.each(['underline', 'boxed'] as const)('Input %s with React Hook Form', (variant) => {
   it('기본값, 입력, reset, setValue의 글자 수와 제출값을 동기화한다', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
-    render(<TestForm onSubmit={onSubmit} />);
+    render(<TestForm variant={variant} onSubmit={onSubmit} />);
     const input = screen.getByRole('textbox', { name: '닉네임' });
 
     expect(input).toHaveValue('여담');
@@ -70,7 +77,7 @@ describe('Input with React Hook Form', () => {
 
   it('register의 blur 검증과 오류 입력 포커스가 동작한다', async () => {
     const user = userEvent.setup();
-    render(<TestForm />);
+    render(<TestForm variant={variant} />);
     const input = screen.getByRole('textbox', { name: '닉네임' });
 
     await user.clear(input);
@@ -86,12 +93,46 @@ describe('Input with React Hook Form', () => {
 
   it('최대 길이를 넘는 입력을 제한한다', async () => {
     const user = userEvent.setup();
-    render(<TestForm />);
+    render(<TestForm variant={variant} />);
     const input = screen.getByRole('textbox', { name: '닉네임' });
 
     await user.clear(input);
     await user.type(input, '12345678901');
     expect(input).toHaveValue('1234567890');
     expect(screen.getByText('10/10')).toBeInTheDocument();
+  });
+});
+
+describe('Input accessibility', () => {
+  it('외부 설명과 오류·글자 수 설명을 함께 연결한다', () => {
+    render(
+      <>
+        <p id="external-description">공개되는 이름입니다.</p>
+        <Input
+          label="여행 이름"
+          value="제주"
+          readOnly
+          maxLength={20}
+          aria-describedby="external-description"
+          helperText="안내"
+          error="이름을 확인해주세요."
+        />
+      </>,
+    );
+    const input = screen.getByRole('textbox', { name: '여행 이름' });
+    expect(input).toHaveAccessibleDescription(/공개되는 이름입니다/);
+    expect(input).toHaveAccessibleDescription(/이름을 확인해주세요/);
+    expect(input).toHaveAccessibleDescription(/2\/20/);
+    expect(input).toBeInvalid();
+    expect(screen.queryByText('안내')).not.toBeInTheDocument();
+  });
+
+  it('박스형도 네이티브 disabled·readOnly·required 속성을 전달한다', () => {
+    const { rerender } = render(<Input variant="boxed" label="여행 이름" disabled required />);
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).toBeRequired();
+    rerender(<Input variant="boxed" label="여행 이름" value="제주" readOnly />);
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    expect(screen.getByRole('textbox')).toHaveValue('제주');
   });
 });

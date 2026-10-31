@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { forgetMapViewport, MainMap } from '@/features/mainMap/ui/mainMap';
 import { mainMapQueries } from '@/queryFactory';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
+import { BrandLogo } from '@/shared/ui/brandLogo';
 import { toast } from '@/shared/ui/toast';
 
 const navigationItems: BottomNavigationItem[] = [
@@ -34,7 +35,10 @@ export function HomePage() {
 
   return (
     <main className="relative mx-auto h-full w-full max-w-[430px] overflow-hidden bg-app-background">
-      <h1 className="sr-only">여담</h1>
+      <h1 className="pointer-events-none absolute top-[max(16px,env(safe-area-inset-top))] left-4 z-10 flex items-center gap-1.5 drop-shadow-[0_0_3px_rgba(255,255,255,0.9)]">
+        <BrandLogo size={22} className="text-brand shrink-0" />
+        <span className="text-brand text-base font-extrabold tracking-[-0.02em]">여담</span>
+      </h1>
       <MainMap
         trips={trips}
         resetSignal={resetSignal}

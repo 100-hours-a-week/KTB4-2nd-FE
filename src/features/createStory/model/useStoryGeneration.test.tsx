@@ -66,7 +66,7 @@ describe('useStoryGeneration API', () => {
       { mood: 'EMOTIONAL', tripPlaceIds: [3, 1] },
       'csrf',
     );
-    expect(result.current.progressPercent).toBe(40);
+    expect(result.current.status).toBe('processing');
   });
   it('2초마다 상태를 조회하고 완료 후에는 조회를 중단한다', async () => {
     const { result } = setup();
@@ -80,7 +80,6 @@ describe('useStoryGeneration API', () => {
     });
     await advance(2000);
     expect(result.current.status).toBe('completed');
-    expect(result.current.progressPercent).toBe(100);
     await advance(4000);
     expect(getStoryGenerationStatus).toHaveBeenCalledTimes(2);
   });
@@ -135,7 +134,7 @@ describe('useStoryGeneration API', () => {
     const resumed = setup();
     await advance();
     expect(resumed.result.current.status).toBe('processing');
-    expect(resumed.result.current.progressPercent).toBe(40);
+    expect(getStoryGenerationStatus).toHaveBeenCalledWith(31);
   });
   it('서버에 작업이 없으면 폴링을 중단한다', async () => {
     vi.mocked(getStoryGenerationStatus).mockRejectedValue({

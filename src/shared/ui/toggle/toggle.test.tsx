@@ -40,6 +40,20 @@ describe('Toggle', () => {
     expect(toggle).toBeChecked();
   });
 
+  it('작은 필터의 접근성 이름과 키보드 토글을 지원한다', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Toggle size="sm" label="즐겨찾기만" aria-label="즐겨찾기만 보기" onChange={onChange} />,
+    );
+    const toggle = screen.getByRole('switch', { name: '즐겨찾기만 보기' });
+    await user.tab();
+    expect(toggle).toHaveFocus();
+    await user.keyboard(' ');
+    expect(toggle).toBeChecked();
+    expect(onChange).toHaveBeenCalledOnce();
+  });
+
   it('비활성화 상태에서는 변경되지 않는다', async () => {
     const user = userEvent.setup();
     render(<Toggle label="알림 받기" disabled />);

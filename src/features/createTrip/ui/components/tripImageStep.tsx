@@ -9,7 +9,7 @@ import { toast } from '@/shared/ui/toast';
 import { validateImageSelection } from '../../model/imageValidation';
 import type { TripCreateFormValues } from '../../model/types';
 import { ImageUploadField } from './imageUploadField';
-import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
+import { TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripImageStepProps = {
   onBack: () => void;
@@ -71,15 +71,18 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
       footer={
         <Button
           type="submit"
-          className={`w-full ${tripCreateButtonClassName}`}
-          disabled={field.value.length === 0 || brokenCount > 0 || isCheckingLocation}
+          className="w-full"
+          disabled={field.value.length === 0 || brokenCount > 0}
+          isLoading={isCheckingLocation}
+          loadingText="위치 정보 확인 중…"
         >
-          {isCheckingLocation ? '위치 정보 확인 중…' : '여행 만들기'}
+          여행 만들기
         </Button>
       }
     >
       <ImageUploadField
         files={field.value}
+        disabled={isCheckingLocation}
         error={
           fieldState.error?.message ??
           (brokenCount > 0

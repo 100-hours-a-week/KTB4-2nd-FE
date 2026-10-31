@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { KakaoLoginButton } from '@/features/kakaoLogin';
 import { UserLocalDataReset } from '@/features/manageAccount';
-import { PinIcon } from '@/shared/ui/icons';
+import { BRAND_LOGO_PATH, BRAND_LOGO_VIEWBOX, BrandLogo } from '@/shared/ui/brandLogo';
 
 const CONTACT_EMAIL = 'leo@yeodam-2gether.com';
 
@@ -11,7 +11,7 @@ export function LoginPage() {
     <main className="page-enter flex h-full flex-col overflow-hidden px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
       <UserLocalDataReset />
       <header className="flex items-center gap-2">
-        <BrandMark />
+        <BrandLogo size={28} className="text-brand shrink-0" />
         <span className="text-brand text-lg font-extrabold tracking-[-0.02em]">여담</span>
         <span className="text-brand/60 text-xs font-semibold tracking-[0.08em] uppercase">
           yeodam
@@ -70,23 +70,8 @@ export function LoginPage() {
   );
 }
 
-function BrandMark() {
-  return (
-    <span
-      aria-hidden="true"
-      className="bg-brand grid size-8 place-items-center rounded-[10px] text-white"
-    >
-      <PinIcon strokeWidth="2" size="18" variant="brand" />
-    </span>
-  );
-}
-
 const STROKE = '#3d5563';
 
-/**
- * 여러 곳에서 찍은 여행 사진이 흩어져 있다가 하나의 핀(기록)으로 모이는 모습입니다.
- * 서비스 문구 '흩어진 여행 사진을 하나의 기록으로'를 그림으로 옮겼습니다.
- */
 function ScatteredPhotosIllustration() {
   return (
     <svg
@@ -108,7 +93,6 @@ function ScatteredPhotosIllustration() {
         </linearGradient>
       </defs>
 
-      {/* 사진마다 핀으로 이어지는 점선: 흩어진 사진이 하나로 모인다는 뜻 */}
       <g fill="none" stroke="#b7c6d3" strokeWidth="1.5" strokeDasharray="3 5" strokeLinecap="round">
         <path d="M110 120 Q150 150 195 200" />
         <path d="M282 112 Q240 150 195 200" />
@@ -131,11 +115,9 @@ function ScatteredPhotosIllustration() {
 
       <circle cx="195" cy="200" r="32" fill="#021730" opacity="0.08" />
       <circle cx="195" cy="200" r="23" fill="#021730" />
-      <path
-        d="M195 187 c-6.6 0 -12 5.4 -12 12 c0 8.6 12 18.5 12 18.5 s12 -9.9 12 -18.5 c0 -6.6 -5.4 -12 -12 -12Z"
-        fill="#ffffff"
-      />
-      <circle cx="195" cy="199" r="4.2" fill="#021730" />
+      <svg x={182} y={187} width={26} height={26} viewBox={BRAND_LOGO_VIEWBOX}>
+        <path d={BRAND_LOGO_PATH} fill="#ffffff" />
+      </svg>
     </svg>
   );
 }

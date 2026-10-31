@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 
 import {
   SEARCH_QUERY_MAX_LENGTH,
@@ -8,7 +8,7 @@ import {
   isSearchableQuery,
   normalizeSearchQuery,
 } from '@/features/search';
-import { CloseIcon } from '@/shared/ui/icons';
+import { SearchField } from '@/shared/ui/searchField';
 
 export function SearchForm({
   query,
@@ -17,8 +17,6 @@ export function SearchForm({
   query: string;
   onSearch: (query: string) => void;
 }) {
-  const inputId = useId();
-  const messageId = `${inputId}-message`;
   const [value, setValue] = useState(query);
   const [syncedQuery, setSyncedQuery] = useState(query);
   const [showLengthError, setShowLengthError] = useState(false);
@@ -45,45 +43,21 @@ export function SearchForm({
 
   return (
     <form role="search" onSubmit={handleSubmit} className="mt-5 shrink-0">
-      <label htmlFor={inputId} className="sr-only">
-        검색어
-      </label>
-      <div
-        className={`bg-surface flex min-h-[52px] items-center gap-2.5 rounded-[16px] border px-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-colors focus-within:border-brand ${showLengthError ? 'border-danger' : 'border-border-subtle'}`}
-      >
-        <input
-          id={inputId}
-          type="search"
-          enterKeyHint="search"
-          autoComplete="off"
-          value={value}
-          // 글자 수는 제출할 때 이모지를 깨지 않게 자르므로, 입력창은 넉넉하게 둡니다.
-          maxLength={SEARCH_QUERY_MAX_LENGTH * 2}
-          onChange={(event) => {
-            setValue(event.target.value);
-            if (showLengthError) setShowLengthError(false);
-          }}
-          placeholder="제주도에서 빨간 옷 입었을 때가 언제야?"
-          aria-invalid={showLengthError || undefined}
-          aria-describedby={showLengthError ? messageId : undefined}
-          className="placeholder:text-muted/70 min-w-0 flex-1 bg-transparent py-3 text-sm font-medium outline-none [&::-webkit-search-cancel-button]:hidden"
-        />
-        {value && (
-          <button
-            type="button"
-            aria-label="검색어 지우기"
-            onClick={() => setValue('')}
-            className="text-muted hover:text-brand focus-visible:outline-brand grid size-7 shrink-0 cursor-pointer place-items-center rounded-full bg-slate-100 transition-colors focus-visible:outline-2"
-          >
-            <CloseIcon strokeWidth="2.6" strokeLinecap="round" size="12" />
-          </button>
-        )}
-      </div>
-      {showLengthError && (
-        <p id={messageId} role="alert" className="text-danger mt-2 px-1 text-xs font-medium">
-          검색어를 {SEARCH_QUERY_MIN_LENGTH}글자 이상 입력해주세요.
-        </p>
-      )}
+      <SearchField
+        label="검색어"
+        enterKeyHint="search"
+        autoComplete="off"
+        value={value}
+        maxLength={SEARCH_QUERY_MAX_LENGTH * 2}
+        onValueChange={(nextValue) => {
+          setValue(nextValue);
+          if (showLengthError) setShowLengthError(false);
+        }}
+        placeholder="제주도에서 빨간 옷 입었을 때가 언제야?"
+        error={
+          showLengthError ? `검색어를 ${SEARCH_QUERY_MIN_LENGTH}글자 이상 입력해주세요.` : undefined
+        }
+      />
     </form>
   );
 }

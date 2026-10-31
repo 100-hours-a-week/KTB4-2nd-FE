@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 import { DropdownMenu, type DropdownMenuItem } from '@/shared/ui/dropdownMenu';
+import { IconButton } from '@/shared/ui/iconButton';
 
 import { usePhotoOriginalQuery } from '../model/usePhotoOriginal';
 import { PHOTO_ACCENT_GRADIENT } from '../model/photoAccent';
@@ -159,14 +160,14 @@ export function PhotoViewer({
       className="fixed top-[var(--app-vertical-offset)] right-0 bottom-[var(--app-vertical-offset)] left-0 z-40 mx-auto flex w-full max-w-[430px] flex-col bg-[#070c11] text-white"
     >
       <header className="grid min-h-16 grid-cols-[48px_1fr_48px] items-center px-3 pt-[env(safe-area-inset-top)]">
-        <button
-          type="button"
+        <IconButton
+          tone="inverse"
           aria-label="원본 보기 닫기"
           onClick={onClose}
-          className="grid size-10 cursor-pointer place-items-center rounded-full hover:bg-white/10"
+          className="hover:bg-white/10"
         >
-          <CloseIcon strokeWidth="2" size="22" />
-        </button>
+          <CloseIcon aria-hidden="true" strokeWidth="2" size="22" />
+        </IconButton>
         <p aria-label="사진 순서" className="text-center text-sm font-bold">
           {current}{' '}
           <span className="text-white/50">
@@ -182,15 +183,15 @@ export function PhotoViewer({
       </header>
 
       <div className="relative flex min-h-0 flex-1 items-center">
-        <button
-          type="button"
+        <IconButton
+          tone="inverse"
           aria-label="이전 사진"
           onClick={previous}
           disabled={previousDisabled || navigationPending}
-          className="absolute left-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
+          className="absolute left-3 z-10 bg-white/15 hover:bg-white/20"
         >
-          <ChevronLeftIcon strokeWidth="2" size="20" />
-        </button>
+          <ChevronLeftIcon aria-hidden="true" strokeWidth="2" size="20" />
+        </IconButton>
         <div className="aspect-square w-full overflow-hidden">
           <PhotoViewerArtwork
             photoId={photo.id}
@@ -202,15 +203,15 @@ export function PhotoViewer({
             }
           />
         </div>
-        <button
-          type="button"
+        <IconButton
+          tone="inverse"
           aria-label="다음 사진"
           onClick={next}
           disabled={navigationPending}
-          className="absolute right-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full bg-white/15"
+          className="absolute right-3 z-10 bg-white/15 hover:bg-white/20"
         >
-          <ChevronRightIcon strokeWidth="2" size="20" />
-        </button>
+          <ChevronRightIcon aria-hidden="true" strokeWidth="2" size="20" />
+        </IconButton>
       </div>
 
       {navigationPending && (

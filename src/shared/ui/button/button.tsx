@@ -2,12 +2,15 @@
 
 import type { ComponentPropsWithRef } from 'react';
 
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'ghost';
 
 export type ButtonProps = ComponentPropsWithRef<'button'> & {
   isLoading?: boolean;
   loadingText?: string;
   variant?: ButtonVariant;
+  size?: ButtonSize;
 };
 
 const variantClassName: Record<ButtonVariant, string> = {
@@ -21,6 +24,12 @@ const variantClassName: Record<ButtonVariant, string> = {
     'bg-transparent text-muted enabled:hover:bg-surface-subtle enabled:hover:text-brand focus-visible:outline-brand',
 };
 
+const sizeClassName: Record<ButtonSize, string> = {
+  sm: 'min-h-control-sm px-4 py-2 text-label',
+  md: 'min-h-control-md px-6 py-3 text-body font-semibold',
+  lg: 'min-h-control-lg px-6 py-4 text-body font-semibold',
+};
+
 export function Button({
   children,
   type = 'button',
@@ -28,6 +37,7 @@ export function Button({
   isLoading = false,
   loadingText = '처리 중…',
   variant = 'primary',
+  size = 'md',
   className = '',
   ...props
 }: ButtonProps) {
@@ -36,14 +46,16 @@ export function Button({
       {...props}
       type={type}
       disabled={disabled || isLoading}
+      aria-busy={isLoading ? true : props['aria-busy']}
       className={`
-        inline-flex min-h-12 items-center justify-center
-        rounded-control px-6 py-3 text-base font-semibold
-        transition-[background-color,transform,opacity] duration-200 ease-out enabled:cursor-pointer
-        enabled:active:scale-[0.98]
+        inline-flex items-center justify-center gap-2 rounded-control
+        enabled:cursor-pointer motion-safe:transition-[background-color,transform,opacity]
+        motion-safe:duration-(--motion-normal) motion-safe:ease-(--motion-ease-out)
+        motion-safe:enabled:active:scale-[0.98]
         focus-visible:outline-2 focus-visible:outline-offset-2
         disabled:cursor-not-allowed disabled:opacity-50
         ${variantClassName[variant]}
+        ${sizeClassName[size]}
         ${className}
       `}
     >

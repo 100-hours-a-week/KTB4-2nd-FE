@@ -49,16 +49,17 @@ export function getTripMarkerThumbnail(group: TripMarkerGroup): string | null {
   return group.trips.find((trip) => trip.thumbnailUrl)?.thumbnailUrl ?? null;
 }
 
-export function groupNearbyTripMarkers(
-  markers: TripMapMarker[],
-  project: (marker: TripMapMarker) => { x: number; y: number },
+/** 화면 좌표가 radius 안에 이어지는 항목끼리 묶는다. */
+export function clusterNearby<T>(
+  items: T[],
+  project: (item: T) => { x: number; y: number },
   radius = 72,
-): TripMarkerGroup[] {
-  const groups: TripMarkerGroup[] = [];
-  const positions = markers.map(project);
+): T[][] {
+  const clusters: T[][] = [];
+  const positions = items.map(project);
   const visited = new Set<number>();
 
-  for (let index = 0; index < markers.length; index += 1) {
+  for (let index = 0; index < items.length; index += 1) {
     if (visited.has(index)) continue;
 
     const queue = [index];
@@ -69,7 +70,7 @@ export function groupNearbyTripMarkers(
       const current = queue.shift()!;
       members.push(current);
 
-      for (let candidate = 0; candidate < markers.length; candidate += 1) {
+      for (let candidate = 0; candidate < items.length; candidate += 1) {
         if (visited.has(candidate)) continue;
         if (
           Math.hypot(
@@ -84,17 +85,23 @@ export function groupNearbyTripMarkers(
       }
     }
 
-    const groupedMarkers = members.map((member) => markers[member]);
-
-    groups.push({
-      markers: groupedMarkers,
-      trips: groupedMarkers.flatMap((marker) => marker.trips),
-      tripCount: groupedMarkers.reduce((count, marker) => count + marker.tripCount, 0),
-      regionName: groupedMarkers[0].regionName,
-      latitude: groupedMarkers[0].latitude,
-      longitude: groupedMarkers[0].longitude,
-    });
+    clusters.push(members.map((member) => items[member]));
   }
 
-  return groups;
+  return clusters;
+}
+
+export function groupNearbyTripMarkers(
+  markers: TripMapMarker[],
+  project: (marker: TripMapMarker) => { x: number; y: number },
+  radius = 72,
+): TripMarkerGroup[] {
+  return clusterNearby(markers, project, radius).map((groupedMarkers) => ({
+    markers: groupedMarkers,
+    trips: groupedMarkers.flatMap((marker) => marker.trips),
+    tripCount: groupedMarkers.reduce((count, marker) => count + marker.tripCount, 0),
+    regionName: groupedMarkers[0].regionName,
+    latitude: groupedMarkers[0].latitude,
+    longitude: groupedMarkers[0].longitude,
+  }));
 }

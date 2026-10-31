@@ -1,3 +1,4 @@
+import { RetryNotice } from '@/shared/ui/retryNotice';
 import { AlertCircleIcon } from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 
@@ -38,26 +39,20 @@ export function SearchSkeleton({
         </div>
       </div>
       {showError && (
-        <div
-          role="alert"
-          className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
-        >
-          <AlertCircleIcon
-            stroke="#ffb3a8"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            size="18"
-          />
-          <span className="flex-1">{errorMessage}</span>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="cursor-pointer font-bold text-[#a9c8ff] underline-offset-2 hover:underline"
-          >
-            다시 시도
-          </button>
-        </div>
+        <RetryNotice
+          message={errorMessage}
+          onRetry={onRetry}
+          icon={
+            <AlertCircleIcon
+              stroke="#ffb3a8"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              size="18"
+            />
+          }
+          className="fixed right-5 bottom-[calc(var(--app-vertical-offset,0px)+88px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto max-w-[390px]"
+        />
       )}
     </div>
   );

@@ -16,7 +16,15 @@ import { TripDetailPage } from './tripDetailPage';
 const replace = vi.fn();
 const push = vi.fn();
 const back = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push, back }) }));
+let searchParams = new URLSearchParams();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace, push, back }),
+  usePathname: () => '/trips/7',
+  useSearchParams: () => searchParams,
+}));
+vi.mock('@/features/tripDetail/ui/tripPlaceMap', () => ({
+  TripPlaceMap: ({ tripId }: { tripId: number }) => <div>여행 {tripId} 지도</div>,
+}));
 vi.mock('@/features/tripDetail/api/deleteTrip', () => ({ deleteTrip: vi.fn() }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
@@ -80,6 +88,7 @@ function renderTripDetailPage(
 describe('TripDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParams = new URLSearchParams();
     vi.mocked(getTripPlaceFolders).mockResolvedValue(folders);
     vi.mocked(deleteTrip).mockResolvedValue(undefined);
     vi.mocked(getUnclassifiedFolders).mockResolvedValue([]);
@@ -98,6 +107,32 @@ describe('TripDetailPage', () => {
     );
     expect(screen.getByRole('link', { name: /성산일출봉 사진 15장 보기/ })).toBeInTheDocument();
     expect(getTripPlaceFolders).toHaveBeenCalledWith(7, null);
+  });
+
+  it('지도로 보기를 누르면 URL에 지도 보기 상태를 남긴다', async () => {
+    const user = userEvent.setup();
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '지도로 보기' }));
+
+    expect(replace).toHaveBeenCalledWith('/trips/7?view=map', { scroll: false });
+  });
+
+  it('지도 보기 상태면 장소 폴더 목록 대신 지도를 보여주고, 목록으로 돌아갈 수 있다', async () => {
+    const user = userEvent.setup();
+    searchParams = new URLSearchParams('view=map');
+    renderTripDetailPage();
+
+    expect(screen.getByText('여행 7 지도')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '지도로 보기' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.queryByRole('link', { name: /서귀포 사진 35장 보기/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '목록으로 보기' }));
+
+    expect(replace).toHaveBeenCalledWith('/trips/7', { scroll: false });
   });
 
   it('방문 기록이 있어도 헤더 뒤로가기는 생성 화면 대신 여행 목록으로 이동한다', async () => {
