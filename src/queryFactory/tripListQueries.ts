@@ -1,5 +1,6 @@
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
+import { getFavoriteTrips } from '@/features/tripList/api/getFavoriteTrips';
 import { getTrips } from '@/features/tripList/api/getTrips';
 import type { TripListFilter } from '@/features/tripList/model/types';
 
@@ -20,5 +21,13 @@ export const tripListQueries = {
         )
           ? PROCESSING_POLLING_MS
           : false,
+    }),
+  favoriteKeys: () => [...tripListQueries.allKeys(), 'favorites'] as const,
+  favorites: () =>
+    infiniteQueryOptions({
+      queryKey: tripListQueries.favoriteKeys(),
+      queryFn: ({ pageParam }) => getFavoriteTrips(pageParam),
+      initialPageParam: null as string | null,
+      getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     }),
 };

@@ -1,21 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/shared/ui/button';
 import { useRouter } from 'next/navigation';
 
-import { TripCard, useTripFavorite, useTripList, type TripListFilter } from '@/features/tripList';
-import { StarIcon } from '@/shared/ui/icons';
+import {
+  TripCard,
+  TripCardSkeleton,
+  useFavoriteTrips,
+  useRemoveFavoriteTrip,
+} from '@/features/tripList';
+import { AlertCircleIcon, StarIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
+import { RetryNotice } from '@/shared/ui/retryNotice';
 import { Skeleton } from '@/shared/ui/skeleton';
-
-const FAVORITE_FILTER: TripListFilter = { sort: 'LATEST', favorite: true };
 
 export function FavoriteTripsPage() {
   const router = useRouter();
-  const { trips, viewState, refetch } = useTripList(FAVORITE_FILTER);
-  const { mutate: changeFavorite } = useTripFavorite(FAVORITE_FILTER);
-  const favoriteTrips = trips.filter((trip) => trip.favorite);
+  const { trips: favoriteTrips, totalCount, viewState, refetch } = useFavoriteTrips();
+  const { mutate: removeFavorite } = useRemoveFavoriteTrip();
 
   function handleBack() {
     if (window.history.length > 1) router.back();
@@ -33,9 +35,10 @@ export function FavoriteTripsPage() {
 
       {viewState === 'ready' && favoriteTrips.length > 0 && (
         <p className="text-muted mt-2 text-xs">
-          <strong className="text-brand font-bold">{favoriteTrips.length}개</strong>의 여행
+          <strong className="text-brand font-bold">{totalCount}개</strong>의 여행
         </p>
       )}
+      {viewState !== 'ready' && <Skeleton animation="none" className="mt-2.5 h-3 w-16" />}
 
       <section aria-label="즐겨찾기한 여행" className="mt-4">
         {viewState === 'ready' ? (
@@ -48,7 +51,7 @@ export function FavoriteTripsPage() {
                   <TripCard
                     trip={trip}
                     colorIndex={trip.id + index}
-                    onFavoriteChange={(tripId) => changeFavorite({ tripId, favorite: false })}
+                    onFavoriteChange={(tripId) => removeFavorite(tripId)}
                   />
                 </li>
               ))}
@@ -87,19 +90,22 @@ function FavoritesSkeleton({ showError, onRetry }: { showError: boolean; onRetry
     <div
       role={showError ? undefined : 'status'}
       aria-label={showError ? undefined : '즐겨찾기 불러오는 중'}
+      aria-busy={!showError}
     >
-      <div className="space-y-2.5">
+      <ul className="space-y-2.5">
         {Array.from({ length: 4 }, (_, index) => (
-          <Skeleton animation="none" key={index} className="h-[106px] w-full rounded-[18px]" />
+          <li key={index}>
+            <TripCardSkeleton />
+          </li>
         ))}
-      </div>
+      </ul>
       {showError && (
-        <div role="alert" className="mt-6 text-center">
-          <p className="text-muted text-xs">즐겨찾기를 불러오지 못했어요.</p>
-          <Button variant="secondary" size="sm" onClick={onRetry} className="mt-2">
-            다시 시도
-          </Button>
-        </div>
+        <RetryNotice
+          message="즐겨찾기를 불러오지 못했어요."
+          onRetry={onRetry}
+          icon={<AlertCircleIcon stroke="#ffb3a8" strokeWidth="2" size="18" />}
+          className="fixed right-5 bottom-[calc(var(--app-vertical-offset,0px)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto max-w-[390px]"
+        />
       )}
     </div>
   );
