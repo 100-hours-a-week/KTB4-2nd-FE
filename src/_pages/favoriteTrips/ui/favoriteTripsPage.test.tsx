@@ -3,14 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTrips } from '@/features/tripList/api/getTrips';
+import { getFavoriteTrips } from '@/features/tripList/api/getFavoriteTrips';
 import { removeTripFavorite } from '@/features/tripList/api/tripFavorite';
 import type { TripListItem } from '@/features/tripList/model/types';
 
 import { FavoriteTripsPage } from './favoriteTripsPage';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ back: vi.fn(), replace: vi.fn() }) }));
-vi.mock('@/features/tripList/api/getTrips', () => ({ getTrips: vi.fn() }));
+vi.mock('@/features/tripList/api/getFavoriteTrips', () => ({ getFavoriteTrips: vi.fn() }));
 vi.mock('@/features/tripList/api/tripFavorite', () => ({
   registerTripFavorite: vi.fn(),
   removeTripFavorite: vi.fn(),
@@ -23,7 +23,7 @@ function trip(id: number, name: string): TripListItem {
   return {
     id,
     name,
-    locations: ['제주시'],
+    locations: [],
     startDate: '2026-09-01',
     endDate: '2026-09-03',
     nights: 2,
@@ -48,20 +48,21 @@ function renderPage() {
 describe('FavoriteTripsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getTrips).mockResolvedValue({
+    vi.mocked(getFavoriteTrips).mockResolvedValue({
       trips: [trip(1, '파리 & 런던'), trip(2, '제주 한 바퀴')],
+      totalCount: 2,
       hasNext: false,
       nextCursor: null,
     });
     vi.mocked(removeTripFavorite).mockResolvedValue(undefined);
   });
 
-  it('즐겨찾기한 여행만 요청해 개수와 함께 보여준다', async () => {
+  it('즐겨찾기 목록을 요청해 전체 개수와 함께 보여준다', async () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: '파리 & 런던' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '제주 한 바퀴' })).toBeInTheDocument();
-    expect(getTrips).toHaveBeenCalledWith({ sort: 'LATEST', favorite: true, cursor: null });
+    expect(getFavoriteTrips).toHaveBeenCalledWith(null);
     expect(screen.getByText('2개')).toBeInTheDocument();
   });
 
@@ -74,11 +75,17 @@ describe('FavoriteTripsPage', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: '파리 & 런던' })).not.toBeInTheDocument(),
     );
+    expect(screen.getByText('1개')).toBeInTheDocument();
     expect(removeTripFavorite).toHaveBeenCalledWith(1, 'csrf-token');
   });
 
   it('즐겨찾기한 여행이 없으면 여행 목록으로 안내한다', async () => {
-    vi.mocked(getTrips).mockResolvedValue({ trips: [], hasNext: false, nextCursor: null });
+    vi.mocked(getFavoriteTrips).mockResolvedValue({
+      trips: [],
+      totalCount: 0,
+      hasNext: false,
+      nextCursor: null,
+    });
     renderPage();
 
     expect(

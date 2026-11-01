@@ -54,9 +54,11 @@ export function TripCard({
       <TripThumbnail trip={trip} colorIndex={colorIndex} />
       <div className="pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 pr-11">
         <h3 className="truncate text-sm font-extrabold tracking-[-0.01em]">{trip.name}</h3>
-        <p className="text-muted mt-1 truncate text-[11px]">
-          {trip.locations.slice(0, 3).join(', ')}
-        </p>
+        {trip.locations.length > 0 && (
+          <p className="text-muted mt-1 truncate text-[11px]">
+            {trip.locations.slice(0, 3).join(', ')}
+          </p>
+        )}
         <p className="text-muted mt-1 truncate text-[11px]">
           {formatShortDate(trip.startDate)} - {formatShortDate(trip.endDate)} · {trip.nights}박
         </p>
