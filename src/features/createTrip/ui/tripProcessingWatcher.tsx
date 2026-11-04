@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
+import { realtimePollingInterval } from '@/shared/api/realtime';
 import { toast } from '@/shared/ui/toast';
 
 import { getTripProcessingStatus, isTripProcessingRunning } from '../api/getTripProcessingStatus';
@@ -64,7 +65,7 @@ export function TripProcessingWatcher() {
     queries: trips.map((trip) => ({
       queryKey: backgroundStatusKey(trip),
       queryFn: () => getTripProcessingStatus(trip.tripId),
-      refetchInterval: POLLING_MS,
+      refetchInterval: () => realtimePollingInterval(POLLING_MS),
     })),
   });
 

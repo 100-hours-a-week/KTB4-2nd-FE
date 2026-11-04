@@ -3,6 +3,7 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 import { getFavoriteTrips } from '@/features/tripList/api/getFavoriteTrips';
 import { getTrips } from '@/features/tripList/api/getTrips';
 import type { TripListFilter } from '@/features/tripList/model/types';
+import { realtimePollingInterval } from '@/shared/api/realtime';
 
 const PROCESSING_POLLING_MS = 5_000;
 
@@ -19,7 +20,7 @@ export const tripListQueries = {
         query.state.data?.pages.some((page) =>
           page.trips.some((trip) => trip.processingStatus !== 'ready'),
         )
-          ? PROCESSING_POLLING_MS
+          ? realtimePollingInterval(PROCESSING_POLLING_MS)
           : false,
     }),
   favoriteKeys: () => [...tripListQueries.allKeys(), 'favorites'] as const,

@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { deletePhoto, deletePhotos } from '@/features/photoList';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { realtimePollingInterval } from '@/shared/api/realtime';
 import { normalizeText } from '@/shared/lib/text';
 
 import type { TripEditData } from '../api/getTripForEdit';
@@ -133,7 +134,7 @@ export function useTripEditSubmit(
       return status;
     },
     enabled: awaitingProcessing,
-    refetchInterval: 2_000,
+    refetchInterval: () => realtimePollingInterval(2_000),
   });
 
   return {

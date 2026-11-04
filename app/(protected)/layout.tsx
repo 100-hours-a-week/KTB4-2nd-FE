@@ -2,6 +2,7 @@ import { ProtectedLayout } from '@/_app/ui/accessLayouts';
 import { getCurrentUser } from '@/entities/user';
 import { StoryGenerationWatcher } from '@/features/createStory';
 import { TripProcessingWatcher } from '@/features/createTrip';
+import { RealtimeSync } from '@/features/realtimeSync';
 import { AnalyticsIdentity } from '@/shared/lib/analytics';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   return (
     <ProtectedLayout>
       {userId !== null && <AnalyticsIdentity userId={userId} />}
+      <RealtimeSync />
       <StoryGenerationWatcher />
       <TripProcessingWatcher />
       {children}
