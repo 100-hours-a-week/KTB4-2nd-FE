@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { createTripQueries } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
+import { realtimePollingInterval } from '@/shared/api/realtime';
 import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { EVENTS, track } from '@/shared/lib/analytics';
 import { normalizeText } from '@/shared/lib/text';
@@ -248,7 +249,7 @@ export function useTripCreateSubmit() {
       return status;
     },
     refetchInterval: (query) => {
-      if (awaitingProcessing) return 2_000;
+      if (awaitingProcessing) return realtimePollingInterval(2_000);
       const interval = processingQuery.refetchInterval;
       return typeof interval === 'function' ? interval(query) : interval;
     },

@@ -6,6 +6,7 @@ import {
   isTripProcessingRunning,
 } from '@/features/createTrip/api/getTripProcessingStatus';
 import { searchPlaces } from '@/features/createTrip/api/searchPlaces';
+import { realtimePollingInterval } from '@/shared/api/realtime';
 
 const PROCESSING_STATUS_POLLING_MS = 2_000;
 
@@ -27,7 +28,7 @@ export const createTripQueries = {
       queryFn: () => getTripProcessingStatus(tripId),
       refetchInterval: (query) =>
         !query.state.data || isTripProcessingRunning(query.state.data.status)
-          ? PROCESSING_STATUS_POLLING_MS
+          ? realtimePollingInterval(PROCESSING_STATUS_POLLING_MS)
           : false,
       retry: false,
     }),

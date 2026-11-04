@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios';
 import { getStoryGenerationStatus } from '@/features/createStory/api/getStoryGenerationStatus';
 import { getStorySourceFolders } from '@/features/createStory/api/getStorySourceFolders';
 import { isStoryGenerationRunning } from '@/features/createStory/model/types';
+import { realtimePollingInterval } from '@/shared/api/realtime';
 
 const GENERATION_STATUS_POLLING_MS = 2_000;
 
@@ -30,7 +31,7 @@ export const storyCreateQueries = {
         if (isAxiosError(query.state.error) && query.state.error.response?.status === 404)
           return false;
         return !query.state.data || isStoryGenerationRunning(query.state.data.status)
-          ? GENERATION_STATUS_POLLING_MS
+          ? realtimePollingInterval(GENERATION_STATUS_POLLING_MS)
           : false;
       },
     }),
