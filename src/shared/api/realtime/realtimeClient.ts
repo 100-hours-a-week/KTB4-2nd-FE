@@ -71,7 +71,6 @@ function addEntry(subscription: RealtimeSubscription) {
   };
 }
 
-/** 연결 여부와 상관없이 구독을 등록합니다. 연결되거나 재연결될 때마다 다시 구독합니다. */
 export function subscribeRealtime(subscription: RealtimeSubscription) {
   return addEntry(subscription);
 }

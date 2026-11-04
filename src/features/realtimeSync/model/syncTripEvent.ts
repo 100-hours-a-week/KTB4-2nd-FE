@@ -11,10 +11,6 @@ export function tripEventsDestination(tripId: number) {
   return `/topic/trips/${tripId}/events`;
 }
 
-/**
- * 같은 `eventId`가 다시 오거나, 이미 받은 것보다 낮은 `sequence`가 늦게 오면 무시합니다.
- * `sequence`는 여행이 바뀔 때마다 커지는 값이라 여행 하나 안에서만 비교합니다.
- */
 export function createTripEventFilter() {
   const seenEventIds = new Set<string>();
   let latestSequence: number | null = null;
@@ -38,7 +34,6 @@ export function createTripEventFilter() {
   };
 }
 
-/** 다른 사람이 여행을 고치거나 사진을 지우면 이 여행과 관련된 화면 데이터를 다시 받습니다. */
 export function syncTripEvent(queryClient: QueryClient, tripId: number, body: unknown) {
   if (!isRecord(body) || !isRecord(body.data)) return;
   if (typeof body.message !== 'string' || !TRIP_EVENT_MESSAGES.has(body.message)) return;
