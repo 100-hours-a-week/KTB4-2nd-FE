@@ -2,7 +2,7 @@ import type { StompConfig } from '@stomp/stompjs';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { connectRealtime } from './realtimeClient';
+import { connectRealtime, subscribeRealtime } from './realtimeClient';
 import { getRealtimeStatus, realtimePollingInterval } from './realtimeStatus';
 
 const { clients, fetchCsrfToken, refreshSession } = vi.hoisted(() => ({
@@ -28,7 +28,7 @@ vi.mock('@stomp/stompjs', () => ({
     this.connectHeaders = {};
     this.connected = false;
     this.webSocket = undefined;
-    this.subscribe = vi.fn();
+    this.subscribe = vi.fn(() => ({ unsubscribe: vi.fn() }));
     this.activate = vi.fn();
     this.deactivate = vi.fn(() => Promise.resolve());
     clients.push(this);
@@ -183,5 +183,98 @@ describe('connectRealtime', () => {
     stop();
     window.dispatchEvent(new Event('online'));
     expect(client.activate).toHaveBeenCalledTimes(2);
+  });
+
+  describe('subscribeRealtime', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('연결 중이면 바로 구독하고, 재연결되면 다시 구독하며, 해제하면 구독을 끊는다', async () => {
+      const stop = connectRealtime([]);
+      const client = latestClient();
+      await connect(client);
+
+      const unsubscribe = subscribeRealtime({
+        destination: '/topic/trips/7/events',
+        onMessage: vi.fn(),
+      });
+      expect(client.subscribe).toHaveBeenCalledTimes(1);
+
+      close(client);
+      await connect(client);
+      expect(client.subscribe).toHaveBeenCalledTimes(2);
+
+      const stompSubscription = client.subscribe.mock.results[1].value;
+      unsubscribe();
+      expect(stompSubscription.unsubscribe).toHaveBeenCalledTimes(1);
+
+      close(client);
+      await connect(client);
+      expect(client.subscribe).toHaveBeenCalledTimes(2);
+      stop();
+    });
+
+    it('연결 전에 등록한 구독은 연결되면 구독한다', async () => {
+      const unsubscribe = subscribeRealtime({
+        destination: '/topic/trips/7/events',
+        onMessage: vi.fn(),
+      });
+      const stop = connectRealtime([]);
+      const client = latestClient();
+
+      await connect(client);
+      expect(client.subscribe.mock.calls[0][0]).toBe('/topic/trips/7/events');
+
+      unsubscribe();
+      stop();
+    });
+
+    it('구독하자마자 연결이 두 번 연달아 끊기면 거절된 것으로 보고 다시 구독하지 않는다', async () => {
+      vi.useFakeTimers();
+      const stop = connectRealtime([{ destination: '/user/queue/ai-tasks', onMessage: vi.fn() }]);
+      const client = latestClient();
+      const onRejected = vi.fn();
+      subscribeRealtime({ destination: '/topic/trips/7/events', onMessage: vi.fn(), onRejected });
+
+      await connect(client);
+      close(client);
+      expect(onRejected).not.toHaveBeenCalled();
+
+      await connect(client);
+      close(client);
+      expect(onRejected).toHaveBeenCalledTimes(1);
+
+      client.subscribe.mockClear();
+      await connect(client);
+      expect(client.subscribe.mock.calls.map(([destination]) => destination)).toEqual([
+        '/user/queue/ai-tasks',
+      ]);
+      stop();
+    });
+
+    it('구독이 한동안 유지된 뒤 끊긴 것은 거절로 세지 않는다', async () => {
+      vi.useFakeTimers();
+      const stop = connectRealtime([]);
+      const client = latestClient();
+      const onRejected = vi.fn();
+      const unsubscribe = subscribeRealtime({
+        destination: '/topic/trips/7/events',
+        onMessage: vi.fn(),
+        onRejected,
+      });
+
+      await connect(client);
+      close(client);
+      await connect(client);
+      vi.advanceTimersByTime(5_000);
+      close(client);
+      await connect(client);
+      close(client);
+
+      expect(onRejected).not.toHaveBeenCalled();
+      unsubscribe();
+      stop();
+    });
   });
 });
