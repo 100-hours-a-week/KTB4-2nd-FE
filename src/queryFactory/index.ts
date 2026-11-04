@@ -8,6 +8,7 @@ export { searchQueries } from './searchQueries';
 export { storyCreateQueries } from './storyCreateQueries';
 export { tripDetailQueries } from './tripDetailQueries';
 export { tripListQueries } from './tripListQueries';
+export { tripShareQueries } from './tripShareQueries';
 export { tripStoryQueries } from './tripStoryQueries';
 export { unclassifiedPhotosQueries } from './unclassifiedPhotosQueries';
 export { userStatsQueries } from './userStatsQueries';

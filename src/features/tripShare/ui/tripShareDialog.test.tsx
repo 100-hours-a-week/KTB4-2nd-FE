@@ -7,17 +7,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from '@/shared/ui/toast';
 
 import { createTripShare } from '../api/createTripShare';
+import { getTripShares } from '../api/getTripShares';
 import { searchShareUser } from '../api/searchShareUser';
 import { TripShareDialog } from './tripShareDialog';
 
 vi.mock('../api/searchShareUser', () => ({ searchShareUser: vi.fn() }));
 vi.mock('../api/createTripShare', () => ({ createTripShare: vi.fn() }));
+vi.mock('../api/getTripShares', () => ({ getTripShares: vi.fn() }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 vi.mock('@/shared/ui/toast', () => ({ toast: { success: vi.fn() } }));
 
 const hazel = { userId: 12, nickname: '헤이즐', email: 'hazel@gmail.com' };
+const hazelShare = {
+  tripShareId: 3,
+  granteeUserId: 12,
+  email: 'hazel@gmail.com',
+  permission: 'WRITE' as const,
+  expiresAt: '2026-10-30T15:20:00+09:00',
+};
 
 function apiError(status: number, message: string) {
   const config = { headers: new AxiosHeaders() };
@@ -31,7 +40,9 @@ function apiError(status: number, message: string) {
 }
 
 function renderDialog() {
-  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={queryClient}>
       <TripShareDialog open tripId={7} tripName="제주도 가을 여행" onClose={vi.fn()} />
@@ -47,7 +58,43 @@ async function searchEmail(email: string) {
 }
 
 describe('TripShareDialog', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
+  });
+
+  it('열면 이미 공유한 사람 목록을 불러오고, 다음 페이지가 있으면 더 불러온다', async () => {
+    vi.mocked(getTripShares)
+      .mockResolvedValueOnce({ shares: [hazelShare], nextCursor: 'next' })
+      .mockResolvedValueOnce({
+        shares: [{ ...hazelShare, tripShareId: 4, email: 'mint@gmail.com', permission: 'READ' }],
+        nextCursor: null,
+      });
+    renderDialog();
+
+    expect(await screen.findByText('hazel@gmail.com')).toBeInTheDocument();
+    expect(screen.getByText('공유한 사람 1+')).toBeInTheDocument();
+    expect(getTripShares).toHaveBeenCalledWith(7, null);
+
+    await userEvent.setup().click(screen.getByRole('button', { name: '더 보기' }));
+
+    expect(await screen.findByText('mint@gmail.com')).toBeInTheDocument();
+    expect(getTripShares).toHaveBeenLastCalledWith(7, 'next');
+    expect(screen.getByText('공유한 사람 2')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '더 보기' })).not.toBeInTheDocument();
+  });
+
+  it('목록을 불러오지 못하면 다시 시도할 수 있다', async () => {
+    vi.mocked(getTripShares)
+      .mockRejectedValueOnce(apiError(500, 'INTERNAL_SERVER_ERROR'))
+      .mockResolvedValueOnce({ shares: [hazelShare], nextCursor: null });
+    renderDialog();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('공유한 사람을 불러오지 못했어요.');
+    await userEvent.setup().click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(await screen.findByText('hazel@gmail.com')).toBeInTheDocument();
+  });
 
   it('이메일로 사용자를 찾고 고른 권한으로 공유를 등록한다', async () => {
     vi.mocked(searchShareUser).mockResolvedValue(hazel);
@@ -58,6 +105,8 @@ describe('TripShareDialog', () => {
       expiresAt: '2026-10-30T15:20:00+09:00',
     });
     renderDialog();
+    await waitFor(() => expect(getTripShares).toHaveBeenCalledTimes(1));
+    vi.mocked(getTripShares).mockResolvedValue({ shares: [hazelShare], nextCursor: null });
 
     const user = await searchEmail('  hazel@gmail.com ');
 
@@ -77,6 +126,8 @@ describe('TripShareDialog', () => {
     );
     expect(toast.success).toHaveBeenCalledWith('헤이즐님에게 공유했어요.');
     expect(await screen.findByText('공유한 사람 1')).toBeInTheDocument();
+    expect(getTripShares).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('hazel@gmail.com')).toBeInTheDocument();
     expect(screen.getByText(/10월 30일 15:20까지 볼 수 있어요/)).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '공유할 이메일' })).toHaveValue('');
   });

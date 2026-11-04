@@ -49,14 +49,13 @@ export function TripShareDialog({ open, tripId, tripName, onClose }: TripShareDi
       title="공유할 이메일을 입력해주세요"
       description={`‘${tripName}’을 함께 볼 사람을 초대해요`}
     >
-      {/* 닫으면 입력과 검색 결과를 비우도록 열려 있을 때만 그린다. */}
       {open && <TripShareForm tripId={tripId} onClose={onClose} />}
     </Dialog>
   );
 }
 
 function TripShareForm({ tripId, onClose }: { tripId: number; onClose: () => void }) {
-  const { shares, search, create } = useTripShare(tripId);
+  const { shares, list, search, create } = useTripShare(tripId);
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<TripSharePermission>('READ');
   const [formatError, setFormatError] = useState(false);
@@ -161,9 +160,34 @@ function TripShareForm({ tripId, onClose }: { tripId: number; onClose: () => voi
         </div>
       )}
 
+      {list.isPending && (
+        <p role="status" className="text-muted mt-4 text-xs">
+          공유한 사람을 불러오고 있어요...
+        </p>
+      )}
+
+      {list.isError && (
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <p role="alert" className="text-danger text-xs font-semibold">
+            공유한 사람을 불러오지 못했어요.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void list.refetch()}
+            className="shrink-0"
+          >
+            다시 시도
+          </Button>
+        </div>
+      )}
+
       {shares.length > 0 && (
         <>
-          <p className="text-muted mt-4 text-xs font-bold">공유한 사람 {shares.length}</p>
+          <p className="text-muted mt-4 text-xs font-bold">
+            공유한 사람 {shares.length}
+            {list.hasNextPage && '+'}
+          </p>
           <ul className="bg-surface-subtle mt-2 rounded-[14px]">
             {shares.map((item) => (
               <li
@@ -171,9 +195,7 @@ function TripShareForm({ tripId, onClose }: { tripId: number; onClose: () => voi
                 className="border-border-subtle flex min-h-14 items-center gap-2 border-b px-3 py-2 last:border-b-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-brand truncate text-[13px] font-semibold">
-                    {item.user.nickname}
-                  </p>
+                  <p className="text-brand truncate text-[13px] font-semibold">{item.email}</p>
                   <p className="text-muted truncate text-[11px]">
                     {expiryFormat.format(new Date(item.expiresAt))}까지 볼 수 있어요
                   </p>
@@ -184,6 +206,16 @@ function TripShareForm({ tripId, onClose }: { tripId: number; onClose: () => voi
               </li>
             ))}
           </ul>
+          {list.hasNextPage && (
+            <button
+              type="button"
+              onClick={() => void list.fetchNextPage()}
+              disabled={list.isFetchingNextPage}
+              className="text-muted hover:text-brand focus-visible:outline-brand mx-auto mt-2 block cursor-pointer rounded text-xs font-semibold focus-visible:outline-2 disabled:cursor-default disabled:opacity-60"
+            >
+              {list.isFetchingNextPage ? '불러오는 중...' : '더 보기'}
+            </button>
+          )}
         </>
       )}
 

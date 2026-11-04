@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '@/shared/api/browser';
 
 import { createTripShare } from './createTripShare';
+import { getTripShares } from './getTripShares';
 import { searchShareUser } from './searchShareUser';
 
 vi.mock('@/shared/api/browser', () => ({ apiClient: { get: vi.fn(), post: vi.fn() } }));
@@ -39,5 +40,33 @@ describe('tripShare api', () => {
       { granteeUserId: 12, permission: 'READ' },
       { headers: { 'X-CSRF-TOKEN': 'csrf-token' } },
     );
+  });
+
+  it('커서로 공유 대상자 목록을 받고, 다음 페이지가 없으면 커서를 비운다', async () => {
+    const item = {
+      tripShareId: 3,
+      granteeUserId: 12,
+      email: 'hazel@gmail.com',
+      permission: 'READ',
+      expiresAt: '2026-10-30T15:20:00+09:00',
+    };
+    vi.mocked(apiClient.get)
+      .mockResolvedValueOnce({
+        data: { data: { items: [item], hasNext: true, nextCursor: 'cursor-1' } },
+      })
+      .mockResolvedValueOnce({
+        data: { data: { items: [], hasNext: false, nextCursor: 'stale' } },
+      });
+
+    await expect(getTripShares(7, null)).resolves.toEqual({
+      shares: [item],
+      nextCursor: 'cursor-1',
+    });
+    expect(apiClient.get).toHaveBeenLastCalledWith('/trips/7/shares', { params: undefined });
+
+    await expect(getTripShares(7, 'cursor-1')).resolves.toEqual({ shares: [], nextCursor: null });
+    expect(apiClient.get).toHaveBeenLastCalledWith('/trips/7/shares', {
+      params: { cursor: 'cursor-1' },
+    });
   });
 });

@@ -8,7 +8,8 @@ export type ShareUser = {
 
 export type TripShare = {
   tripShareId: number;
-  user: ShareUser;
+  granteeUserId: number;
+  email: string;
   permission: TripSharePermission;
   expiresAt: string;
 };
