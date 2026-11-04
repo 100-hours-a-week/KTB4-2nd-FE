@@ -1,9 +1,8 @@
 import { isId, isRecord } from './syncAiTaskMessage';
 
-/** 오래 켜 둔 탭에서도 메모리가 늘지 않도록 최근 기록만 남깁니다. */
 const MAX_REMEMBERED = 200;
 
-function forgetOldest(records: Set<string> | Map<string, number>) {
+export function forgetOldest(records: Set<string> | Map<string, number>) {
   if (records.size <= MAX_REMEMBERED) return;
   const oldest = records.keys().next().value;
   if (oldest !== undefined) records.delete(oldest);

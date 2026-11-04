@@ -1,4 +1,4 @@
-export { connectRealtime } from './realtimeClient';
+export { connectRealtime, subscribeRealtime } from './realtimeClient';
 export type { RealtimeSubscription } from './realtimeClient';
 export {
   getRealtimeStatus,
