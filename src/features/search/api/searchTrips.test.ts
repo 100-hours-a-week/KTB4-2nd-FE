@@ -32,6 +32,7 @@ describe('searchTrips', () => {
             {
               tripAttachmentId: 3,
               tripId: 1,
+              tripName: '제주도 가을 여행',
               tripPlaceId: 9,
               thumbnailUrl: 'https://cdn.test/photo-3',
               score: 0.8,
@@ -59,6 +60,7 @@ describe('searchTrips', () => {
         {
           id: 3,
           tripId: 1,
+          tripName: '제주도 가을 여행',
           tripPlaceId: 9,
           thumbnailUrl: 'https://cdn.test/photo-3',
           accent: 'coast',
