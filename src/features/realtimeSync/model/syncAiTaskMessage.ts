@@ -39,7 +39,6 @@ export function syncAiTaskMessage(queryClient: QueryClient, body: unknown) {
   }
 }
 
-/** 연결이 바뀌면 진행 중인 작업 상태를 다시 받아 놓친 알림을 메우고 폴링 간격을 바로 바꿉니다. */
 export function refetchAiTaskQueries(queryClient: QueryClient) {
   return Promise.all(
     [

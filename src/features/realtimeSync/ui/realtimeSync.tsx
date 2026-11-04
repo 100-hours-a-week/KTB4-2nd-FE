@@ -16,7 +16,6 @@ import {
   syncAiTaskMessage,
 } from '../model/syncAiTaskMessage';
 
-/** 로그인 화면에서 웹소켓을 하나만 연결하고, AI 작업 알림을 React Query 캐시에 반영합니다. */
 export function RealtimeSync() {
   const queryClient = useQueryClient();
 

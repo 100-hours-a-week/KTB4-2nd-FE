@@ -25,10 +25,6 @@ function parseBody(body: string): unknown {
   }
 }
 
-/**
- * 로그인한 사용자의 웹소켓(STOMP) 연결을 열고, 재연결될 때마다 같은 구독을 다시 겁니다.
- * 반환한 함수를 호출하면 연결을 닫고 재연결도 멈춥니다.
- */
 export function connectRealtime(subscriptions: RealtimeSubscription[]) {
   let stopped = false;
   let connectedThisAttempt = false;
@@ -43,7 +39,6 @@ export function connectRealtime(subscriptions: RealtimeSubscription[]) {
     heartbeatIncoming: HEARTBEAT_MS,
     heartbeatOutgoing: HEARTBEAT_MS,
     connectionTimeout: CONNECTION_TIMEOUT_MS,
-    // beforeConnect가 예외를 던지면 재연결이 멈추므로 실패는 여기서 처리합니다.
     beforeConnect: async (stomp) => {
       if (stopped) return;
       connectedThisAttempt = false;
@@ -57,7 +52,6 @@ export function connectRealtime(subscriptions: RealtimeSubscription[]) {
         }
         stomp.connectHeaders = { 'X-CSRF-TOKEN': await fetchCsrfToken() };
       } catch (error) {
-        // 세션이 끝났다면 재연결해도 계속 거절되므로 멈춥니다. 다른 실패는 다음 재연결에서 다시 시도합니다.
         if (isAxiosError(error) && error.response?.status === 401) {
           stop();
         }
@@ -80,7 +74,6 @@ export function connectRealtime(subscriptions: RealtimeSubscription[]) {
     },
   });
 
-  // 네트워크가 돌아오거나 화면으로 돌아오면 재연결 대기 시간을 기다리지 않고 바로 연결합니다.
   function reconnectNow() {
     if (stopped || client.connected || client.webSocket || document.visibilityState === 'hidden')
       return;

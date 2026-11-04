@@ -17,12 +17,6 @@ function getJobKey(message: unknown, data: Record<string, unknown>) {
   return null;
 }
 
-/**
- * 처리할 필요가 없는 AI 작업 알림을 거릅니다.
- * - 같은 `eventId`가 다시 오면 무시합니다.
- * - 같은 작업에서 이미 받은 것보다 낮은 `statusVersion`이 늦게 오면 무시합니다.
- *   완료 알림은 직전 알림과 버전이 같을 수 있어 같은 버전은 통과시킵니다.
- */
 export function createAiTaskEventFilter() {
   const seenEventIds = new Set<string>();
   const latestVersions = new Map<string, number>();
