@@ -16,7 +16,7 @@ import {
   validateTripPlaces,
 } from '../../model/validation';
 import { PlaceSearchField } from './placeSearchField';
-import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
+import { TripCreateStepLayout } from './tripCreateStepLayout';
 
 const PLACE_SEARCH_DEBOUNCE_MS = 300;
 
@@ -81,11 +81,7 @@ export function TripLocationStep({ onBack, onNext }: TripLocationStepProps) {
       onBack={onBack}
       contentScrollable={false}
       footer={
-        <Button
-          className={`w-full ${tripCreateButtonClassName}`}
-          disabled={places.length === 0}
-          onClick={() => void moveNext()}
-        >
+        <Button className="w-full" disabled={places.length === 0} onClick={() => void moveNext()}>
           다음
         </Button>
       }

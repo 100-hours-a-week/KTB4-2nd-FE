@@ -158,3 +158,36 @@ it('사진을 열 수 없으면(디코딩 실패) 부모에게 미리보기 불�
   await waitFor(() => expect(screen.getByText('미리보기 불가')).toBeInTheDocument());
   expect(onPreviewBrokenChange).toHaveBeenCalledWith(broken, true);
 });
+
+it('처리 중에는 파일 선택·삭제·재시도를 막고 해제 후 같은 파일로 복구한다', async () => {
+  decode.mockRejectedValueOnce(new Error('broken image'));
+  const file = new File(['heic'], 'photo.heic', { type: 'image/heic' });
+  const onSelect = vi.fn();
+  const onRemove = vi.fn();
+  const view = render(
+    <ImageUploadField files={[file]} disabled onSelect={onSelect} onRemove={onRemove} />,
+  );
+  await screen.findByText('미리보기 불가');
+  const input = screen.getByLabelText('여행 사진 추가');
+  const remove = screen.getByRole('button', { name: 'photo.heic 삭제' });
+  const retry = screen.getByRole('button', { name: 'photo.heic 미리보기 다시 시도' });
+  expect(input).toBeDisabled();
+  expect(remove).toBeDisabled();
+  expect(retry).toBeDisabled();
+  fireEvent.change(input, { target: { files: [file] } });
+  fireEvent.click(remove);
+  fireEvent.click(retry);
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(onRemove).not.toHaveBeenCalled();
+  expect(decode).toHaveBeenCalledTimes(1);
+
+  view.rerender(<ImageUploadField files={[file]} onSelect={onSelect} onRemove={onRemove} />);
+  expect(input).toBeEnabled();
+  fireEvent.click(retry);
+  expect(await screen.findByRole('img', { name: file.name })).toBeInTheDocument();
+  expect(decode).toHaveBeenCalledTimes(2);
+  fireEvent.click(remove);
+  expect(onRemove).toHaveBeenCalledWith(0);
+  fireEvent.change(input, { target: { files: [file] } });
+  expect(onSelect).toHaveBeenCalledWith([file]);
+});

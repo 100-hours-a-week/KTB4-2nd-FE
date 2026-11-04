@@ -46,17 +46,19 @@ export function Input({
   return (
     <div className="bg-surface flex w-full flex-col gap-2">
       {label && (
-        <label htmlFor={inputId} className="text-brand text-sm font-semibold">
+        <label htmlFor={inputId} className="text-brand text-label">
           {label}
         </label>
       )}
       <div
         className={`
-          border-field-border relative flex gap-3 transition-colors focus-within:border-brand
+          border-field-border relative flex min-h-control-md items-center gap-3
+          focus-within:border-brand motion-safe:transition-colors
+          motion-safe:duration-(--motion-normal) motion-safe:ease-(--motion-ease-out)
           ${
             isBoxed
-              ? 'min-h-24 items-start rounded-control border-2 px-4 py-3 focus-within:shadow-[0_0_0_1px_var(--brand)]'
-              : 'items-center border-b-2 focus-within:shadow-[0_1px_0_0_var(--brand)]'
+              ? 'rounded-control border-2 px-4 focus-within:shadow-[0_0_0_1px_var(--brand)]'
+              : 'border-b-2 focus-within:shadow-[0_1px_0_0_var(--brand)]'
           }
           ${disabled ? 'cursor-not-allowed opacity-50' : ''}
         `}
@@ -73,18 +75,15 @@ export function Input({
           aria-describedby={describedBy || undefined}
           className={`
             min-w-0 flex-1 rounded-none border-0 bg-transparent px-0
-            text-brand placeholder:text-muted text-base outline-none
+            text-brand placeholder:text-muted text-body py-2 outline-none
             disabled:text-muted disabled:cursor-not-allowed
-            ${isBoxed ? 'min-h-16 py-0 pr-10 pb-7' : 'min-h-12 py-3'}
             ${className}
           `}
         />
         {showCount && (
           <span
             id={countId}
-            className={`text-field-border shrink-0 text-sm font-semibold tabular-nums ${
-              isBoxed ? 'absolute right-3 bottom-3' : 'pr-2'
-            }`}
+            className={`text-field-border text-label shrink-0 tabular-nums ${isBoxed ? '' : 'pr-2'}`}
           >
             {count}/{limit}
           </span>
@@ -94,7 +93,7 @@ export function Input({
         <p
           id={messageId}
           role={error ? 'alert' : undefined}
-          className={`flex items-start gap-2 text-sm ${error ? 'text-danger' : 'text-field-border'}`}
+          className={`flex items-start gap-2 text-description ${error ? 'text-danger-strong' : 'text-field-border'}`}
         >
           {error && (
             <WarningIcon

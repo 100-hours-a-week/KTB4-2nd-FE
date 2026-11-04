@@ -155,7 +155,7 @@ describe('스토리 생성 이후 헤더 뒤로가기', () => {
   it('생성 중 다른 작업을 이어한 뒤에도 상세 헤더에서 목록으로 나갈 수 있다', async () => {
     const user = await enterStoryCreate();
     await startStory(user);
-    await screen.findByRole('progressbar', { name: '스토리 생성 진행률' });
+    await screen.findByRole('status', { name: '스토리 생성 중' });
     await user.click(screen.getByRole('button', { name: '다른 작업 이어하기' }));
     await user.click(await screen.findByRole('button', { name: '여행 목록으로 돌아가기' }));
 
@@ -172,7 +172,7 @@ describe('스토리 생성 이후 헤더 뒤로가기', () => {
   it('생성을 취소한 뒤 앨범, 분위기, 여행 상세를 거쳐 목록으로 나간다', async () => {
     const user = await enterStoryCreate();
     await startStory(user);
-    await screen.findByRole('progressbar', { name: '스토리 생성 진행률' });
+    await screen.findByRole('status', { name: '스토리 생성 중' });
     await user.click(screen.getByRole('button', { name: '스토리 생성에서 돌아가기' }));
     const dialog = screen.getByRole('dialog', { name: '스토리 생성을 취소할까요?' });
     await user.click(within(dialog).getByRole('button', { name: '취소하기' }));

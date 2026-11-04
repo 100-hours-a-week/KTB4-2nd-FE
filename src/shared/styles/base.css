@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--app-backdrop);
+  color: var(--foreground);
+  font-family: var(--font-suit), system-ui, sans-serif;
+}

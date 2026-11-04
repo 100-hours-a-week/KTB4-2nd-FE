@@ -19,7 +19,6 @@ export async function decodeHeicPixels(
     }
 
     const imageData = new ImageData(width, height);
-    // Keep the full-resolution RGBA path identical to heic-to; resizing stays on Main.
     for (let index = 3; index < imageData.data.length; index += 4) {
       imageData.data[index] = 255;
     }

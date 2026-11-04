@@ -214,12 +214,12 @@ describe('TripListPage', () => {
     );
   });
 
-  it('불러오기에 실패하면 스켈레톤과 다시 시도 동작을 제공한다', async () => {
+  it('불러오기에 실패하면 오류를 알리고 다시 시도할 수 있다', async () => {
     vi.mocked(getTrips).mockRejectedValue(new Error('failed'));
     renderTripListPage();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('여행을 가져오지 못했어요.');
-    expect(screen.getByRole('status', { name: '여행 목록 불러오는 중' })).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: '여행 목록 불러오는 중' })).not.toBeInTheDocument();
 
     vi.mocked(getTrips).mockResolvedValue(page(trips));
     await userEvent.click(screen.getByRole('button', { name: '다시 시도' }));

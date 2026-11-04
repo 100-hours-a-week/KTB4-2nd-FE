@@ -12,9 +12,9 @@ import {
   type StoryMood,
 } from '@/features/createStory';
 import type { TripDetail } from '@/features/tripDetail';
-import { Button } from '@/shared/ui/button';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { StoryCancelDialog } from './components/storyCancelDialog';
+import { StoryCreateActions } from './components/storyCreateActions';
 import { StoryCreateIntro } from './components/storyCreateIntro';
 import { StoryFolderGrid } from './components/storyFolderGrid';
 import { StoryGenerationView } from './components/storyGenerationView';
@@ -108,7 +108,6 @@ function StoryCreateContent({
           nickname={nickname}
           status={generation.status as 'processing' | 'completed' | 'failed'}
           elapsed={generation.elapsed}
-          progressPercent={generation.progressPercent}
           message={generation.message}
           onContinueElsewhere={() => router.replace(`/trips/${trip.id}`)}
           onBack={back}
@@ -135,25 +134,13 @@ function StoryCreateContent({
               onUnavailableSelected={form.removeFolders}
             />
           )}
-          <footer className="bg-surface before:from-surface relative shrink-0 pt-3 pb-[max(24px,env(safe-area-inset-bottom))] before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent">
-            <Button
-              disabled={
-                step === 'mood' ? !form.mood : form.selectedIds.length === 0 || aiGuard.isChecking
-              }
-              onClick={step === 'mood' ? () => goToStep('folder') : start}
-              className="w-full gap-2 rounded-[16px] text-sm disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
-            >
-              {step === 'mood' ? '다음' : '생성'}{' '}
-              {step === 'folder' && form.selectedIds.length > 0 && (
-                <span
-                  aria-hidden="true"
-                  className="grid size-5 place-items-center rounded-full bg-white/20 text-[11px]"
-                >
-                  {form.selectedIds.length}
-                </span>
-              )}
-            </Button>
-          </footer>
+          <StoryCreateActions
+            step={step}
+            selectedCount={form.selectedIds.length}
+            canProceed={step === 'mood' ? !!form.mood : form.selectedIds.length > 0}
+            isChecking={aiGuard.isChecking}
+            onProceed={step === 'mood' ? () => goToStep('folder') : start}
+          />
         </>
       )}
       <AiUnavailableDialog

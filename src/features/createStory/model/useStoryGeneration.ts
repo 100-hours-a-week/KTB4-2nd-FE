@@ -102,8 +102,6 @@ export function useStoryGeneration(tripId: number) {
           : 'processing';
 
   const preparing = !result || result.status === 'QUEUED';
-  const progressPercent =
-    status === 'completed' ? 100 : preparing ? 0 : Math.min(99, Math.max(0, result.progress));
   const elapsed =
     status === 'processing' && job.startedAt !== null
       ? Math.max(0, Math.floor((now - job.startedAt) / 1000))
@@ -158,7 +156,6 @@ export function useStoryGeneration(tripId: number) {
 
   return {
     status,
-    progressPercent,
     elapsed,
     message: preparing ? PREPARING_MESSAGE : WRITING_MESSAGE,
     isCanceling: cancelMutation.isPending,

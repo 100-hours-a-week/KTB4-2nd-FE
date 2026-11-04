@@ -2,6 +2,9 @@
 
 import { type PointerEvent, useEffect, useRef, useState } from 'react';
 
+import { IconButton } from '@/shared/ui/iconButton';
+import { CloseIcon } from '@/shared/ui/icons';
+
 import { type ToastItem, useToastStore } from './toastStore';
 
 const progressStyle: Record<ToastItem['variant'], string> = {
@@ -99,17 +102,12 @@ function ToastMessage({ toast }: { toast: ToastItem }) {
       onPointerUp={handlePointerEnd}
       onPointerCancel={handlePointerEnd}
       style={{ transform, opacity }}
-      className={`toast-enter rounded-control bg-surface text-brand relative flex min-h-14 cursor-grab touch-none items-center gap-3 overflow-hidden border border-slate-200 px-4 py-3 shadow-lg select-none active:cursor-grabbing ${dragging ? '' : 'transition-[opacity,transform] duration-200 ease-out'}`}
+      className={`toast-enter rounded-control bg-surface text-brand relative flex min-h-14 cursor-grab touch-none items-center gap-3 overflow-hidden border border-slate-200 px-4 py-1.5 shadow-lg select-none active:cursor-grabbing ${dragging ? '' : 'transition-[opacity,transform] duration-200 ease-out'}`}
     >
       <p className="min-w-0 flex-1 text-sm font-medium break-words">{toast.message}</p>
-      <button
-        type="button"
-        aria-label="알림 닫기"
-        onClick={() => setExit('fade')}
-        className="text-muted hover:text-brand focus-visible:outline-brand shrink-0 cursor-pointer rounded-[4px] px-1 text-xl leading-none focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        ×
-      </button>
+      <IconButton aria-label="알림 닫기" onClick={() => setExit('fade')} className="-mr-2">
+        <CloseIcon aria-hidden="true" size="18" />
+      </IconButton>
       {toast.duration > 0 && (
         <span
           aria-hidden="true"
@@ -130,7 +128,7 @@ export function ToastViewport() {
   return (
     <div
       aria-label="알림"
-      className="pointer-events-none fixed top-[calc(var(--app-vertical-offset)+1.5rem)] left-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2"
+      className="pointer-events-none fixed top-[calc(var(--app-vertical-offset,0px)+1.5rem)] left-1/2 z-(--layer-toast) w-[calc(100%-2rem)] max-w-sm -translate-x-1/2"
     >
       {toasts.map((toast, index) => {
         const depth = toasts.length - 1 - index;

@@ -31,20 +31,10 @@ export function DeleteTripDialog({
       }
     >
       <DialogActions>
-        <Button
-          variant="secondary"
-          onClick={onClose}
-          disabled={isDeleting}
-          className="min-h-11 w-full px-0 text-sm"
-        >
+        <Button variant="secondary" onClick={onClose} disabled={isDeleting} className="w-full">
           취소
         </Button>
-        <Button
-          variant="destructive"
-          onClick={onConfirm}
-          isLoading={isDeleting}
-          className="min-h-11 w-full px-0 text-sm"
-        >
+        <Button variant="destructive" onClick={onConfirm} isLoading={isDeleting} className="w-full">
           삭제하기
         </Button>
       </DialogActions>

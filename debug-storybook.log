@@ -1,0 +1,23 @@
+[16:08:13.538] [INFO] storybook v10.6.5
+[16:08:14.265] [DEBUG] Getting package.json info for /Users/hyejun/Desktop/KTB4-2nd-FE/package.json...
+[16:08:14.796] [DEBUG] Could not determine @babel/preset-env version in use. In case of runtime errors with @babel/preset-env, you may need to set the babelRemoveBugfixes feature flag in your `main.ts` file.
+[16:08:15.054] [DEBUG] Serving static files from [36mpublic[39m at [36m/[39m
+[16:08:15.060] [INFO] Starting...
+[16:08:15.086] [DEBUG] readDependencyManifest: could not resolve "@next/third-parties"
+[16:08:15.321] [DEBUG] Starting preview..
+[16:08:16.099] [DEBUG] Change detection enabled.
+[16:08:16.100] [DEBUG] Change detection: snapshotting Vite resolve config (restart required if vite.config.ts changes)
+[16:08:16.101] [DEBUG] Change detection: ignored 28 regex alias(es); related modules tracked as opaque-leaf.
+[16:08:16.101] [DEBUG] ChangeDetectionResolverFactory: skipped regex aliases [/^react$/, /^react\/jsx-runtime$/, /^react\/jsx-dev-runtime$/, /^react-dom$/, /^react-dom\/server$/, /^react-dom\/test-utils$/, /^react-dom\/client$/, /^react-dom\/cjs\/react-dom\.development\.js$/, /^@storybook\/global$/, /^storybook\/test$/, /^storybook\/actions$/, /^storybook\/preview-api$/, /^storybook\/internal\/channels$/, /^storybook\/internal\/client-logger$/, /^storybook\/internal\/core-events$/, /^storybook\/internal\/preview-errors$/, /^storybook\/internal\/types$/, /^storybook\/internal\/preview-api$/, /^react$/, /^react\/jsx-runtime$/, /^react\/jsx-dev-runtime$/, /^react-dom$/, /^react-dom\/server$/, /^react-dom\/test-utils$/, /^react-dom\/client$/, /^react-dom\/cjs\/react-dom\.development\.js$/, /^\/?@vite\/env/, /^\/?@vite\/client/]
+[16:08:16.113] [ERROR] [38;2;241;97;97mError: listen EADDRINUSE: address already in use 127.0.0.1:6006[39m
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+[16:08:16.115] [WARN] Broken build, fix the error above.
+You may need to refresh the browser.
+[16:08:16.206] [DEBUG] ChangeDetectionResolverFactory: 'react-hook-form' from '/Users/hyejun/Desktop/KTB4-2nd-FE/.storybook/examples/forms.stories.tsx' unresolved ("." is not exported under the conditions ["storybook", "stories", "test", "module", "browser", "development|production"] from package /Users/hyejun/Desktop/KTB4-2nd-FE/node_modules/react-hook-form (see exports field in /Users/hyejun/Desktop/KTB4-2nd-FE/node_modules/react-hook-form/package.json))
+[16:08:16.206] [DEBUG] Could not resolve react-hook-form from /Users/hyejun/Desktop/KTB4-2nd-FE/.storybook/examples/forms.stories.tsx
+[16:08:16.291] [DEBUG] ChangeDetectionResolverFactory: 'react-hook-form' from '/Users/hyejun/Desktop/KTB4-2nd-FE/src/features/createTrip/ui/components/tripNameStep.tsx' unresolved ("." is not exported under the conditions ["storybook", "stories", "test", "module", "browser", "development|production"] from package /Users/hyejun/Desktop/KTB4-2nd-FE/node_modules/react-hook-form (see exports field in /Users/hyejun/Desktop/KTB4-2nd-FE/node_modules/react-hook-form/package.json))
+[16:08:16.291] [DEBUG] Could not resolve react-hook-form from /Users/hyejun/Desktop/KTB4-2nd-FE/src/features/createTrip/ui/components/tripNameStep.tsx
+[16:08:16.302] [DEBUG] Change detection graph built: 5 stories, 24 deps tracked, 201ms

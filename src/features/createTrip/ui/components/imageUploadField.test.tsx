@@ -7,17 +7,15 @@ import { getHeicWorkerCount } from '../../model/heicWorkerCount';
 
 import { ImageUploadField } from './imageUploadField';
 
-const { convertHeic, convertHeicWasm, prepareWasm } = vi.hoisted(() => ({
+const { convertHeic, prepareWasm } = vi.hoisted(() => ({
   convertHeic: vi.fn(),
-  convertHeicWasm: vi.fn(),
   prepareWasm: vi.fn(),
 }));
 
 vi.mock('../../model/heicWorkerCount', () => ({ getHeicWorkerCount: () => 4 }));
 const concurrency = getHeicWorkerCount();
-vi.mock('heic-to', () => ({ heicTo: convertHeic }));
 vi.mock('../../model/decodeHeicWithWasm', () => ({
-  decodeHeicWithWasm: convertHeicWasm,
+  decodeHeicWithWasm: convertHeic,
   prepareHeicWasmWorker: prepareWasm,
 }));
 
@@ -107,7 +105,6 @@ function deferredPreview() {
 
 beforeEach(() => {
   convertHeic.mockReset();
-  convertHeicWasm.mockReset();
   prepareWasm.mockReset().mockResolvedValue(undefined);
   vi.stubGlobal(
     'fetch',
@@ -168,11 +165,10 @@ it('화면 밖의 대기 사진도 스켈레톤을 보여주고 이미지가 준
     pending.resolve(previewBitmap());
   });
   await screen.findByRole('img', { name: 'first.heic' });
-  expect(cards[0].querySelector('span[aria-hidden="true"]')).toBeNull();
+  expect(cards[0].querySelector(`.${skeletonStyles.breathe}`)).toBeNull();
 });
 
-it('Wasm 경로도 설정된 동시 처리 수를 지키고 기존 썸네일과 URL 정리 흐름을 유지한다', async () => {
-  vi.stubEnv('NEXT_PUBLIC_HEIC_PREVIEW_DECODER', 'wasm');
+it('Wasm 변환은 설정된 동시 처리 수를 지키고 썸네일과 URL 정리 흐름을 유지한다', async () => {
   installIntersectionObserverMock();
   const createUrl = installPreviewUrlMocks();
   const files = Array.from(
@@ -180,7 +176,7 @@ it('Wasm 경로도 설정된 동시 처리 수를 지키고 기존 썸네일과 
     (_, index) => new File(['heic'], `${index}.heic`, { type: 'image/heic' }),
   );
   const conversions = files.map(() => deferredPreview());
-  convertHeicWasm.mockImplementation((file: File) => conversions[files.indexOf(file)].promise);
+  convertHeic.mockImplementation((file: File) => conversions[files.indexOf(file)].promise);
   const { unmount } = render(
     <ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />,
   );
@@ -188,12 +184,11 @@ it('Wasm 경로도 설정된 동시 처리 수를 지키고 기존 썸네일과 
     const observer = MockIntersectionObserver.instances[0];
     screen.getAllByRole('listitem').forEach((card) => observer.trigger(card));
   });
-  await waitFor(() => expect(convertHeicWasm).toHaveBeenCalledTimes(concurrency));
-  expect(convertHeic).not.toHaveBeenCalled();
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency));
   await act(async () => {
     conversions[0].resolve(previewBitmap());
   });
-  await waitFor(() => expect(convertHeicWasm).toHaveBeenCalledTimes(files.length));
+  await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(files.length));
   await act(async () => {
     conversions.slice(1).forEach((conversion) => conversion.resolve(previewBitmap()));
   });
@@ -226,9 +221,9 @@ it('스크롤하지 않아도 선택한 모든 사진의 미리보기를 차례�
   installIntersectionObserverMock();
   const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
   const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
-  convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
+  convertHeic.mockImplementation(async (file: File) =>
     previewBitmap(
-      blob === firstFile
+      file === firstFile
         ? new Blob(['first-preview'], { type: 'image/jpeg' })
         : new Blob(['second-preview'], { type: 'image/jpeg' }),
     ),
@@ -256,10 +251,7 @@ it('스크롤하지 않아도 선택한 모든 사진의 미리보기를 차례�
   expect(await screen.findByRole('img', { name: 'first.HEIC' })).toBeInTheDocument();
   expect(await screen.findByRole('img', { name: 'second.HEIC' })).toBeInTheDocument();
   expect(convertHeic).toHaveBeenCalledTimes(2);
-  expect(convertHeic).toHaveBeenCalledWith({
-    blob: firstFile,
-    type: 'bitmap',
-  });
+  expect(convertHeic).toHaveBeenCalledWith(firstFile, expect.any(AbortSignal));
 
   act(() => observer.trigger(cards[0]));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(2));
@@ -273,14 +265,10 @@ it('스크롤로 화면 근처에 온 사진을 먼저 처리하고 남은 사�
     (_, index) => new File(['heic'], `${index}.heic`, { type: 'image/heic' }),
   );
   const pending = files.map(() => deferredPreview());
-  convertHeic.mockImplementation(
-    ({ blob }: { blob: File }) => pending[files.indexOf(blob)].promise,
-  );
+  convertHeic.mockImplementation((file: File) => pending[files.indexOf(file)].promise);
   render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency));
-  expect(convertHeic.mock.calls.map(([params]) => params.blob)).toEqual(
-    files.slice(0, concurrency),
-  );
+  expect(convertHeic.mock.calls.map(([file]) => file)).toEqual(files.slice(0, concurrency));
 
   const observer = MockIntersectionObserver.instances[0];
   const cards = screen.getAllByRole('listitem');
@@ -291,11 +279,11 @@ it('스크롤로 화면 근처에 온 사진을 먼저 처리하고 남은 사�
   });
   await act(async () => pending[0].resolve(previewBitmap()));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency + 1));
-  expect(convertHeic.mock.calls[concurrency][0].blob).toBe(files[concurrency + 1]);
+  expect(convertHeic.mock.calls[concurrency][0]).toBe(files[concurrency + 1]);
 
   await act(async () => pending[1].resolve(previewBitmap()));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(files.length));
-  expect(convertHeic.mock.calls[concurrency + 1][0].blob).toBe(files[concurrency]);
+  expect(convertHeic.mock.calls[concurrency + 1][0]).toBe(files[concurrency]);
   await act(async () => {
     pending.slice(2).forEach((task) => task.resolve(previewBitmap()));
   });
@@ -309,9 +297,9 @@ it('앞 사진을 삭제해도 남은 HEIC 미리보기를 다시 변환하지 �
   installIntersectionObserverMock();
   const firstFile = new File(['first-heic'], 'first.HEIC', { type: 'image/heic' });
   const secondFile = new File(['second-heic'], 'second.HEIC', { type: 'image/heic' });
-  convertHeic.mockImplementation(async ({ blob }: { blob: Blob }) =>
+  convertHeic.mockImplementation(async (file: File) =>
     previewBitmap(
-      blob === firstFile
+      file === firstFile
         ? new Blob(['first-preview'], { type: 'image/jpeg' })
         : new Blob(['second-preview'], { type: 'image/jpeg' }),
     ),
@@ -364,10 +352,7 @@ it('HEIC 사진을 JPEG blob으로 변환해 미리보기에 사용한다', asyn
     'src',
     'blob:http://localhost:3000/converted',
   );
-  expect(convertHeic).toHaveBeenCalledWith({
-    blob: file,
-    type: 'bitmap',
-  });
+  expect(convertHeic).toHaveBeenCalledWith(file, expect.any(AbortSignal));
 });
 
 it.each(['image/jpeg', 'image/png'])(
@@ -394,25 +379,21 @@ it('HEIC는 선택 순서로 Worker 수만큼만 동시에 변환하고 JPEG는 
     (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
   );
   const pending = files.map(() => deferredPreview());
-  convertHeic.mockImplementation(
-    ({ blob }: { blob: File }) => pending[files.indexOf(blob)].promise,
-  );
+  convertHeic.mockImplementation((file: File) => pending[files.indexOf(file)].promise);
   const jpeg = new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' });
 
   render(<ImageUploadField files={[...files, jpeg]} onSelect={vi.fn()} onRemove={vi.fn()} />);
 
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency));
-  expect(convertHeic.mock.calls.map(([params]) => params.blob)).toEqual(
-    files.slice(0, concurrency),
-  );
+  expect(convertHeic.mock.calls.map(([file]) => file)).toEqual(files.slice(0, concurrency));
   expect(screen.getByRole('img', { name: jpeg.name })).toBeInTheDocument();
 
   await act(async () => pending[1].resolve(previewBitmap(new Blob(['second']))));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency + 1));
-  expect(convertHeic.mock.calls[concurrency][0].blob).toBe(files[concurrency]);
+  expect(convertHeic.mock.calls[concurrency][0]).toBe(files[concurrency]);
   await act(async () => pending[0].resolve(previewBitmap(new Blob(['first']))));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(files.length));
-  expect(convertHeic.mock.calls[concurrency + 1][0].blob).toBe(files[concurrency + 1]);
+  expect(convertHeic.mock.calls[concurrency + 1][0]).toBe(files[concurrency + 1]);
   await act(async () => {
     pending.slice(2).forEach((task) => task.resolve(previewBitmap()));
   });
@@ -428,9 +409,7 @@ it('대기 중인 사진을 삭제하면 변환하지 않고 나머지 사진을
     (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
   );
   const pending = files.map(() => deferredPreview());
-  convertHeic.mockImplementation(
-    ({ blob }: { blob: File }) => pending[files.indexOf(blob)].promise,
-  );
+  convertHeic.mockImplementation((file: File) => pending[files.indexOf(file)].promise);
   const { rerender } = render(
     <ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />,
   );
@@ -445,14 +424,14 @@ it('대기 중인 사진을 삭제하면 변환하지 않고 나머지 사진을
   );
   await act(async () => pending[0].resolve(previewBitmap(new Blob(['first']))));
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency + 1));
-  expect(convertHeic.mock.calls[concurrency][0].blob).toBe(files[concurrency + 1]);
+  expect(convertHeic.mock.calls[concurrency][0]).toBe(files[concurrency + 1]);
   await act(async () => {
     pending.forEach((task, index) => {
       if (index !== 0 && index !== concurrency) task.resolve(previewBitmap());
     });
   });
   expect(await screen.findByRole('img', { name: files[concurrency + 1].name })).toBeInTheDocument();
-  expect(convertHeic.mock.calls.map(([params]) => params.blob)).not.toContain(files[concurrency]);
+  expect(convertHeic.mock.calls.map(([file]) => file)).not.toContain(files[concurrency]);
 });
 
 it('디코딩이 끝나도 작은 JPEG 생성이 완료될 때까지 동시 처리 자리를 유지한다', async () => {
@@ -462,7 +441,7 @@ it('디코딩이 끝나도 작은 JPEG 생성이 완료될 때까지 동시 처�
     (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
   );
   const bitmaps = files.map(() => previewBitmap());
-  convertHeic.mockImplementation(async ({ blob }: { blob: File }) => bitmaps[files.indexOf(blob)]);
+  convertHeic.mockImplementation(async (file: File) => bitmaps[files.indexOf(file)]);
   const finishEncoding: BlobCallback[] = [];
   vi.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementation((callback) => {
     finishEncoding.push(callback);
@@ -511,9 +490,7 @@ it('한 사진의 변환이 실패해도 대기 중인 다음 사진을 표시�
     (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
   );
   const pending = files.map(() => deferredPreview());
-  convertHeic.mockImplementation(
-    ({ blob }: { blob: File }) => pending[files.indexOf(blob)].promise,
-  );
+  convertHeic.mockImplementation((file: File) => pending[files.indexOf(file)].promise);
   render(<ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />);
   await waitFor(() => expect(convertHeic).toHaveBeenCalledTimes(concurrency));
 
@@ -550,9 +527,7 @@ it('페이지를 나가면 대기 변환을 취소하고 실행 중 결과의 UR
     { length: concurrency + 1 },
     (_, index) => new File(['heic'], `${index}.HEIC`, { type: 'image/heic' }),
   );
-  convertHeic.mockImplementation(
-    ({ blob }: { blob: File }) => pending[files.indexOf(blob)].promise,
-  );
+  convertHeic.mockImplementation((file: File) => pending[files.indexOf(file)].promise);
   const { unmount } = render(
     <ImageUploadField files={files} onSelect={vi.fn()} onRemove={vi.fn()} />,
   );

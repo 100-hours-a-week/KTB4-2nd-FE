@@ -27,19 +27,14 @@ export function WithdrawDialog({
       }
     >
       <DialogActions>
-        <Button
-          variant="secondary"
-          onClick={onClose}
-          disabled={isWithdrawing}
-          className="min-h-11 w-full px-0 text-sm"
-        >
+        <Button variant="secondary" onClick={onClose} disabled={isWithdrawing} className="w-full">
           취소
         </Button>
         <Button
           variant="destructive"
           onClick={onConfirm}
           isLoading={isWithdrawing}
-          className="min-h-11 w-full px-0 text-sm"
+          className="w-full"
         >
           탈퇴하기
         </Button>

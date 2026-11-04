@@ -1,3 +1,4 @@
+import { RetryNotice } from '@/shared/ui/retryNotice';
 import { WarningIcon } from '@/shared/ui/icons';
 import { Skeleton } from '@/shared/ui/skeleton';
 
@@ -9,7 +10,11 @@ export function PlaceFolderSkeleton({
   onRetry?: () => void;
 }) {
   return (
-    <div role="status" aria-label="장소 사진 불러오는 중">
+    <div
+      role={showError ? undefined : 'status'}
+      aria-label={showError ? undefined : '장소 사진 불러오는 중'}
+      aria-busy={!showError}
+    >
       <div className="grid grid-cols-2 gap-x-2.5 gap-y-4">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index}>
@@ -20,22 +25,12 @@ export function PlaceFolderSkeleton({
         ))}
       </div>
       {showError && (
-        <div
-          role="alert"
-          className="bg-brand fixed right-5 bottom-[calc(var(--app-vertical-offset)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto flex max-w-[390px] items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg"
-        >
-          <WarningIcon stroke="#ffb1a9" size="17" />
-          <span className="flex-1">사진 로드에 실패했어요.</span>
-          {onRetry && (
-            <button
-              type="button"
-              onClick={onRetry}
-              className="cursor-pointer font-bold text-[#a9c8ff] hover:underline"
-            >
-              다시 시도
-            </button>
-          )}
-        </div>
+        <RetryNotice
+          message="사진 로드에 실패했어요."
+          onRetry={onRetry}
+          icon={<WarningIcon stroke="#ffb1a9" size="17" />}
+          className="fixed right-5 bottom-[calc(var(--app-vertical-offset,0px)+20px+env(safe-area-inset-bottom))] left-5 z-30 mx-auto max-w-[390px]"
+        />
       )}
     </div>
   );

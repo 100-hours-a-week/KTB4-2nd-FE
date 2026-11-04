@@ -8,7 +8,7 @@ import { toast } from '@/shared/ui/toast';
 
 import type { TripCreateFormValues } from '../../model/types';
 import { TRIP_DATE_MAX_DAYS, validateTripDateRange } from '../../model/validation';
-import { tripCreateButtonClassName, TripCreateStepLayout } from './tripCreateStepLayout';
+import { TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripDateStepProps = {
   onBack: () => void;
@@ -49,17 +49,12 @@ export function TripDateStep({ onBack, onNext }: TripDateStepProps) {
         <div className="grid grid-cols-[1fr_2fr] gap-2">
           <Button
             variant="secondary"
-            className={tripCreateButtonClassName}
             disabled={!startDate && !endDate}
             onClick={() => setRange({ startDate: '', endDate: '' })}
           >
             재설정
           </Button>
-          <Button
-            className={tripCreateButtonClassName}
-            disabled={!startDate || !endDate}
-            onClick={() => void moveNext()}
-          >
+          <Button disabled={!startDate || !endDate} onClick={() => void moveNext()}>
             다음
           </Button>
         </div>

@@ -33,6 +33,7 @@ export function TripStoryDetailPage({ trip }: { trip: TripDetail }) {
     <TripStoryPage
       story={story}
       isLoading={query.isPending}
+      isRetrying={query.isFetching}
       errorMessage={
         query.isError && !notFound
           ? '스토리를 불러오지 못했어요. 잠시 후 다시 시도해주세요.'

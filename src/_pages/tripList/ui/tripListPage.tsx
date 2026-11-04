@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Button } from '@/shared/ui/button';
 
 import {
   toTripListSort,
@@ -121,13 +122,9 @@ export function TripListPage({ onTripSelect, initialFavoriteOnly = false }: Trip
           className="text-muted mt-4 flex items-center justify-center gap-2 text-xs"
         >
           <span>여행 목록을 갱신하지 못했어요.</span>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="text-brand cursor-pointer font-bold underline"
-          >
+          <Button variant="ghost" size="sm" onClick={() => void refetch()}>
             다시 시도
-          </button>
+          </Button>
         </div>
       )}
       <BottomNavigation items={navigationItems} activeId="list" />

@@ -8,24 +8,31 @@ import {
   KOREA_CENTER,
 } from '@/features/mainMap/lib/tripMapView';
 
-import { clusterNearby } from '@/features/mainMap/model/tripMapMarker';
-
-import { makePlaceMarkerContent, toPlaceMarkerGroup } from '../lib/placeMapMarker';
+import { groupPlacesAtSamePosition, makePlaceMarkerContent } from '../lib/placeMapMarker';
 import type { TripPlaceMarker } from './types';
 
 const FIT_OPTIONS: FitMapOptions = { padding: [72, 32, 16, 32], singleLevel: 6 };
 
 type UseKakaoPlaceMapOptions = {
   places: TripPlaceMarker[];
-  onPlaceSelect: (place: TripPlaceMarker) => void;
+  onPlacesSelect: (places: TripPlaceMarker[], marker: HTMLElement) => void;
+  onPlacesDismiss?: () => void;
 };
 
-export function useKakaoPlaceMap({ places, onPlaceSelect }: UseKakaoPlaceMapOptions) {
+export function useKakaoPlaceMap({
+  places,
+  onPlacesSelect,
+  onPlacesDismiss,
+}: UseKakaoPlaceMapOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMap | null>(null);
   const overlaysRef = useRef<KakaoCustomOverlay[]>([]);
   const placesRef = useRef(places);
-  const onPlaceSelectRef = useRef(onPlaceSelect);
+  const onPlacesSelectRef = useRef(onPlacesSelect);
+  const dismissRef = useRef(onPlacesDismiss);
+  useEffect(() => {
+    dismissRef.current = onPlacesDismiss;
+  }, [onPlacesDismiss]);
   const interactedRef = useRef(false);
   const [sdkReady, setSdkReady] = useState(false);
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -40,8 +47,8 @@ export function useKakaoPlaceMap({ places, onPlaceSelect }: UseKakaoPlaceMapOpti
     placesRef.current = places;
   }, [places]);
   useEffect(() => {
-    onPlaceSelectRef.current = onPlaceSelect;
-  }, [onPlaceSelect]);
+    onPlacesSelectRef.current = onPlacesSelect;
+  }, [onPlacesSelect]);
 
   const drawMarkers = useCallback(() => {
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
@@ -49,33 +56,25 @@ export function useKakaoPlaceMap({ places, onPlaceSelect }: UseKakaoPlaceMapOpti
     const map = mapRef.current;
     const maps = window.kakao?.maps;
     if (!map || !maps) return;
-    const projection = map.getProjection();
-    const clusters = clusterNearby(placesRef.current.filter(isValidPosition), (place) =>
-      projection.containerPointFromCoords(new maps.LatLng(place.latitude, place.longitude)),
+    overlaysRef.current = groupPlacesAtSamePosition(placesRef.current.filter(isValidPosition)).map(
+      (group) => {
+        const place = group[0];
+        const content = makePlaceMarkerContent(
+          place,
+          () => onPlacesSelectRef.current(group, content),
+          group.length,
+        );
+        return new maps.CustomOverlay({
+          map,
+          position: new maps.LatLng(place.latitude, place.longitude),
+          content,
+          clickable: true,
+          xAnchor: 0.5,
+          yAnchor: 1,
+          zIndex: 2,
+        });
+      },
     );
-    overlaysRef.current = clusters.map((places) => {
-      const group = toPlaceMarkerGroup(places);
-      const onClick = () => {
-        // 겹친 장소는 서로 떨어져 보일 때까지 확대한다. 더 확대할 수 없으면 대표 장소를 연다.
-        if (places.length === 1 || map.getLevel() <= 1) {
-          onPlaceSelectRef.current(group.lead);
-          return;
-        }
-        interactedRef.current = true;
-        const level = map.getLevel();
-        fitMap(map, maps, places, FIT_OPTIONS);
-        if (map.getLevel() >= level) map.setLevel(level - 1);
-      };
-      return new maps.CustomOverlay({
-        map,
-        position: new maps.LatLng(group.lead.latitude, group.lead.longitude),
-        content: makePlaceMarkerContent(group, onClick),
-        clickable: true,
-        xAnchor: 0.5,
-        yAnchor: 1,
-        zIndex: places.length > 1 ? 3 : 2,
-      });
-    });
   }, []);
 
   useEffect(() => {
@@ -96,17 +95,20 @@ export function useKakaoPlaceMap({ places, onPlaceSelect }: UseKakaoPlaceMapOpti
       map.setMinLevel(1);
       map.setMaxLevel(14);
       const onIdle = () => {
+        dismissRef.current?.();
         if (container.isConnected && container.clientWidth > 0) drawMarkers();
       };
       maps.event.addListener(map, 'idle', onIdle);
       const markInteracted = () => {
         interactedRef.current = true;
+        dismissRef.current?.();
       };
       container.addEventListener('pointerdown', markInteracted);
       container.addEventListener('wheel', markInteracted);
       const resizeObserver = new ResizeObserver(() => {
         if (!container.isConnected || container.clientWidth === 0 || container.clientHeight === 0)
           return;
+        dismissRef.current?.();
         const center = map.getCenter();
         map.relayout();
         if (interactedRef.current) map.setCenter(center);

@@ -42,7 +42,7 @@ export function MyPage({ user }: MyPageProps) {
   const failureNotifiedRef = useRef(false);
   const { mutate: requestLogout, isPending: isLoggingOut } = useLogout();
   const { mutate: requestWithdraw, isPending: isWithdrawing } = useWithdraw();
-  const { stats } = useUserStats();
+  const { stats, favoriteTripCount } = useUserStats();
 
   useEffect(() => {
     if (user) {
@@ -73,7 +73,7 @@ export function MyPage({ user }: MyPageProps) {
               <StarIcon strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" size="20" />
             }
             label="즐겨찾기한 여행"
-            value={stats ? `${stats.favoriteTripCount}개` : undefined}
+            value={favoriteTripCount === null ? undefined : `${favoriteTripCount}개`}
           />
         </MenuGroup>
 
@@ -94,20 +94,16 @@ export function MyPage({ user }: MyPageProps) {
           variant="secondary"
           onClick={() => requestLogout()}
           isLoading={isLoggingOut}
-          className="rounded-row w-full text-[15px]"
+          className="w-full"
         >
           로그아웃
         </Button>
       </div>
 
       <div className="mt-8 flex flex-col items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setWithdrawOpen(true)}
-          className="text-muted hover:text-brand focus-visible:outline-brand cursor-pointer text-[13px] font-medium underline underline-offset-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setWithdrawOpen(true)}>
           탈퇴하기
-        </button>
+        </Button>
         <p className="text-muted/70 text-[11px] font-medium">여담 · {APP_VERSION}</p>
       </div>
 

@@ -48,7 +48,7 @@ export function AiUnavailableDialog({
       title={copy.title}
       description={copy.description}
     >
-      <Button onClick={onClose} className="min-h-11 w-full px-0 text-sm">
+      <Button onClick={onClose} className="w-full">
         확인
       </Button>
     </Dialog>

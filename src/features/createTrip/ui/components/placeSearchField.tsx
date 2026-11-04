@@ -1,4 +1,5 @@
-import { CloseIcon, PinIcon, SearchIcon } from '@/shared/ui/icons';
+import { PinIcon } from '@/shared/ui/icons';
+import { SearchField } from '@/shared/ui/searchField';
 
 import type { PlaceCandidate } from '../../model/types';
 
@@ -25,33 +26,15 @@ export function PlaceSearchField({
 
   return (
     <div className="flex min-h-0 flex-col">
-      <label htmlFor="place-search" className="sr-only">
-        여행지 검색
-      </label>
-      <div className="bg-surface border-border-subtle focus-within:border-brand flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-[16px] border px-4 shadow-[0_2px_8px_rgba(2,23,48,0.03)] transition-colors">
-        <span className="text-muted shrink-0">
-          <SearchIcon strokeWidth="2" strokeLinecap="round" size={19} />
-        </span>
-        <input
-          id="place-search"
-          type="search"
-          value={query}
-          autoComplete="off"
-          placeholder="시/군 이름으로 검색해주세요"
-          onChange={(event) => onQueryChange(event.target.value)}
-          className="text-brand placeholder:text-muted/70 min-w-0 flex-1 bg-transparent py-3 text-sm font-medium outline-none [&::-webkit-search-cancel-button]:hidden"
-        />
-        {query && (
-          <button
-            type="button"
-            aria-label="검색어 지우기"
-            onClick={() => onQueryChange('')}
-            className="text-muted hover:text-brand focus-visible:outline-brand grid size-7 shrink-0 cursor-pointer place-items-center rounded-full bg-slate-100 transition-colors focus-visible:outline-2"
-          >
-            <CloseIcon strokeWidth="2.6" strokeLinecap="round" size="12" />
-          </button>
-        )}
-      </div>
+      <SearchField
+        label="여행지 검색"
+        showSearchIcon
+        value={query}
+        autoComplete="off"
+        placeholder="시/군 이름으로 검색해주세요"
+        onValueChange={onQueryChange}
+        className="shrink-0"
+      />
 
       {query.trim() && (
         <div

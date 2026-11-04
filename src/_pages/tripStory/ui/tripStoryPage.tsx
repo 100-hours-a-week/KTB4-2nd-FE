@@ -13,6 +13,7 @@ import {
 import { CalendarIcon, EditIcon, ExpandIcon, ImageIcon, ImageOffIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { Button } from '@/shared/ui/button';
+import { IconButton } from '@/shared/ui/iconButton';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { toast } from '@/shared/ui/toast';
 
@@ -21,11 +22,13 @@ const DAY_LABELS = ['첫째 날', '둘째 날', '셋째 날'];
 export function TripStoryPage({
   story,
   isLoading = false,
+  isRetrying = false,
   errorMessage,
   onRetry,
 }: {
   story: TripStory;
   isLoading?: boolean;
+  isRetrying?: boolean;
   errorMessage?: string;
   onRetry?: () => void;
 }) {
@@ -48,14 +51,19 @@ export function TripStoryPage({
           onBack={handleBack}
           backLabel="여행 상세로 돌아가기"
           action={
-            <button
-              type="button"
+            <IconButton
               aria-label="스토리 편집 (준비 중)"
               onClick={() => toast.warning('아직 지원하지 않는 기능이에요.')}
-              className="group focus-visible:outline-brand relative grid size-11 cursor-pointer place-items-center rounded-full hover:bg-brand/5 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="hover:bg-brand/5"
             >
-              <EditIcon strokeLinecap="round" strokeLinejoin="round" size="22" variant="story" />
-            </button>
+              <EditIcon
+                aria-hidden="true"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                size="22"
+                variant="story"
+              />
+            </IconButton>
           }
         />
       </div>
@@ -100,7 +108,12 @@ export function TripStoryPage({
           className="flex min-h-72 flex-col items-center justify-center gap-4 px-6 text-center"
         >
           <p className="text-muted text-sm leading-6">{errorMessage}</p>
-          <Button variant="secondary" onClick={onRetry}>
+          <Button
+            variant="secondary"
+            isLoading={isRetrying}
+            loadingText="스토리 불러오는 중…"
+            onClick={onRetry}
+          >
             다시 시도
           </Button>
         </section>
