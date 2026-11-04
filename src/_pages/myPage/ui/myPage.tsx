@@ -42,7 +42,7 @@ export function MyPage({ user }: MyPageProps) {
   const failureNotifiedRef = useRef(false);
   const { mutate: requestLogout, isPending: isLoggingOut } = useLogout();
   const { mutate: requestWithdraw, isPending: isWithdrawing } = useWithdraw();
-  const { stats } = useUserStats();
+  const { stats, favoriteTripCount } = useUserStats();
 
   useEffect(() => {
     if (user) {
@@ -73,7 +73,7 @@ export function MyPage({ user }: MyPageProps) {
               <StarIcon strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" size="20" />
             }
             label="즐겨찾기한 여행"
-            value={stats ? `${stats.favoriteTripCount}개` : undefined}
+            value={favoriteTripCount === null ? undefined : `${favoriteTripCount}개`}
           />
         </MenuGroup>
 

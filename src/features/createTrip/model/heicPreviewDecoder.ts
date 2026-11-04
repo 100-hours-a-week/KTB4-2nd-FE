@@ -1,8 +1,7 @@
-import { getHeicPreviewDecoderMode, type HeicPreviewDecoderMode } from './heicPreviewDecoderMode';
 import { HeicPreviewResourceError } from './heicPreviewError';
 
 type Decoder = (file: File, signal: AbortSignal) => Promise<ImageBitmap>;
-const decoders = new Map<HeicPreviewDecoderMode, Promise<Decoder>>();
+let decoder: Promise<Decoder> | undefined;
 
 async function checkConnection() {
   if (!navigator.onLine) throw new HeicPreviewResourceError('network');
@@ -20,35 +19,26 @@ async function checkConnection() {
 }
 
 export function resetHeicPreviewDecoder() {
-  decoders.delete(getHeicPreviewDecoderMode());
+  decoder = undefined;
 }
 
 export function prepareHeicPreviewDecoder(): Promise<Decoder> {
-  const mode = getHeicPreviewDecoderMode();
-  const existing = decoders.get(mode);
-  if (existing) return existing;
+  if (decoder) return decoder;
 
   const preparation = Promise.resolve().then(async () => {
     await checkConnection();
     try {
-      if (mode === 'wasm') {
-        const { prepareHeicWasmWorker, decodeHeicWithWasm } = await import('./decodeHeicWithWasm');
-        await prepareHeicWasmWorker();
-        return decodeHeicWithWasm;
-      }
-      const { heicTo } = await import('heic-to');
-      return async (file: File, signal: AbortSignal) => {
-        signal.throwIfAborted();
-        return heicTo({ blob: file, type: 'bitmap' });
-      };
+      const { prepareHeicWasmWorker, decodeHeicWithWasm } = await import('./decodeHeicWithWasm');
+      await prepareHeicWasmWorker();
+      return decodeHeicWithWasm;
     } catch (cause) {
       if (cause instanceof HeicPreviewResourceError) throw cause;
       throw new HeicPreviewResourceError(navigator.onLine ? 'module' : 'network', cause);
     }
   });
-  decoders.set(mode, preparation);
+  decoder = preparation;
   void preparation.catch(() => {
-    if (decoders.get(mode) === preparation) decoders.delete(mode);
+    if (decoder === preparation) decoder = undefined;
   });
   return preparation;
 }

@@ -1,6 +1,7 @@
 import type { ApiResponse } from '@/shared/api';
 import { apiClient } from '@/shared/api/browser';
 
+import { countNights } from '../model/countNights';
 import type { TripListFilter, TripListItem } from '../model/types';
 
 type TripListItemStatus = 'PROCESSING' | 'UPDATING' | 'COMPLETED' | 'FAILED' | 'CANCELED';
@@ -32,8 +33,6 @@ export type TripListPageResult = {
 export type GetTripsParams = TripListFilter & {
   cursor?: string | null;
 };
-
-const MILLISECONDS_PER_DAY = 86_400_000;
 
 export async function getTrips({
   sort,
@@ -77,13 +76,4 @@ function splitPlaceSummary(placeSummary: string) {
     .split(',')
     .map((place) => place.trim())
     .filter((place) => place.length > 0);
-}
-
-function countNights(startDate: string, endDate: string) {
-  const start = Date.parse(`${startDate}T00:00:00Z`);
-  const end = Date.parse(`${endDate}T00:00:00Z`);
-
-  if (Number.isNaN(start) || Number.isNaN(end)) return 0;
-
-  return Math.max(0, Math.round((end - start) / MILLISECONDS_PER_DAY));
 }

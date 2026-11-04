@@ -16,11 +16,9 @@ export function TripDetailMenu({ onEdit, onShare, onDelete }: TripDetailMenuProp
       onSelect: onEdit,
     },
     {
-      id: 'share-link',
-      label: '링크로 공유하기',
+      id: 'share',
+      label: '공유하기',
       icon: <LinkIcon size="20" />,
-      badge: '준비 중',
-      disabled: true,
       onSelect: onShare,
     },
     {

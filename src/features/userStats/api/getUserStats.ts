@@ -1,14 +1,24 @@
+import type { ApiResponse } from '@/shared/api';
+import { apiClient } from '@/shared/api/browser';
+
 import type { UserStats } from '../model/types';
 
-const MOCK_USER_STATS: UserStats = {
-  tripCount: 4,
-  photoCount: 853,
-  storyCount: 2,
-  favoriteTripCount: 1,
-  storageUsedBytes: 12_400_000_000,
-  storageLimitBytes: 30_000_000_000,
+type UserStatsResponse = {
+  tripCount: number;
+  attachmentCount: number;
+  storyCount: number;
+  storageUsedBytes: number;
+  storageMaximumBytes: number;
 };
 
 export async function getUserStats(): Promise<UserStats> {
-  return MOCK_USER_STATS;
+  const { data } = await apiClient.get<ApiResponse<UserStatsResponse>>('/users/me/stats');
+
+  return {
+    tripCount: data.data.tripCount,
+    photoCount: data.data.attachmentCount,
+    storyCount: data.data.storyCount,
+    storageUsedBytes: data.data.storageUsedBytes,
+    storageLimitBytes: data.data.storageMaximumBytes,
+  };
 }
