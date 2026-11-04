@@ -10,9 +10,9 @@ import {
   useTripSummary,
   type TripDetail,
 } from '@/features/tripDetail';
+import { TripShareDialog } from '@/features/tripShare';
 import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
 import { PageHeader } from '@/shared/ui/pageHeader';
-import { toast } from '@/shared/ui/toast';
 
 import { DeleteTripDialog } from './components/deleteTripDialog';
 import { EmptyPlaceFolders } from './components/emptyPlaceFolders';
@@ -44,12 +44,11 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const { mutate: requestDelete, isPending: isDeleting } = useDeleteTrip(trip.id);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const handleBack = () => {
     router.replace('/trips');
   };
-
-  const showUnsupportedToast = () => toast.warning('아직 지원하지 않는 기능이에요.');
 
   // 사진 목록에서 돌아왔을 때 보던 형태를 유지하도록 URL에 남긴다.
   function changeViewMode(mode: TripDetailViewMode) {
@@ -76,7 +75,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
         action={
           <TripDetailMenu
             onEdit={() => router.push(`/trips/${trip.id}/edit?step=name`)}
-            onShare={showUnsupportedToast}
+            onShare={() => setShareOpen(true)}
             onDelete={() => setDeleteOpen(true)}
           />
         }
@@ -117,6 +116,13 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
           setStoryEmptyOpen(false);
           router.push(`/trips/${trip.id}/story/create`);
         }}
+      />
+
+      <TripShareDialog
+        open={shareOpen}
+        tripId={trip.id}
+        tripName={trip.name}
+        onClose={() => setShareOpen(false)}
       />
 
       <DeleteTripDialog
