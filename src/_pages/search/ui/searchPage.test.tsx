@@ -29,7 +29,16 @@ const result: SearchResult = {
       thumbnailUrl: null,
     },
   ],
-  photos: [{ id: 3, tripId: 1, tripPlaceId: 9, thumbnailUrl: null, accent: 'coast' }],
+  photos: [
+    {
+      id: 3,
+      tripId: 1,
+      tripName: '제주도 가을 여행',
+      tripPlaceId: 9,
+      thumbnailUrl: null,
+      accent: 'coast',
+    },
+  ],
 };
 
 function renderPage(query: string) {
@@ -87,7 +96,9 @@ describe('SearchPage', () => {
 
     expect(await screen.findByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '사진 1건' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('link', { name: '1번째 사진이 있는 폴더 보기' })).toHaveAttribute(
+    expect(
+      screen.getByRole('link', { name: '제주도 가을 여행의 1번째 사진이 있는 폴더 보기' }),
+    ).toHaveAttribute(
       'href',
       `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
     );
@@ -98,6 +109,33 @@ describe('SearchPage', () => {
     ).toHaveAttribute(
       'href',
       `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
+    );
+  });
+
+  it('사진을 여행 폴더별로 묶어서 보여준다', async () => {
+    vi.mocked(searchTrips).mockResolvedValue({
+      ...result,
+      photos: [
+        { ...result.photos[0], id: 3 },
+        {
+          id: 4,
+          tripId: 2,
+          tripName: '부산 여름 여행',
+          tripPlaceId: 20,
+          thumbnailUrl: null,
+          accent: 'night',
+        },
+        { ...result.photos[0], id: 5 },
+      ],
+    });
+    renderPage('바다');
+
+    const jeju = await screen.findByRole('region', { name: '제주도 가을 여행 2장' });
+    expect(within(jeju).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('region', { name: '부산 여름 여행 1장' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '부산 여름 여행 여행 폴더 열기' })).toHaveAttribute(
+      'href',
+      '/trips/2',
     );
   });
 
