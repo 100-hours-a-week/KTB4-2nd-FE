@@ -4,16 +4,12 @@ export const STORY_SUMMARY_LIMIT = 20;
 export const STORY_DAY_LABEL_LIMIT = 40;
 export const STORY_DETAIL_SUMMARY_LIMIT = 40;
 export const STORY_MEMO_LIMIT = 125;
-/** 백엔드가 받는 스토리 사진 수의 최대값입니다. */
 export const STORY_BLOCK_LIMIT = 30;
 
-/** 글 분위기 다시 쓰기(tone-preview)는 이 세 가지만 지원합니다. */
 export const STORY_TONE_PREVIEW_MOODS = ['PLAIN', 'HUMOROUS', 'LITERARY'] as const;
 
 export type StoryEditBlock = {
-  /** 화면에서 사진을 구분하는 값입니다. 새로 넣은 사진은 storyBlockId가 없어 따로 둡니다. */
   key: string;
-  /** 새로 넣은 사진은 null이며, 저장하면 백엔드가 번호를 만듭니다. */
   storyBlockId: number | null;
   tripPlaceId: number;
   tripAttachmentId: number;
@@ -38,7 +34,6 @@ export type StoryEditDraft = {
 
 type StoryContentDay = Omit<TripStoryResponse['days'][number], 'blocks'> & {
   blocks: (Omit<TripStoryResponse['days'][number]['blocks'][number], 'storyBlockId'> & {
-    /** 미리보기에서는 아직 저장하지 않은 사진이 null로 옵니다. */
     storyBlockId: number | null;
   })[];
 };
@@ -47,7 +42,6 @@ type StoryContent = Pick<TripStoryResponse, 'storyId' | 'mood' | 'storySummary'>
   days: StoryContentDay[];
 };
 
-/** 수정 응답은 저장된 사진만 담아서 storyBlockId가 항상 있습니다. */
 export type StoryUpdateResponse = Pick<TripStoryResponse, 'storyId' | 'storySummary' | 'days'> & {
   tone: TripStoryMood;
 };
@@ -81,7 +75,6 @@ export type StoryTonePreviewRequest = {
 
 let newBlockSequence = 0;
 
-/** 아직 저장하지 않은 사진에 붙일 화면용 key를 만듭니다. */
 export function createNewBlockKey() {
   newBlockSequence += 1;
   return `new-${newBlockSequence}`;
@@ -111,7 +104,6 @@ export function toStoryEditDraft(story: StoryContent): StoryEditDraft {
   };
 }
 
-/** 수정·미리보기 응답(`tone`)을 조회 응답(`mood`) 모양으로 맞춥니다. */
 export function fromStoryContentResponse<T extends { tone: TripStoryMood }>({
   tone,
   ...story
@@ -183,7 +175,6 @@ export function removeStoryEditBlock(draft: StoryEditDraft, blockKey: string): S
   };
 }
 
-/** 그날의 index 자리에 사진을 끼워 넣습니다. */
 export function insertStoryEditBlock(
   draft: StoryEditDraft,
   dayKey: string,
@@ -200,7 +191,6 @@ export function insertStoryEditBlock(
   };
 }
 
-/** 백엔드와 같이 이모지도 한 글자로 셉니다. */
 export function countStoryText(value: string) {
   return [...value].length;
 }

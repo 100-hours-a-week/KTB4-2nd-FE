@@ -70,7 +70,6 @@ export function useTripStoryEdit(
     setIsDirty(true);
   }
 
-  /** 입력값 때문에 저장을 막았으면 false를 돌려줍니다. */
   function submit() {
     if (save.isPending || tonePreview.isPending) return true;
     if (!isDirty) {

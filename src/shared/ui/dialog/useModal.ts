@@ -33,7 +33,6 @@ export function useModal(
       const last = focusable[focusable.length - 1];
       const active = document.activeElement;
 
-      // 포커스가 다이얼로그 밖으로 나가지 않도록 양 끝에서 순환시킵니다.
       if (event.shiftKey && (active === first || !panelRef.current.contains(active))) {
         event.preventDefault();
         last.focus();

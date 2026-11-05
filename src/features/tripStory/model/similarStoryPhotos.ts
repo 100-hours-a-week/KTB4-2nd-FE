@@ -6,10 +6,6 @@ export type SimilarStoryPhoto = { tripAttachmentId: number; thumbnailUrl: string
 
 const MAX_FOLDER_PAGES = 10;
 
-/**
- * 유사 사진 API는 사진 번호만 주므로, 같은 장소 폴더 사진 목록에서 썸네일을 찾아 붙입니다.
- * TODO: 백엔드 응답에 thumbnailUrl이 들어오면 폴더 조회를 없앱니다.
- */
 export async function findSimilarStoryPhotos({
   tripId,
   tripPlaceId,

@@ -16,10 +16,6 @@ export type StoryPhotoToAdd = {
   placeName?: string;
 };
 
-/**
- * 백엔드는 새 사진의 날짜를 그 사진이 속한 장소 날짜로 정합니다.
- * 장소 폴더 목록에는 날짜가 없어서, 끼워 넣은 날에서 벗어나지 않도록 그날 이미 쓰인 장소의 사진만 보여줍니다.
- */
 export function StoryPhotoAddSheet({
   tripId,
   placeIds,
