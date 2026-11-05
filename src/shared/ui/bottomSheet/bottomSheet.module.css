@@ -1,0 +1,26 @@
+.backdrop {
+  animation: sheet-fade-in var(--motion-normal) var(--motion-ease-out) backwards;
+}
+
+.panel {
+  animation: sheet-slide-up var(--motion-enter) var(--motion-ease-out) backwards;
+}
+
+@keyframes sheet-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    animation: none;
+  }
+}
