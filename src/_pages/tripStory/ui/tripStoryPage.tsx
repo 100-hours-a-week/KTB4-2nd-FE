@@ -25,12 +25,15 @@ export function TripStoryPage({
   isRetrying = false,
   errorMessage,
   onRetry,
+  onEdit,
 }: {
   story: TripStory;
   isLoading?: boolean;
   isRetrying?: boolean;
   errorMessage?: string;
   onRetry?: () => void;
+  /** 여행 주인이고 스토리를 불러온 뒤에만 넘겨서 편집 버튼을 보여줍니다. */
+  onEdit?: () => void;
 }) {
   const router = useRouter();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -51,19 +54,17 @@ export function TripStoryPage({
           onBack={handleBack}
           backLabel="여행 상세로 돌아가기"
           action={
-            <IconButton
-              aria-label="스토리 편집 (준비 중)"
-              onClick={() => toast.warning('아직 지원하지 않는 기능이에요.')}
-              className="hover:bg-brand/5"
-            >
-              <EditIcon
-                aria-hidden="true"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                size="22"
-                variant="story"
-              />
-            </IconButton>
+            onEdit && (
+              <IconButton aria-label="스토리 편집" onClick={onEdit} className="hover:bg-brand/5">
+                <EditIcon
+                  aria-hidden="true"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  size="22"
+                  variant="story"
+                />
+              </IconButton>
+            )
           }
         />
       </div>
@@ -95,6 +96,11 @@ export function TripStoryPage({
             {story.photoCount}장
           </span>
         </p>
+        {story.summary && (
+          <p className="mt-4 text-[15px] leading-6 font-semibold wrap-break-word">
+            {story.summary}
+          </p>
+        )}
       </section>
       {isLoading ? (
         <div role="status" aria-label="스토리 불러오는 중" className="space-y-5 px-5 py-6">

@@ -24,14 +24,18 @@ export type TripStory = {
   startDate: string;
   endDate: string;
   photoCount: number;
+  summary?: string;
   days: StoryDay[];
 };
+
+export type TripStoryMood = 'PLAIN' | 'EMOTIONAL' | 'HUMOROUS' | 'CALM' | 'LITERARY';
 
 export type TripStoryResponse = {
   storyId: number;
   tripId: number;
+  /** 여행 주인일 때만 true이며, 스토리 수정은 주인만 할 수 있습니다. */
   userByMe: boolean;
-  mood: 'PLAIN' | 'EMOTIONAL' | 'HUMOROUS' | 'CALM' | 'LITERARY';
+  mood: TripStoryMood;
   storySummary: string;
   days: {
     date: string;
@@ -43,7 +47,7 @@ export type TripStoryResponse = {
       tripAttachmentId: number;
       thumbnailUrl: string | null;
       detailSummary: string;
-      memo: string;
+      memo: string | null;
     }[];
   }[];
 };
