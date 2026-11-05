@@ -2,14 +2,17 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
+import { useState } from 'react';
 
 import type { TripDetail } from '@/features/tripDetail';
 import { toTripStory, type TripStory } from '@/features/tripStory';
 import { tripStoryQueries } from '@/queryFactory';
 
+import { TripStoryEditor } from './tripStoryEditor';
 import { TripStoryPage } from './tripStoryPage';
 
 export function TripStoryDetailPage({ trip }: { trip: TripDetail }) {
+  const [editing, setEditing] = useState(false);
   const query = useQuery({
     ...tripStoryQueries.detail(trip.id),
     retry: (failureCount, error) => {
@@ -29,6 +32,21 @@ export function TripStoryDetailPage({ trip }: { trip: TripDetail }) {
         photoCount: trip.photoCount,
         days: [],
       };
+  const canEdit = !!query.data?.userByMe && story.days.length > 0;
+
+  if (editing && query.data) {
+    return (
+      <TripStoryEditor
+        trip={story}
+        story={query.data}
+        onClose={() => {
+          setEditing(false);
+          window.scrollTo({ top: 0 });
+        }}
+      />
+    );
+  }
+
   return (
     <TripStoryPage
       story={story}
@@ -40,6 +58,7 @@ export function TripStoryDetailPage({ trip }: { trip: TripDetail }) {
           : undefined
       }
       onRetry={() => void query.refetch()}
+      onEdit={canEdit ? () => setEditing(true) : undefined}
     />
   );
 }

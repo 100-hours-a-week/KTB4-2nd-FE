@@ -2,7 +2,7 @@
 
 import { PhotoArtwork, type PhotoListItem } from '@/features/photoList';
 
-import { useLongPress } from '../../lib/useLongPress';
+import { useLongPress } from '@/shared/lib/longPress';
 
 export function PhotoGridItem({
   photo,

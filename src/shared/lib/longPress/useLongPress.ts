@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 
-import { LONG_PRESS_DELAY_MS, LONG_PRESS_MOVE_TOLERANCE_PX } from '../config/longPress';
+import { LONG_PRESS_DELAY_MS, LONG_PRESS_MOVE_TOLERANCE_PX } from './config';
 
 type UseLongPressOptions = {
   onLongPress: () => void;
