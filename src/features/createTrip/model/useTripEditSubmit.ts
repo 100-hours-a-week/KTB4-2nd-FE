@@ -6,7 +6,7 @@ import { useRef, useState } from 'react';
 import { deletePhoto, deletePhotos } from '@/features/photoList';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
-import { realtimePollingInterval } from '@/shared/api/realtime';
+import { isRealtimeConnected, realtimePollingInterval } from '@/shared/api/realtime';
 import { normalizeText } from '@/shared/lib/text';
 
 import type { TripEditData } from '../api/getTripForEdit';
@@ -14,6 +14,11 @@ import {
   getTripProcessingStatus,
   type TripProcessingStatusResponse,
 } from '../api/getTripProcessingStatus';
+import {
+  sendTripEditCommand,
+  type TripEditCommand,
+  TripEditCommandError,
+} from '../api/sendTripEditCommand';
 import { updateTrip, type UpdateTripRequest } from '../api/updateTrip';
 import { uploadAdditionalAttachmentBatch } from '../api/uploadAdditionalAttachments';
 import { splitIntoUploadBatches } from '../api/uploadInitialAttachments';
@@ -73,16 +78,45 @@ export function useTripEditSubmit(
   const [awaitingProcessing, setAwaitingProcessing] = useState(false);
   const deletedPhotoIds = useRef(new Set<number>());
   const addition = useRef<AdditionPoint | null>(null);
+  const commandRequestIds = useRef(new Map<string, string>());
+
+  /**
+   * 결과를 받지 못한 명령은 같은 requestId로 다시 보내 중복 반영을 막습니다.
+   * 성공하거나 거절된 명령은 기록이 남으므로 다음에는 새 requestId를 씁니다.
+   */
+  const runCommand = async (command: TripEditCommand) => {
+    const key = JSON.stringify(command);
+    const requestId = commandRequestIds.current.get(key) ?? crypto.randomUUID();
+    commandRequestIds.current.set(key, requestId);
+    try {
+      await sendTripEditCommand(tripId, requestId, command);
+      commandRequestIds.current.delete(key);
+    } catch (error) {
+      if (!(error instanceof TripEditCommandError && error.code === 'TIMEOUT')) {
+        commandRequestIds.current.delete(key);
+      }
+      throw error;
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async ({ values, removedPhotoIds }: TripEditSubmitInput) => {
       const csrfToken = await fetchCsrfToken();
 
+      // 실시간 연결이 있으면 함께 보는 사람에게 알림이 가는 웹소켓 명령으로 저장합니다.
+      // 연결이 없을 때는 기존 REST로 저장하며, 이 경로는 여행 주인만 쓸 수 있습니다.
+      const realtime = isRealtimeConnected();
+
       const updateRequest = getTripUpdateRequest(initial, values);
-      if (updateRequest) await updateTrip(tripId, updateRequest, csrfToken);
+      if (updateRequest) {
+        if (realtime) await runCommand({ type: 'update', changes: updateRequest });
+        else await updateTrip(tripId, updateRequest, csrfToken);
+      }
 
       const photoIdsToDelete = removedPhotoIds.filter((id) => !deletedPhotoIds.current.has(id));
-      if (photoIdsToDelete.length === 1) await deletePhoto(photoIdsToDelete[0], csrfToken);
+      if (photoIdsToDelete.length > 0 && realtime) {
+        await runCommand({ type: 'attachments/delete', attachmentIds: photoIdsToDelete });
+      } else if (photoIdsToDelete.length === 1) await deletePhoto(photoIdsToDelete[0], csrfToken);
       else if (photoIdsToDelete.length > 1) await deletePhotos(photoIdsToDelete, csrfToken);
       photoIdsToDelete.forEach((id) => deletedPhotoIds.current.add(id));
       if (photoIdsToDelete.length > 0) setDeletedIds(new Set(deletedPhotoIds.current));
