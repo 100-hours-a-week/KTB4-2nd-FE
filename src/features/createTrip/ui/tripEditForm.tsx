@@ -100,8 +100,6 @@ function TripEditFormContent({
   const members = useTripPresence(data.tripId);
   useTripEditNotifications(data.tripId);
 
-  // 다른 사람이 바꾼 값을 받으면, 내가 손대지 않은 칸만 새 값으로 맞춥니다.
-  // 그래야 저장할 때 내가 고치지 않은 칸이 예전 값으로 되돌아가지 않습니다.
   const previousData = useRef(data);
   useEffect(() => {
     const previous = previousData.current;
@@ -157,7 +155,6 @@ function TripEditFormContent({
   };
 
   const existingPhotos = data.photos.filter((photo) => !edit.deletedPhotoIds.has(photo.id));
-  // 다른 사람이 먼저 지운 사진은 지울 목록에서도 뺍니다.
   const existingPhotoIds = new Set(existingPhotos.map((photo) => photo.id));
   const pendingRemovedIds = new Set([...removedPhotoIds].filter((id) => existingPhotoIds.has(id)));
   const keptPhotoCount = existingPhotos.length - pendingRemovedIds.size;

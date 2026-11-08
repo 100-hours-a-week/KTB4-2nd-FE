@@ -80,10 +80,6 @@ export function useTripEditSubmit(
   const addition = useRef<AdditionPoint | null>(null);
   const commandRequestIds = useRef(new Map<string, string>());
 
-  /**
-   * 결과를 받지 못한 명령은 같은 requestId로 다시 보내 중복 반영을 막습니다.
-   * 성공하거나 거절된 명령은 기록이 남으므로 다음에는 새 requestId를 씁니다.
-   */
   const runCommand = async (command: TripEditCommand) => {
     const key = JSON.stringify(command);
     const requestId = commandRequestIds.current.get(key) ?? crypto.randomUUID();
@@ -103,8 +99,6 @@ export function useTripEditSubmit(
     mutationFn: async ({ values, removedPhotoIds }: TripEditSubmitInput) => {
       const csrfToken = await fetchCsrfToken();
 
-      // 실시간 연결이 있으면 함께 보는 사람에게 알림이 가는 웹소켓 명령으로 저장합니다.
-      // 연결이 없을 때는 기존 REST로 저장하며, 이 경로는 여행 주인만 쓸 수 있습니다.
       const realtime = isRealtimeConnected();
 
       const updateRequest = getTripUpdateRequest(initial, values);

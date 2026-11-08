@@ -39,7 +39,6 @@ export function getTripEditNotice(body: unknown): string | null {
   return null;
 }
 
-/** 수정 화면에 있는 동안 다른 곳에서 바뀐 내용을 알리고, 화면의 기준 값을 새로 받습니다. */
 export function useTripEditNotifications(tripId: number) {
   const queryClient = useQueryClient();
 
