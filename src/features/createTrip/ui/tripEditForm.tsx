@@ -2,9 +2,10 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import { TripPresenceBar, useTripPresence } from '@/features/tripPresence';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { Funnel } from '@/shared/lib/funnel';
 import { Button } from '@/shared/ui/button';
@@ -18,10 +19,11 @@ import { getTripEditSubmitError } from '../model/editSubmitError';
 import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 import type { TripCreateFormValues, TripCreateStep } from '../model/types';
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
+import { useTripEditNotifications } from '../model/useTripEditNotifications';
 import { hasTripEditChanges, useTripEditSubmit } from '../model/useTripEditSubmit';
 import { TripDateStep } from './components/tripDateStep';
 import { TripEditImageStep } from './components/tripEditImageStep';
-import { TripFormModeContext } from './components/tripFormMode';
+import { TripFormHeaderSlotContext, TripFormModeContext } from './components/tripFormMode';
 import { TripLocationStep } from './components/tripLocationStep';
 import { TripNameStep } from './components/tripNameStep';
 import { TripProcessingView } from './components/tripProcessingView';
@@ -29,16 +31,18 @@ import { TripProcessingView } from './components/tripProcessingView';
 type TripEditFormProps = {
   tripId: number;
   initialStep: TripCreateStep;
+  /** 접속자 목록에서 나를 빼고 보여주는 데 씁니다. 확인하지 못했으면 null입니다. */
+  currentUserId: number | null;
 };
 
-export function TripEditForm({ tripId, initialStep }: TripEditFormProps) {
+export function TripEditForm({ tripId, initialStep, currentUserId }: TripEditFormProps) {
   const router = useRouter();
   const { data, isPending, isError, refetch } = useQuery(createTripQueries.edit(tripId));
 
   return (
     <TripFormModeContext.Provider value="edit">
       {data ? (
-        <TripEditFormContent data={data} initialStep={initialStep} />
+        <TripEditFormContent data={data} initialStep={initialStep} currentUserId={currentUserId} />
       ) : (
         <main className="bg-surface text-brand mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col px-6 pt-[max(8px,env(safe-area-inset-top))]">
           <PageHeader
@@ -73,9 +77,11 @@ export function TripEditForm({ tripId, initialStep }: TripEditFormProps) {
 function TripEditFormContent({
   data,
   initialStep,
+  currentUserId,
 }: {
   data: TripEditData;
   initialStep: TripCreateStep;
+  currentUserId: number | null;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -91,6 +97,31 @@ function TripEditFormContent({
     mode: 'onChange',
   });
   const { step, goToStep, goBack } = useTripCreateFunnel(initialStep);
+  const members = useTripPresence(data.tripId);
+  useTripEditNotifications(data.tripId);
+
+  // 다른 사람이 바꾼 값을 받으면, 내가 손대지 않은 칸만 새 값으로 맞춥니다.
+  // 그래야 저장할 때 내가 고치지 않은 칸이 예전 값으로 되돌아가지 않습니다.
+  const previousData = useRef(data);
+  useEffect(() => {
+    const previous = previousData.current;
+    previousData.current = data;
+    if (previous === data) return;
+
+    const values = methods.getValues();
+    if (values.tripName === previous.tripName) {
+      methods.resetField('tripName', { defaultValue: data.tripName });
+    }
+    const regionCodes = (places: TripEditData['places']) =>
+      places.map((place) => place.regionCode).join();
+    if (regionCodes(values.places) === regionCodes(previous.places)) {
+      methods.resetField('places', { defaultValue: data.places });
+    }
+    if (values.startDate === previous.startDate && values.endDate === previous.endDate) {
+      methods.resetField('startDate', { defaultValue: data.startDate });
+      methods.resetField('endDate', { defaultValue: data.endDate });
+    }
+  }, [data, methods]);
   const [removedPhotoIds, setRemovedPhotoIds] = useState<Set<number>>(new Set());
   const [isAddingPhotos, setIsAddingPhotos] = useState(false);
 
@@ -126,9 +157,9 @@ function TripEditFormContent({
   };
 
   const existingPhotos = data.photos.filter((photo) => !edit.deletedPhotoIds.has(photo.id));
-  const pendingRemovedIds = new Set(
-    [...removedPhotoIds].filter((id) => !edit.deletedPhotoIds.has(id)),
-  );
+  // 다른 사람이 먼저 지운 사진은 지울 목록에서도 뺍니다.
+  const existingPhotoIds = new Set(existingPhotos.map((photo) => photo.id));
+  const pendingRemovedIds = new Set([...removedPhotoIds].filter((id) => existingPhotoIds.has(id)));
   const keptPhotoCount = existingPhotos.length - pendingRemovedIds.size;
 
   const toggleRemovedPhoto = (photoId: number) => {
@@ -196,32 +227,36 @@ function TripEditFormContent({
   }
 
   return (
-    <FormProvider {...methods}>
-      <form className="h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
-        <Funnel step={step}>
-          <Funnel.Step name="name">
-            <TripNameStep onBack={() => handleBack('name')} onNext={() => goToStep('location')} />
-          </Funnel.Step>
-          <Funnel.Step name="location">
-            <TripLocationStep
-              onBack={() => handleBack('location')}
-              onNext={() => goToStep('date')}
-            />
-          </Funnel.Step>
-          <Funnel.Step name="date">
-            <TripDateStep onBack={() => handleBack('date')} onNext={() => goToStep('images')} />
-          </Funnel.Step>
-          <Funnel.Step name="images">
-            <TripEditImageStep
-              existingPhotos={existingPhotos}
-              removedPhotoIds={pendingRemovedIds}
-              onToggleRemove={toggleRemovedPhoto}
-              onBack={() => handleBack('images')}
-              isSubmitting={edit.isSaving}
-            />
-          </Funnel.Step>
-        </Funnel>
-      </form>
-    </FormProvider>
+    <TripFormHeaderSlotContext.Provider
+      value={<TripPresenceBar members={members} currentUserId={currentUserId} />}
+    >
+      <FormProvider {...methods}>
+        <form className="h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
+          <Funnel step={step}>
+            <Funnel.Step name="name">
+              <TripNameStep onBack={() => handleBack('name')} onNext={() => goToStep('location')} />
+            </Funnel.Step>
+            <Funnel.Step name="location">
+              <TripLocationStep
+                onBack={() => handleBack('location')}
+                onNext={() => goToStep('date')}
+              />
+            </Funnel.Step>
+            <Funnel.Step name="date">
+              <TripDateStep onBack={() => handleBack('date')} onNext={() => goToStep('images')} />
+            </Funnel.Step>
+            <Funnel.Step name="images">
+              <TripEditImageStep
+                existingPhotos={existingPhotos}
+                removedPhotoIds={pendingRemovedIds}
+                onToggleRemove={toggleRemovedPhoto}
+                onBack={() => handleBack('images')}
+                isSubmitting={edit.isSaving}
+              />
+            </Funnel.Step>
+          </Funnel>
+        </form>
+      </FormProvider>
+    </TripFormHeaderSlotContext.Provider>
   );
 }
