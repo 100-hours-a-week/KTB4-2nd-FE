@@ -2,7 +2,7 @@ import type { StompConfig } from '@stomp/stompjs';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { connectRealtime, subscribeRealtime } from './realtimeClient';
+import { connectRealtime, publishRealtime, subscribeRealtime } from './realtimeClient';
 import { getRealtimeStatus, realtimePollingInterval } from './realtimeStatus';
 
 const { clients, fetchCsrfToken, refreshSession } = vi.hoisted(() => ({
@@ -17,6 +17,7 @@ type FakeClient = {
   connected: boolean;
   webSocket: undefined;
   subscribe: ReturnType<typeof vi.fn>;
+  publish: ReturnType<typeof vi.fn>;
   activate: ReturnType<typeof vi.fn>;
   deactivate: ReturnType<typeof vi.fn>;
 };
@@ -29,6 +30,7 @@ vi.mock('@stomp/stompjs', () => ({
     this.connected = false;
     this.webSocket = undefined;
     this.subscribe = vi.fn(() => ({ unsubscribe: vi.fn() }));
+    this.publish = vi.fn();
     this.activate = vi.fn();
     this.deactivate = vi.fn(() => Promise.resolve());
     clients.push(this);
@@ -215,6 +217,28 @@ describe('connectRealtime', () => {
       stop();
     });
 
+    it('구독할 때마다 onSubscribed를 불러 재연결 뒤에도 다시 참여할 수 있게 한다', async () => {
+      const stop = connectRealtime([]);
+      const client = latestClient();
+      const onSubscribed = vi.fn();
+      const unsubscribe = subscribeRealtime({
+        destination: '/topic/trips/7/presence',
+        onMessage: vi.fn(),
+        onSubscribed,
+      });
+      expect(onSubscribed).not.toHaveBeenCalled();
+
+      await connect(client);
+      expect(onSubscribed).toHaveBeenCalledTimes(1);
+
+      close(client);
+      await connect(client);
+      expect(onSubscribed).toHaveBeenCalledTimes(2);
+
+      unsubscribe();
+      stop();
+    });
+
     it('연결 전에 등록한 구독은 연결되면 구독한다', async () => {
       const unsubscribe = subscribeRealtime({
         destination: '/topic/trips/7/events',
@@ -274,6 +298,30 @@ describe('connectRealtime', () => {
 
       expect(onRejected).not.toHaveBeenCalled();
       unsubscribe();
+      stop();
+    });
+  });
+
+  describe('publishRealtime', () => {
+    it('연결되어 있으면 본문을 JSON으로 보내고, 본문이 없으면 빈 프레임을 보낸다', async () => {
+      const stop = connectRealtime([]);
+      const client = latestClient();
+      expect(publishRealtime('/app/trips/7/presence/join')).toBe(false);
+
+      await connect(client);
+      expect(publishRealtime('/app/trips/7/presence/join')).toBe(true);
+      expect(publishRealtime('/app/trips/7/update', { requestId: 'r1', changes: {} })).toBe(true);
+
+      expect(client.publish.mock.calls).toEqual([
+        [{ destination: '/app/trips/7/presence/join' }],
+        [
+          {
+            destination: '/app/trips/7/update',
+            body: '{"requestId":"r1","changes":{}}',
+            headers: { 'content-type': 'application/json' },
+          },
+        ],
+      ]);
       stop();
     });
   });

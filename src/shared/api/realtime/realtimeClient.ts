@@ -10,6 +10,8 @@ import { setRealtimeStatus } from './realtimeStatus';
 export type RealtimeSubscription = {
   destination: string;
   onMessage: (body: unknown) => void;
+  /** 처음 구독할 때와 재연결 뒤 다시 구독할 때마다 불립니다. */
+  onSubscribed?: () => void;
   onRejected?: () => void;
 };
 
@@ -42,6 +44,7 @@ function subscribeEntry(client: Client, entry: SubscriptionEntry) {
     entry.onMessage(parseBody(message.body)),
   );
   entry.subscribedAt = Date.now();
+  entry.onSubscribed?.();
 }
 
 function releaseEntriesOnClose() {
@@ -73,6 +76,21 @@ function addEntry(subscription: RealtimeSubscription) {
 
 export function subscribeRealtime(subscription: RealtimeSubscription) {
   return addEntry(subscription);
+}
+
+/** 연결되어 있을 때만 보내고, 보냈는지 돌려줍니다. 본문이 없으면 빈 프레임을 보냅니다. */
+export function publishRealtime(destination: string, body?: unknown) {
+  if (!activeClient?.connected) return false;
+  activeClient.publish(
+    body === undefined
+      ? { destination }
+      : {
+          destination,
+          body: JSON.stringify(body),
+          headers: { 'content-type': 'application/json' },
+        },
+  );
+  return true;
 }
 
 export function connectRealtime(subscriptions: RealtimeSubscription[]) {
