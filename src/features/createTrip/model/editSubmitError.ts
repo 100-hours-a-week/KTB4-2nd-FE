@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import type { ApiErrorResponse } from '@/shared/api';
 
+import { TripEditCommandError } from '../api/sendTripEditCommand';
 import type { TripCreateStep } from './types';
 
 export type TripEditSubmitError = {
@@ -22,9 +23,12 @@ export function getTripEditSubmitError(error: unknown): TripEditSubmitError {
 }
 
 function toTripEditSubmitError(error: unknown): TripEditSubmitError {
-  const code = axios.isAxiosError<ApiErrorResponse>(error)
-    ? error.response?.data?.message
-    : undefined;
+  const code =
+    error instanceof TripEditCommandError
+      ? error.code
+      : axios.isAxiosError<ApiErrorResponse>(error)
+        ? error.response?.data?.message
+        : undefined;
 
   switch (code) {
     case 'TRIP_NAME_DUPLICATED':
@@ -55,6 +59,20 @@ function toTripEditSubmitError(error: unknown): TripEditSubmitError {
       return { message: '사진 업로드를 준비하지 못했어요. 잠시 후 다시 시도해주세요.' };
     case 'TRIP_NOT_FOUND':
       return { message: '여행을 찾을 수 없어요.' };
+    case 'WRITE_PERMISSION_REQUIRED':
+      return { message: '이 여행을 편집할 권한이 없어요.' };
+    case 'ATTACHMENT_NOT_FOUND':
+    case 'INVALID_ATTACHMENT_IDS':
+      return {
+        message: '이미 지워진 사진이 있어요. 사진 목록을 다시 확인해주세요.',
+        step: 'images',
+      };
+    case 'ATTACHMENT_DELETE_NOT_ALLOWED':
+      return {
+        message: '사진 정리나 스토리 생성이 진행 중이라 지금은 사진을 지울 수 없어요.',
+      };
+    case 'TIMEOUT':
+      return { message: '저장됐는지 확인하지 못했어요. 같은 내용으로 다시 저장해주세요.' };
     default:
       return { message: '여행을 수정하지 못했어요. 잠시 후 다시 시도해주세요.' };
   }

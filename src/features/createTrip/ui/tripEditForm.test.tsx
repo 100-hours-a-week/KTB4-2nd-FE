@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { deletePhoto } from '@/features/photoList/api/photoDelete';
+import type { RealtimeSubscription } from '@/shared/api/realtime';
 import { toast } from '@/shared/ui/toast';
 
 import { getTripForEdit, type TripEditData } from '../api/getTripForEdit';
@@ -14,9 +15,30 @@ import { uploadAdditionalAttachmentBatch } from '../api/uploadAdditionalAttachme
 import type { TripCreateStep } from '../model/types';
 import { TripEditForm } from './tripEditForm';
 
-const { replace, back } = vi.hoisted(() => ({
+const { replace, back, realtime } = vi.hoisted(() => ({
   replace: vi.fn(),
   back: vi.fn(),
+  realtime: {
+    connected: false,
+    subscriptions: [] as RealtimeSubscription[],
+    publish: vi.fn(),
+  },
+}));
+vi.mock('@/shared/api/realtime', () => ({
+  isRealtimeConnected: () => realtime.connected,
+  realtimePollingInterval: (ms: number) => ms,
+  subscribeRealtimeStatus: () => () => {},
+  publishRealtime: (destination: string, body?: unknown) => {
+    realtime.publish(destination, body);
+    return realtime.connected;
+  },
+  subscribeRealtime: (subscription: RealtimeSubscription) => {
+    realtime.subscriptions.push(subscription);
+    if (realtime.connected) subscription.onSubscribed?.();
+    return () => {
+      realtime.subscriptions = realtime.subscriptions.filter((item) => item !== subscription);
+    };
+  },
 }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace, back }),
@@ -62,7 +84,7 @@ function renderForm(initialStep: TripCreateStep) {
   });
   return render(
     <QueryClientProvider client={client}>
-      <TripEditForm tripId={7} initialStep={initialStep} />
+      <TripEditForm tripId={7} initialStep={initialStep} currentUserId={1} />
     </QueryClientProvider>,
   );
 }
@@ -78,11 +100,33 @@ function conflict(code: string) {
   });
 }
 
+function emit(destination: string, body: unknown) {
+  act(() => {
+    realtime.subscriptions
+      .filter((subscription) => subscription.destination === destination)
+      .forEach((subscription) => subscription.onMessage(body));
+  });
+}
+
+function presence(members: { userId: number; nickname: string; permission: string }[]) {
+  return {
+    message: 'PRESENCE_SNAPSHOT',
+    data: {
+      tripId: 7,
+      epoch: 'epoch-1',
+      revision: members.length,
+      members: members.map((member) => ({ ...member, profileImageUrl: null })),
+    },
+  };
+}
+
 describe('TripEditForm', () => {
   const originalCreateObjectURL = URL.createObjectURL;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    realtime.connected = false;
+    realtime.subscriptions = [];
     vi.mocked(getTripForEdit).mockResolvedValue(trip);
     vi.mocked(updateTrip).mockResolvedValue(undefined);
     vi.mocked(deletePhoto).mockResolvedValue(undefined);
@@ -281,5 +325,150 @@ describe('TripEditForm', () => {
 
     expect(toast.error).toHaveBeenCalledWith('여행 하나에 사진은 최대 200장까지 올릴 수 있어요.');
     expect(screen.getByRole('button', { name: '1번째 기존 사진 삭제 취소' })).toBeInTheDocument();
+  });
+
+  describe('함께 편집', () => {
+    beforeEach(() => {
+      realtime.connected = true;
+    });
+
+    it('접속자 목록에 참여하고, 다른 사람이 있으면 헤더 아래에 보여주며 누르면 참여자 시트를 연다', async () => {
+      const user = userEvent.setup();
+      renderForm('name');
+      await screen.findByDisplayValue('제주 여행');
+
+      expect(realtime.publish).toHaveBeenCalledWith('/app/trips/7/presence/join', undefined);
+      emit(
+        '/topic/trips/7/presence',
+        presence([{ userId: 1, nickname: '혜준', permission: 'OWNER' }]),
+      );
+      expect(screen.queryByText(/함께 편집 중/)).not.toBeInTheDocument();
+
+      emit(
+        '/topic/trips/7/presence',
+        presence([
+          { userId: 1, nickname: '혜준', permission: 'OWNER' },
+          { userId: 2, nickname: '지민', permission: 'WRITE' },
+        ]),
+      );
+      await user.click(screen.getByRole('button', { name: '지민님과 함께 편집 중' }));
+
+      const sheet = screen.getByRole('dialog', { name: '함께 편집 중 2명' });
+      expect(sheet).toHaveTextContent('혜준 (나)');
+      expect(sheet).toHaveTextContent('편집할 수 있어요');
+    });
+
+    it('연결되어 있으면 웹소켓 명령으로 저장하고 결과를 받으면 상세로 돌아간다', async () => {
+      const user = userEvent.setup();
+      renderForm('name');
+
+      const nameInput = await screen.findByDisplayValue('제주 여행');
+      await user.clear(nameInput);
+      await user.type(nameInput, '부산 여행');
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      await user.click(await screen.findByRole('button', { name: '다음' }));
+      await user.click(await screen.findByRole('button', { name: '다음' }));
+      await user.click(await screen.findByRole('button', { name: '수정 완료' }));
+
+      await waitFor(() =>
+        expect(realtime.publish).toHaveBeenCalledWith('/app/trips/7/update', {
+          requestId: expect.any(String),
+          changes: { tripName: '부산 여행' },
+        }),
+      );
+      const [, { requestId }] = realtime.publish.mock.calls.find(
+        ([destination]) => destination === '/app/trips/7/update',
+      )!;
+      emit('/user/queue/command-results', {
+        message: 'TRIP_UPDATE_SUCCESS',
+        data: { requestId, tripId: 7, status: 'SUCCEEDED', sequence: 3 },
+      });
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips/7'));
+      expect(updateTrip).not.toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith('여행을 수정했어요.');
+
+      emit('/topic/trips/7/events', {
+        message: 'TRIP_UPDATED',
+        data: {
+          eventId: 'e-own',
+          requestId,
+          tripId: 7,
+          sequence: 3,
+          changes: { tripName: '부산 여행' },
+        },
+      });
+      expect(toast.info).not.toHaveBeenCalled();
+    });
+
+    it('명령이 거절되면 이유를 안내한다', async () => {
+      const user = userEvent.setup();
+      renderForm('images');
+
+      await user.click(await screen.findByRole('button', { name: '1번째 기존 사진 삭제' }));
+      await user.click(screen.getByRole('button', { name: '수정 완료' }));
+      await waitFor(() =>
+        expect(realtime.publish).toHaveBeenCalledWith('/app/trips/7/attachments/delete', {
+          requestId: expect.any(String),
+          attachmentIds: [101],
+        }),
+      );
+      const [, { requestId }] = realtime.publish.mock.calls.find(
+        ([destination]) => destination === '/app/trips/7/attachments/delete',
+      )!;
+      emit('/user/queue/command-results', {
+        message: 'WRITE_PERMISSION_REQUIRED',
+        data: { requestId, tripId: 7, status: 'REJECTED' },
+      });
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith('이 여행을 편집할 권한이 없어요.'),
+      );
+      expect(deletePhoto).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('다른 곳에서 이름이 바뀌면 알리고, 내가 고치지 않은 이름 칸을 새 값으로 바꾼다', async () => {
+      renderForm('name');
+      await screen.findByDisplayValue('제주 여행');
+
+      vi.mocked(getTripForEdit).mockResolvedValue({ ...trip, tripName: '제주 가을 여행' });
+      emit('/topic/trips/7/events', {
+        message: 'TRIP_UPDATED',
+        data: {
+          eventId: 'e1',
+          requestId: 'other',
+          tripId: 7,
+          sequence: 4,
+          changes: { tripName: '제주 가을 여행' },
+        },
+      });
+
+      expect(toast.info).toHaveBeenCalledWith('여행 이름이 바뀌었어요.');
+      expect(await screen.findByDisplayValue('제주 가을 여행')).toBeInTheDocument();
+    });
+
+    it('내가 고치던 이름은 다른 곳에서 바뀌어도 그대로 둔다', async () => {
+      const user = userEvent.setup();
+      renderForm('name');
+      const nameInput = await screen.findByDisplayValue('제주 여행');
+      await user.clear(nameInput);
+      await user.type(nameInput, '부산 여행');
+
+      vi.mocked(getTripForEdit).mockResolvedValue({ ...trip, tripName: '제주 가을 여행' });
+      emit('/topic/trips/7/events', {
+        message: 'TRIP_UPDATED',
+        data: {
+          eventId: 'e2',
+          requestId: 'other',
+          tripId: 7,
+          sequence: 5,
+          changes: { tripName: '제주 가을 여행' },
+        },
+      });
+
+      await waitFor(() => expect(getTripForEdit).toHaveBeenCalledTimes(2));
+      expect(screen.getByDisplayValue('부산 여행')).toBeInTheDocument();
+    });
   });
 });

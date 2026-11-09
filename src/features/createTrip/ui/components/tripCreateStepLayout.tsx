@@ -3,7 +3,7 @@ import { useContext, type ReactNode } from 'react';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
 import { TRIP_CREATE_STEPS, type TripCreateStep } from '../../model/types';
-import { TripFormModeContext } from './tripFormMode';
+import { TripFormHeaderSlotContext, TripFormModeContext } from './tripFormMode';
 
 type TripCreateStepLayoutProps = {
   step: TripCreateStep;
@@ -27,6 +27,7 @@ export function TripCreateStepLayout({
   contentScrollable = true,
 }: TripCreateStepLayoutProps) {
   const mode = useContext(TripFormModeContext);
+  const headerSlot = useContext(TripFormHeaderSlotContext);
   const stepNumber = TRIP_CREATE_STEPS.indexOf(step) + 1;
   const footerFade =
     'before:from-surface before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:to-transparent';
@@ -41,6 +42,7 @@ export function TripCreateStepLayout({
         onBack={onBack}
         className="shrink-0"
       />
+      {headerSlot}
 
       <div className="mt-2 flex shrink-0 items-center gap-3">
         <div aria-hidden="true" className="flex flex-1 gap-1">

@@ -6,7 +6,7 @@ import { useRef, useState } from 'react';
 import { deletePhoto, deletePhotos } from '@/features/photoList';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
-import { realtimePollingInterval } from '@/shared/api/realtime';
+import { isRealtimeConnected, realtimePollingInterval } from '@/shared/api/realtime';
 import { normalizeText } from '@/shared/lib/text';
 
 import type { TripEditData } from '../api/getTripForEdit';
@@ -14,6 +14,11 @@ import {
   getTripProcessingStatus,
   type TripProcessingStatusResponse,
 } from '../api/getTripProcessingStatus';
+import {
+  sendTripEditCommand,
+  type TripEditCommand,
+  TripEditCommandError,
+} from '../api/sendTripEditCommand';
 import { updateTrip, type UpdateTripRequest } from '../api/updateTrip';
 import { uploadAdditionalAttachmentBatch } from '../api/uploadAdditionalAttachments';
 import { splitIntoUploadBatches } from '../api/uploadInitialAttachments';
@@ -73,16 +78,39 @@ export function useTripEditSubmit(
   const [awaitingProcessing, setAwaitingProcessing] = useState(false);
   const deletedPhotoIds = useRef(new Set<number>());
   const addition = useRef<AdditionPoint | null>(null);
+  const commandRequestIds = useRef(new Map<string, string>());
+
+  const runCommand = async (command: TripEditCommand) => {
+    const key = JSON.stringify(command);
+    const requestId = commandRequestIds.current.get(key) ?? crypto.randomUUID();
+    commandRequestIds.current.set(key, requestId);
+    try {
+      await sendTripEditCommand(tripId, requestId, command);
+      commandRequestIds.current.delete(key);
+    } catch (error) {
+      if (!(error instanceof TripEditCommandError && error.code === 'TIMEOUT')) {
+        commandRequestIds.current.delete(key);
+      }
+      throw error;
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async ({ values, removedPhotoIds }: TripEditSubmitInput) => {
       const csrfToken = await fetchCsrfToken();
 
+      const realtime = isRealtimeConnected();
+
       const updateRequest = getTripUpdateRequest(initial, values);
-      if (updateRequest) await updateTrip(tripId, updateRequest, csrfToken);
+      if (updateRequest) {
+        if (realtime) await runCommand({ type: 'update', changes: updateRequest });
+        else await updateTrip(tripId, updateRequest, csrfToken);
+      }
 
       const photoIdsToDelete = removedPhotoIds.filter((id) => !deletedPhotoIds.current.has(id));
-      if (photoIdsToDelete.length === 1) await deletePhoto(photoIdsToDelete[0], csrfToken);
+      if (photoIdsToDelete.length > 0 && realtime) {
+        await runCommand({ type: 'attachments/delete', attachmentIds: photoIdsToDelete });
+      } else if (photoIdsToDelete.length === 1) await deletePhoto(photoIdsToDelete[0], csrfToken);
       else if (photoIdsToDelete.length > 1) await deletePhotos(photoIdsToDelete, csrfToken);
       photoIdsToDelete.forEach((id) => deletedPhotoIds.current.add(id));
       if (photoIdsToDelete.length > 0) setDeletedIds(new Set(deletedPhotoIds.current));
