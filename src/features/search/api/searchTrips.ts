@@ -20,6 +20,7 @@ export type SearchResponse = {
   attachments: {
     tripAttachmentId: number;
     tripId: number;
+    tripName: string;
     tripPlaceId: number;
     thumbnailUrl: string | null;
     score: number;
@@ -59,6 +60,7 @@ function toSearchResult(response: SearchResponse): SearchResult {
     photos: response.attachments.map((attachment, index) => ({
       id: attachment.tripAttachmentId,
       tripId: attachment.tripId,
+      tripName: attachment.tripName,
       tripPlaceId: attachment.tripPlaceId,
       thumbnailUrl: attachment.thumbnailUrl,
       accent: PHOTO_ACCENTS[index % PHOTO_ACCENTS.length],

@@ -9,6 +9,7 @@ export function toTripStory(trip: TripDetail, response: TripStoryResponse): Trip
     startDate: trip.startDate,
     endDate: trip.endDate,
     photoCount: trip.photoCount,
+    summary: response.storySummary,
     days: response.days.map((day) => ({
       date: day.date,
       dayNumber: Math.max(
@@ -25,7 +26,7 @@ export function toTripStory(trip: TripDetail, response: TripStoryResponse): Trip
           placeName: '',
           situation: '',
           detailSummary: block.detailSummary,
-          sentence: block.memo,
+          sentence: block.memo ?? '',
           thumbnailUrl: block.thumbnailUrl,
         })),
     })),

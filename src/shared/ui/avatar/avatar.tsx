@@ -5,23 +5,21 @@ import { useState, type ReactNode } from 'react';
 
 import { PersonIcon } from '@/shared/ui/icons';
 
-export type AvatarSize = 'sm' | 'md';
+export type AvatarSize = 'xs' | 'sm' | 'md';
 
 export type AvatarProps = {
-  /** 프로필 이미지 URL. 없거나 불러오지 못하면 fallback을 보여줍니다. */
   src?: string | null;
-  /** 이미지의 대체 텍스트. 보통 사용자 닉네임을 넣습니다. */
   alt?: string;
   size?: AvatarSize;
   fallback?: ReactNode;
   className?: string;
 };
 
-const sizePx: Record<AvatarSize, number> = { sm: 36, md: 48 };
-const sizeClassName: Record<AvatarSize, string> = { sm: 'size-9', md: 'size-12' };
+const sizePx: Record<AvatarSize, number> = { xs: 24, sm: 36, md: 48 };
+const sizeClassName: Record<AvatarSize, string> = { xs: 'size-6', sm: 'size-9', md: 'size-12' };
+const iconPx: Record<AvatarSize, number> = { xs: 14, sm: 18, md: 24 };
 
 export function Avatar({ src, alt = '', size = 'md', fallback, className = '' }: AvatarProps) {
-  // 실패한 URL 자체를 기억해 두면 src가 바뀔 때 별도 초기화 없이 다시 시도합니다.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const showImage = Boolean(src) && src !== failedSrc;
 
@@ -29,9 +27,7 @@ export function Avatar({ src, alt = '', size = 'md', fallback, className = '' }:
     <span
       className={`border-border-subtle bg-surface text-muted relative grid shrink-0 place-items-center overflow-hidden rounded-full border ${sizeClassName[size]} ${className}`}
     >
-      {fallback ?? (
-        <PersonIcon strokeWidth="1.7" strokeLinecap="round" size={size === 'md' ? 24 : 18} />
-      )}
+      {fallback ?? <PersonIcon strokeWidth="1.7" strokeLinecap="round" size={iconPx[size]} />}
       {showImage && (
         <Image
           src={src!}

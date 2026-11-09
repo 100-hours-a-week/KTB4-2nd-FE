@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LONG_PRESS_DELAY_MS } from '../config/longPress';
+import { LONG_PRESS_DELAY_MS } from './config';
 import { useLongPress } from './useLongPress';
 
 function pointer(x = 0, y = 0) {

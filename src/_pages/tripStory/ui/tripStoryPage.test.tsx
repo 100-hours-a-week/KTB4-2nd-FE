@@ -64,12 +64,12 @@ function story(): TripStory {
     ],
   };
 }
-function renderStory(value = story()) {
+function renderStory(value = story(), onEdit?: () => void) {
   return render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <TripStoryPage story={value} />
+      <TripStoryPage story={value} onEdit={onEdit} />
     </QueryClientProvider>,
   );
 }
@@ -178,10 +178,15 @@ describe('TripStoryPage', () => {
     expect(screen.getByText('아직 만들어진 스토리가 없어요.')).toBeInTheDocument();
   });
 
-  it('편집은 미지원 안내를 표시한다', async () => {
-    renderStory();
-    await userEvent.click(screen.getByRole('button', { name: '스토리 편집 (준비 중)' }));
-    expect(toast.warning).toHaveBeenCalledWith('아직 지원하지 않는 기능이에요.');
+  it('편집할 수 있을 때만 편집 버튼을 보여준다', async () => {
+    const view = renderStory();
+    expect(screen.queryByRole('button', { name: '스토리 편집' })).not.toBeInTheDocument();
+    view.unmount();
+
+    const onEdit = vi.fn();
+    renderStory(story(), onEdit);
+    await userEvent.click(screen.getByRole('button', { name: '스토리 편집' }));
+    expect(onEdit).toHaveBeenCalledOnce();
   });
 
   it.each([1, 4])('방문 기록이 %i개여도 헤더 뒤로가기는 여행 상세로 이동한다', async (length) => {
