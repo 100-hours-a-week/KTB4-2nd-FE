@@ -10,10 +10,9 @@ import { toast } from '@/shared/ui/toast';
 type TripEditPageProps = {
   tripId: number;
   initialStep: TripCreateStep;
-  currentUserId: number | null;
 };
 
-export function TripEditPage({ tripId, initialStep, currentUserId }: TripEditPageProps) {
+export function TripEditPage({ tripId, initialStep }: TripEditPageProps) {
   const router = useRouter();
   const { isChecking, isOwner, canEdit } = useTripAccess(tripId);
   const readOnly = !isChecking && !canEdit;
@@ -27,12 +26,5 @@ export function TripEditPage({ tripId, initialStep, currentUserId }: TripEditPag
 
   if (readOnly) return null;
 
-  return (
-    <TripEditForm
-      tripId={tripId}
-      initialStep={initialStep}
-      currentUserId={currentUserId}
-      realtimeOnly={!isOwner}
-    />
-  );
+  return <TripEditForm tripId={tripId} initialStep={initialStep} realtimeOnly={!isOwner} />;
 }

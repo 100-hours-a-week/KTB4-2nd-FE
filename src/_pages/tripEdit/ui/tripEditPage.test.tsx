@@ -59,7 +59,7 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <TripEditPage tripId={7} initialStep="name" currentUserId={1} />
+      <TripEditPage tripId={7} initialStep="name" />
     </QueryClientProvider>,
   );
 }

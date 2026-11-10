@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { TripPresenceBar, useTripPresence } from '@/features/tripPresence';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { Funnel } from '@/shared/lib/funnel';
 import { Button } from '@/shared/ui/button';
@@ -30,30 +30,18 @@ import { TripProcessingView } from './components/tripProcessingView';
 type TripEditFormProps = {
   tripId: number;
   initialStep: TripCreateStep;
-  /** 접속자 목록에서 나를 빼고 보여주는 데 씁니다. 확인하지 못했으면 null입니다. */
-  currentUserId: number | null;
   /** 공유받은 사람이면 true입니다. 저장을 웹소켓으로만 보냅니다. */
   realtimeOnly?: boolean;
 };
 
-export function TripEditForm({
-  tripId,
-  initialStep,
-  currentUserId,
-  realtimeOnly = false,
-}: TripEditFormProps) {
+export function TripEditForm({ tripId, initialStep, realtimeOnly = false }: TripEditFormProps) {
   const router = useRouter();
   const { data, isPending, isError, refetch } = useQuery(createTripQueries.edit(tripId));
 
   return (
     <TripFormModeContext.Provider value="edit">
       {data ? (
-        <TripEditFormContent
-          data={data}
-          initialStep={initialStep}
-          currentUserId={currentUserId}
-          realtimeOnly={realtimeOnly}
-        />
+        <TripEditFormContent data={data} initialStep={initialStep} realtimeOnly={realtimeOnly} />
       ) : (
         <main className="bg-surface text-brand mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col px-6 pt-[max(8px,env(safe-area-inset-top))]">
           <PageHeader
@@ -88,12 +76,10 @@ export function TripEditForm({
 function TripEditFormContent({
   data,
   initialStep,
-  currentUserId,
   realtimeOnly,
 }: {
   data: TripEditData;
   initialStep: TripCreateStep;
-  currentUserId: number | null;
   realtimeOnly: boolean;
 }) {
   const router = useRouter();
@@ -110,7 +96,6 @@ function TripEditFormContent({
     mode: 'onChange',
   });
   const { step, goToStep, goBack } = useTripCreateFunnel(initialStep);
-  const members = useTripPresence(data.tripId);
 
   const previousData = useRef(data);
   useEffect(() => {
@@ -236,9 +221,7 @@ function TripEditFormContent({
   }
 
   return (
-    <TripFormHeaderSlotContext.Provider
-      value={<TripPresenceBar members={members} currentUserId={currentUserId} />}
-    >
+    <TripFormHeaderSlotContext.Provider value={<TripPresenceStatus />}>
       <FormProvider {...methods}>
         <form className="h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
           <Funnel step={step}>

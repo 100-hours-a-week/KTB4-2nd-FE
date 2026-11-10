@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { deletePhoto } from '@/features/photoList/api/photoDelete';
 import { TripRealtimeSync } from '@/features/realtimeSync';
 import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
+import { TripPresenceProvider } from '@/features/tripPresence';
 import type { RealtimeSubscription } from '@/shared/api/realtime';
 import { toast } from '@/shared/ui/toast';
 
@@ -85,11 +86,13 @@ function renderForm(initialStep: TripCreateStep) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  // 실제 화면처럼 여행 레이아웃의 실시간 동기화 안에 그립니다.
+  // 실제 화면처럼 여행 레이아웃의 접속자 목록과 실시간 동기화 안에 그립니다.
   return render(
     <QueryClientProvider client={client}>
-      <TripRealtimeSync tripId={7} />
-      <TripEditForm tripId={7} initialStep={initialStep} currentUserId={1} />
+      <TripPresenceProvider tripId={7} currentUserId={1}>
+        <TripRealtimeSync tripId={7} />
+        <TripEditForm tripId={7} initialStep={initialStep} />
+      </TripPresenceProvider>
     </QueryClientProvider>,
   );
 }
@@ -356,7 +359,7 @@ describe('TripEditForm', () => {
         '/topic/trips/7/presence',
         presence([{ userId: 1, nickname: '혜준', permission: 'OWNER' }]),
       );
-      expect(screen.queryByText(/함께 편집 중/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/함께 보는 중/)).not.toBeInTheDocument();
 
       emit(
         '/topic/trips/7/presence',
@@ -365,9 +368,9 @@ describe('TripEditForm', () => {
           { userId: 2, nickname: '지민', permission: 'WRITE' },
         ]),
       );
-      await user.click(screen.getByRole('button', { name: '지민님과 함께 편집 중' }));
+      await user.click(screen.getByRole('button', { name: '지민님과 함께 보는 중' }));
 
-      const sheet = screen.getByRole('dialog', { name: '함께 편집 중 2명' });
+      const sheet = screen.getByRole('dialog', { name: '함께 보는 중 2명' });
       expect(sheet).toHaveTextContent('혜준 (나)');
       expect(sheet).toHaveTextContent('편집할 수 있어요');
     });

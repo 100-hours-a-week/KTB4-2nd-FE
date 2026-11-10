@@ -29,11 +29,12 @@ function participantColor(userId: number) {
   return PARTICIPANT_COLORS[userId % PARTICIPANT_COLORS.length];
 }
 
+/** 서버는 누가 어느 화면에 있는지 알려주지 않아서, 같은 여행을 열어 둔 사람을 모두 '함께 보는 중'으로 보여줍니다. */
 export function getTripPresenceLabel(others: TripPresenceMember[]) {
   const [first, second] = others.map((member) => member.nickname);
-  if (others.length === 1) return `${first}님과 함께 편집 중`;
-  if (others.length === 2) return `${first}, ${second}님과 함께 편집 중`;
-  return `${first} 외 ${others.length - 1}명과 함께 편집 중`;
+  if (others.length === 1) return `${first}님과 함께 보는 중`;
+  if (others.length === 2) return `${first}, ${second}님과 함께 보는 중`;
+  return `${first} 외 ${others.length - 1}명과 함께 보는 중`;
 }
 
 function ParticipantAvatar({
@@ -63,13 +64,15 @@ function ParticipantAvatar({
   );
 }
 
-/** 나 말고 다른 사람이 같은 여행을 편집 중일 때만 헤더 아래에 보입니다. */
+/** 나 말고 다른 사람이 같은 여행을 열어 두었을 때만 헤더 아래에 보입니다. */
 export function TripPresenceBar({
   members,
   currentUserId,
+  className = '',
 }: {
   members: TripPresenceMember[];
   currentUserId: number | null;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const others = members.filter((member) => member.userId !== currentUserId);
@@ -84,7 +87,7 @@ export function TripPresenceBar({
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className="bg-surface-subtle hover:bg-surface-subtle-hover focus-visible:outline-brand rounded-pill mt-2 flex min-h-11 w-full shrink-0 items-center gap-2 py-1.5 pr-3 pl-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors"
+        className={`bg-surface-subtle hover:bg-surface-subtle-hover focus-visible:outline-brand rounded-pill mt-2 flex min-h-11 w-full shrink-0 items-center gap-2 py-1.5 pr-3 pl-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${className}`}
       >
         <span aria-hidden="true" className="flex shrink-0">
           {others.slice(0, MAX_STACKED_AVATARS).map((member, index) => (
@@ -104,7 +107,7 @@ export function TripPresenceBar({
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        title={`함께 편집 중 ${sheetMembers.length}명`}
+        title={`함께 보는 중 ${sheetMembers.length}명`}
         description="지금 이 여행을 열어 둔 사람이에요."
       >
         <ul className="divide-border-subtle divide-y">
