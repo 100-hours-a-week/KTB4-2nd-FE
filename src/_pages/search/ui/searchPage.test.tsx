@@ -5,13 +5,36 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getAiStatus } from '@/features/aiStatus/api/getAiStatus';
+import { getPhotoOriginal } from '@/features/photoList/api/getPhotoOriginal';
+import { issuePhotoDownloadUrl } from '@/features/photoList/api/photoDownload';
 import { searchTrips } from '@/features/search/api/searchTrips';
 import type { SearchResult } from '@/features/search/model/types';
 
 import { SearchPage } from './searchPage';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+// 실제 Next처럼 history.pushState·replaceState·뒤로가기로 바뀐 주소를 useSearchParams가 따라가게 합니다.
+vi.mock('next/navigation', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const subscribe = (onChange: () => void) => {
+    window.addEventListener('popstate', onChange);
+    window.addEventListener('test:locationchange', onChange);
+    return () => {
+      window.removeEventListener('popstate', onChange);
+      window.removeEventListener('test:locationchange', onChange);
+    };
+  };
+  return {
+    useRouter: () => ({ push }),
+    useSearchParams: () =>
+      new URLSearchParams(useSyncExternalStore(subscribe, () => window.location.search)),
+  };
+});
+vi.mock('@/features/photoList/api/getPhotoOriginal', () => ({ getPhotoOriginal: vi.fn() }));
+vi.mock('@/features/photoList/api/photoDownload', () => ({
+  issuePhotoDownloadUrl: vi.fn(),
+  issueBulkPhotoDownloadUrl: vi.fn(),
+}));
 vi.mock('@/features/search/api/searchTrips', () => ({ searchTrips: vi.fn() }));
 vi.mock('@/features/aiStatus/api/getAiStatus', () => ({ getAiStatus: vi.fn() }));
 
@@ -51,9 +74,26 @@ function renderPage(query: string) {
   );
 }
 
+const originalPushState = window.history.pushState.bind(window.history);
+const originalReplaceState = window.history.replaceState.bind(window.history);
+window.history.pushState = (...args) => {
+  originalPushState(...args);
+  window.dispatchEvent(new Event('test:locationchange'));
+};
+window.history.replaceState = (...args) => {
+  originalReplaceState(...args);
+  window.dispatchEvent(new Event('test:locationchange'));
+};
+
 describe('SearchPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.replaceState(null, '', '/search?q=' + encodeURIComponent('제주 바다'));
+    vi.mocked(getPhotoOriginal).mockResolvedValue({ originalUrl: null } as never);
+    vi.mocked(issuePhotoDownloadUrl).mockResolvedValue({
+      tripAttachmentId: 3,
+      downloadUrl: 'https://cdn.example.com/3.jpg',
+    });
     vi.mocked(searchTrips).mockResolvedValue(result);
     vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
   });
@@ -97,11 +137,8 @@ describe('SearchPage', () => {
     expect(await screen.findByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '사진 1건' })).toHaveAttribute('aria-selected', 'true');
     expect(
-      screen.getByRole('link', { name: '제주도 가을 여행의 1번째 사진이 있는 폴더 보기' }),
-    ).toHaveAttribute(
-      'href',
-      `/trips/1/places/9/photos?place=${encodeURIComponent('성산일출봉')}&trip=${encodeURIComponent('제주도 가을 여행')}`,
-    );
+      screen.getByRole('button', { name: '제주도 가을 여행의 1번째 사진 보기' }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: '폴더 1건' }));
     expect(
@@ -232,5 +269,71 @@ describe('SearchPage', () => {
       expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('제주 바다')}`),
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  describe('사진 상세보기', () => {
+    it('사진을 누르면 넘기기 없이 상세보기를 열고, 원본을 다운로드할 수 있다', async () => {
+      const user = userEvent.setup();
+      renderPage('제주 바다');
+
+      await user.click(
+        await screen.findByRole('button', { name: '제주도 가을 여행의 1번째 사진 보기' }),
+      );
+
+      const viewer = screen.getByRole('dialog', { name: '사진 원본 보기' });
+      expect(viewer).toHaveTextContent('성산일출봉');
+      expect(viewer).toHaveTextContent('제주도 가을 여행');
+      expect(within(viewer).queryByRole('button', { name: '이전 사진' })).not.toBeInTheDocument();
+      expect(within(viewer).queryByRole('button', { name: '다음 사진' })).not.toBeInTheDocument();
+      expect(within(viewer).queryByLabelText('사진 순서')).not.toBeInTheDocument();
+      expect(new URLSearchParams(window.location.search).get('photo')).toBe('3');
+
+      await user.click(within(viewer).getByRole('button', { name: '사진 더보기 메뉴' }));
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+        '원본 다운로드',
+      ]);
+      await user.click(screen.getByRole('menuitem', { name: '원본 다운로드' }));
+      await waitFor(() => expect(issuePhotoDownloadUrl).toHaveBeenCalledWith(3));
+    });
+
+    it('뒤로가기를 누르면 상세보기만 닫히고 검색 결과는 그대로 남는다', async () => {
+      const user = userEvent.setup();
+      renderPage('제주 바다');
+
+      await user.click(
+        await screen.findByRole('button', { name: '제주도 가을 여행의 1번째 사진 보기' }),
+      );
+      expect(screen.getByRole('dialog', { name: '사진 원본 보기' })).toBeInTheDocument();
+
+      window.history.back();
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: '사진 원본 보기' })).not.toBeInTheDocument(),
+      );
+      expect(window.location.pathname).toBe('/search');
+      expect(new URLSearchParams(window.location.search).get('q')).toBe('제주 바다');
+      expect(screen.getByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: '사진 1건' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      expect(searchTrips).toHaveBeenCalledTimes(1);
+    });
+
+    it('닫기 버튼도 뒤로가기처럼 상세보기만 닫는다', async () => {
+      const user = userEvent.setup();
+      renderPage('제주 바다');
+
+      await user.click(
+        await screen.findByRole('button', { name: '제주도 가을 여행의 1번째 사진 보기' }),
+      );
+      await user.click(screen.getByRole('button', { name: '원본 보기 닫기' }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: '사진 원본 보기' })).not.toBeInTheDocument(),
+      );
+      expect(new URLSearchParams(window.location.search).get('photo')).toBeNull();
+      expect(screen.getByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
+    });
   });
 });
