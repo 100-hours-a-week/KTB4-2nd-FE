@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import type { SearchResult } from '@/features/search';
 
@@ -11,7 +11,16 @@ import { PhotoResults } from './photoResults';
 import { ResultTab, type SearchTab } from './resultTab';
 
 export function SearchResults({ result }: { result: SearchResult }) {
-  const [selectedTab, setSelectedTab] = useState<SearchTab | null>(null);
+  // 고른 탭을 주소에 남겨서, 다른 화면에 갔다가 돌아와도 같은 탭을 보여줍니다.
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const selectedTab: SearchTab | null =
+    tabParam === 'folder' || tabParam === 'photo' ? tabParam : null;
+  const setSelectedTab = (next: SearchTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', next);
+    window.history.replaceState(null, '', `?${params.toString()}`);
+  };
   const isEmpty = result.folders.length === 0 && result.photos.length === 0;
   const tab: SearchTab =
     selectedTab ?? (result.photos.length === 0 && result.folders.length > 0 ? 'folder' : 'photo');

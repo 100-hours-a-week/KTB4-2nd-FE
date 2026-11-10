@@ -165,6 +165,29 @@ describe('TripDetailPage', () => {
     historyLength.mockRestore();
   });
 
+  it('검색 결과의 폴더 열기로 들어왔으면 헤더 뒤로가기로 검색 화면에 돌아간다', async () => {
+    const user = userEvent.setup();
+    const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(3);
+    searchParams = new URLSearchParams('from=search');
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '검색 결과로 돌아가기' }));
+
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+    historyLength.mockRestore();
+  });
+
+  it('검색에서 들어온 상태로 지도 보기를 바꿔도 검색으로 돌아갈 표시는 남긴다', async () => {
+    const user = userEvent.setup();
+    searchParams = new URLSearchParams('from=search');
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '지도로 보기' }));
+
+    expect(replace).toHaveBeenCalledWith('/trips/7?from=search&view=map', { scroll: false });
+  });
+
   it('이전 방문 기록이 없으면 여행 목록으로 이동한다', async () => {
     const user = userEvent.setup();
     const historyLength = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
