@@ -54,7 +54,6 @@ function page(photos: PhotoListItem[], nextCursor: string | null = null): PlaceP
   return { photos, hasNext: nextCursor !== null, nextCursor };
 }
 
-/** 공유 대상자 목록이 404면 주인이 아니고, 초대받은 여행 목록의 권한을 씁니다. */
 function sharedWith(permission: 'READ' | 'WRITE') {
   vi.mocked(getMyTripPermission).mockResolvedValue(permission);
 }
