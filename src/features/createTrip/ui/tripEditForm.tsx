@@ -33,16 +33,28 @@ type TripEditFormProps = {
   initialStep: TripCreateStep;
   /** 접속자 목록에서 나를 빼고 보여주는 데 씁니다. 확인하지 못했으면 null입니다. */
   currentUserId: number | null;
+  /** 공유받은 사람이면 true입니다. 저장을 웹소켓으로만 보냅니다. */
+  realtimeOnly?: boolean;
 };
 
-export function TripEditForm({ tripId, initialStep, currentUserId }: TripEditFormProps) {
+export function TripEditForm({
+  tripId,
+  initialStep,
+  currentUserId,
+  realtimeOnly = false,
+}: TripEditFormProps) {
   const router = useRouter();
   const { data, isPending, isError, refetch } = useQuery(createTripQueries.edit(tripId));
 
   return (
     <TripFormModeContext.Provider value="edit">
       {data ? (
-        <TripEditFormContent data={data} initialStep={initialStep} currentUserId={currentUserId} />
+        <TripEditFormContent
+          data={data}
+          initialStep={initialStep}
+          currentUserId={currentUserId}
+          realtimeOnly={realtimeOnly}
+        />
       ) : (
         <main className="bg-surface text-brand mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col px-6 pt-[max(8px,env(safe-area-inset-top))]">
           <PageHeader
@@ -78,10 +90,12 @@ function TripEditFormContent({
   data,
   initialStep,
   currentUserId,
+  realtimeOnly,
 }: {
   data: TripEditData;
   initialStep: TripCreateStep;
   currentUserId: number | null;
+  realtimeOnly: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -134,7 +148,7 @@ function TripEditFormContent({
     void invalidateTripData(queryClient);
     router.replace(tripPath);
   };
-  const edit = useTripEditSubmit(data, finish);
+  const edit = useTripEditSubmit(data, finish, { realtimeOnly });
   const isUploading = edit.isSaving && isAddingPhotos;
 
   useEffect(() => {

@@ -71,6 +71,8 @@ function toTripEditSubmitError(error: unknown): TripEditSubmitError {
       return {
         message: '사진 정리나 스토리 생성이 진행 중이라 지금은 사진을 지울 수 없어요.',
       };
+    case 'REALTIME_DISCONNECTED':
+      return { message: '연결이 끊겨 저장하지 못했어요. 잠시 후 다시 저장해주세요.' };
     case 'TIMEOUT':
       return { message: '저장됐는지 확인하지 못했어요. 같은 내용으로 다시 저장해주세요.' };
     default:

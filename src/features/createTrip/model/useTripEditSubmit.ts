@@ -6,7 +6,11 @@ import { useRef, useState } from 'react';
 import { deletePhoto, deletePhotos } from '@/features/photoList';
 import { createTripQueries, invalidateTripData } from '@/queryFactory';
 import { fetchCsrfToken } from '@/shared/api/browser';
-import { isRealtimeConnected, realtimePollingInterval } from '@/shared/api/realtime';
+import {
+  isRealtimeConnected,
+  realtimePollingInterval,
+  waitForRealtimeConnection,
+} from '@/shared/api/realtime';
 import { normalizeText } from '@/shared/lib/text';
 
 import type { TripEditData } from '../api/getTripForEdit';
@@ -37,6 +41,15 @@ type AdditionPoint = {
 };
 
 const FINISHED_STATUSES = new Set(['COMPLETED', 'FAILED', 'CANCELED']);
+const REALTIME_RECONNECT_WAIT_MS = 5_000;
+
+type TripEditSubmitOptions = {
+  /**
+   * 백엔드의 REST 수정·삭제 API는 주인만 받아줍니다.
+   * 공유받은 사람은 웹소켓이 끊겨도 REST로 보내지 않고, 다시 연결되기를 기다렸다가 웹소켓으로 보냅니다.
+   */
+  realtimeOnly?: boolean;
+};
 
 export function getTripUpdateRequest(
   initial: TripEditData,
@@ -70,6 +83,7 @@ function isSameFiles(left: File[], right: File[]) {
 export function useTripEditSubmit(
   initial: TripEditData,
   onFinished: (status: TripProcessingStatusResponse | null) => void,
+  { realtimeOnly = false }: TripEditSubmitOptions = {},
 ) {
   const tripId = initial.tripId;
   const queryClient = useQueryClient();
@@ -99,15 +113,21 @@ export function useTripEditSubmit(
     mutationFn: async ({ values, removedPhotoIds }: TripEditSubmitInput) => {
       const csrfToken = await fetchCsrfToken();
 
-      const realtime = isRealtimeConnected();
-
       const updateRequest = getTripUpdateRequest(initial, values);
+      const photoIdsToDelete = removedPhotoIds.filter((id) => !deletedPhotoIds.current.has(id));
+      const needsCommand = updateRequest !== null || photoIdsToDelete.length > 0;
+
+      let realtime = isRealtimeConnected();
+      if (realtimeOnly && needsCommand && !realtime) {
+        realtime = await waitForRealtimeConnection(REALTIME_RECONNECT_WAIT_MS);
+        if (!realtime) throw new TripEditCommandError('REALTIME_DISCONNECTED');
+      }
+
       if (updateRequest) {
         if (realtime) await runCommand({ type: 'update', changes: updateRequest });
         else await updateTrip(tripId, updateRequest, csrfToken);
       }
 
-      const photoIdsToDelete = removedPhotoIds.filter((id) => !deletedPhotoIds.current.has(id));
       if (photoIdsToDelete.length > 0 && realtime) {
         await runCommand({ type: 'attachments/delete', attachmentIds: photoIdsToDelete });
       } else if (photoIdsToDelete.length === 1) await deletePhoto(photoIdsToDelete[0], csrfToken);

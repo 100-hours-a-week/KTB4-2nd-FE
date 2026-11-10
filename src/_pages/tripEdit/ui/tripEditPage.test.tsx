@@ -11,7 +11,11 @@ import { TripEditPage } from './tripEditPage';
 const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 vi.mock('@/features/createTrip', () => ({
-  TripEditForm: ({ tripId }: { tripId: number }) => <div>여행 {tripId} 수정 폼</div>,
+  TripEditForm: ({ tripId, realtimeOnly }: { tripId: number; realtimeOnly?: boolean }) => (
+    <div>
+      여행 {tripId} 수정 폼{realtimeOnly ? ' (웹소켓 전용)' : ''}
+    </div>
+  ),
 }));
 vi.mock('@/features/tripShare/api/getTripShares', () => ({ getTripShares: vi.fn() }));
 vi.mock('@/features/tripList/api/getInvitedTrips', () => ({ getInvitedTrips: vi.fn() }));
@@ -69,17 +73,17 @@ describe('TripEditPage', () => {
   it('여행 주인이면 수정 폼을 보여준다', async () => {
     renderPage();
 
-    expect(screen.getByText('여행 7 수정 폼')).toBeInTheDocument();
-    await waitFor(() => expect(getTripShares).toHaveBeenCalled());
+    expect(await screen.findByText('여행 7 수정 폼')).toBeInTheDocument();
+    expect(getTripShares).toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('편집 권한으로 공유받은 여행이면 수정 폼을 그대로 보여준다', async () => {
+  it('편집 권한으로 공유받은 여행이면 수정 폼을 보여주고 저장은 웹소켓으로만 보내게 한다', async () => {
     sharedWith('WRITE');
     renderPage();
 
     await waitFor(() => expect(getInvitedTrips).toHaveBeenCalled());
-    expect(screen.getByText('여행 7 수정 폼')).toBeInTheDocument();
+    expect(await screen.findByText('여행 7 수정 폼 (웹소켓 전용)')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
 
