@@ -12,6 +12,7 @@ import {
 } from '@/features/tripStory';
 import { CalendarIcon, EditIcon, ExpandIcon, ImageIcon, ImageOffIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { Button } from '@/shared/ui/button';
 import { IconButton } from '@/shared/ui/iconButton';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -67,6 +68,7 @@ export function TripStoryPage({
             )
           }
         />
+        <TripPresenceStatus className="mb-2" />
       </div>
       <section aria-label="여행 정보" className="border-border-subtle border-b px-5 pt-6 pb-5">
         <h2 className="text-[23px] font-extrabold tracking-[-0.04em] wrap-break-word">

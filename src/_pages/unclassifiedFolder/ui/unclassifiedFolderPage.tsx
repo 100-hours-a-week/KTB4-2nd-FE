@@ -12,6 +12,7 @@ import {
 } from '@/features/unclassifiedPhotos';
 import { CheckIcon, TrashIcon, WarningIcon } from '@/shared/ui/icons';
 import { PageHeader } from '@/shared/ui/pageHeader';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { RetryNotice } from '@/shared/ui/retryNotice';
 import { DecodedThumbnail } from '@/shared/ui/decodedThumbnail';
@@ -44,6 +45,7 @@ export function UnclassifiedFolderPage({ tripId, tripName }: UnclassifiedFolderP
         onBack={handleBack}
         backLabel="여행 상세로 돌아가기"
       />
+      <TripPresenceStatus />
 
       <section aria-label="여행 정보" className="mt-2">
         <h2 className="truncate text-lg font-extrabold">{tripName}</h2>

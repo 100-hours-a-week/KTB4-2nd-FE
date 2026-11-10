@@ -11,6 +11,7 @@ import {
   type TripDetail,
 } from '@/features/tripDetail';
 import { TripShareDialog, useTripAccess } from '@/features/tripShare';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
@@ -82,6 +83,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
           />
         }
       />
+      <TripPresenceStatus />
 
       <TripMeta trip={trip} unclassifiedCount={unclassifiedCount} />
 
