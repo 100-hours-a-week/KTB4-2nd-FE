@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-import { invalidateTripData } from '@/queryFactory';
+import { createTripQueries, invalidateTripData } from '@/queryFactory';
 
 import { forgetOldest } from './aiTaskEventFilter';
 import { isRecord } from './syncAiTaskMessage';
@@ -40,4 +40,6 @@ export function syncTripEvent(queryClient: QueryClient, tripId: number, body: un
   if (body.data.tripId !== tripId) return;
 
   void invalidateTripData(queryClient);
+  // 수정 화면에 있다면 다른 사람이 바꾼 값을 받아 와야 손대지 않은 칸을 맞출 수 있습니다.
+  void queryClient.invalidateQueries({ queryKey: createTripQueries.editKeys(tripId) });
 }

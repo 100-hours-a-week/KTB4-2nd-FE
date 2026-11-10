@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import type { RealtimeSubscription } from '@/shared/api/realtime';
+import { toast } from '@/shared/ui/toast';
+
+import { rememberOwnTripEditRequest } from '../model/tripEditNotice';
 
 import { TripRealtimeSync } from './tripRealtimeSync';
 
@@ -13,6 +16,7 @@ const { subscriptions, unsubscribe } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({ fetchTripSummary: vi.fn() }));
+vi.mock('@/shared/ui/toast', () => ({ toast: { info: vi.fn() } }));
 vi.mock('@/shared/api/realtime', () => ({
   isRealtimeConnected: () => true,
   subscribeRealtimeStatus: () => () => {},
@@ -83,5 +87,50 @@ describe('TripRealtimeSync', () => {
 
     await act(async () => {});
     expect(subscriptions).toHaveLength(1);
+  });
+
+  it('다른 사람이 바꾸면 어느 화면에서든 알려주고, 수정 화면 데이터도 다시 받는다', async () => {
+    vi.mocked(fetchTripSummary).mockResolvedValue({} as never);
+    const { invalidate } = renderSync();
+    await waitFor(() => expect(subscriptions).toHaveLength(1));
+
+    act(() =>
+      subscriptions[0].onMessage({
+        message: 'TRIP_UPDATED',
+        data: { eventId: 'b', requestId: 'other', tripId: 7, changes: { tripName: '부산' } },
+      }),
+    );
+    act(() =>
+      subscriptions[0].onMessage({
+        message: 'TRIP_PHOTOS_DELETED',
+        data: { eventId: 'c', requestId: 'other', tripId: 7, attachmentCount: 2 },
+      }),
+    );
+
+    expect(toast.info).toHaveBeenCalledWith('여행 이름이 바뀌었어요.');
+    expect(toast.info).toHaveBeenCalledWith('사진 2장이 지워졌어요.');
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['createTrip', 'edit', 7] });
+  });
+
+  it('내가 보낸 명령으로 생긴 알림이나 다른 여행의 알림은 띄우지 않는다', async () => {
+    vi.mocked(fetchTripSummary).mockResolvedValue({} as never);
+    renderSync();
+    await waitFor(() => expect(subscriptions).toHaveLength(1));
+    rememberOwnTripEditRequest('mine');
+
+    act(() =>
+      subscriptions[0].onMessage({
+        message: 'TRIP_UPDATED',
+        data: { eventId: 'd', requestId: 'mine', tripId: 7, changes: { tripName: '부산' } },
+      }),
+    );
+    act(() =>
+      subscriptions[0].onMessage({
+        message: 'TRIP_UPDATED',
+        data: { eventId: 'e', requestId: 'other', tripId: 8, changes: { tripName: '부산' } },
+      }),
+    );
+
+    expect(toast.info).not.toHaveBeenCalled();
   });
 });

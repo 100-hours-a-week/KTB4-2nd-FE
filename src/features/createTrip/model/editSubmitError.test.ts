@@ -1,6 +1,7 @@
 import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
+import { TripEditCommandError } from '../api/sendTripEditCommand';
 import { getTripEditSubmitError } from './editSubmitError';
 
 function apiError(status: number, message: string) {
@@ -36,5 +37,11 @@ describe('getTripEditSubmitError', () => {
 
     expect(result.message).toContain('사진 정리나 스토리 생성이 진행 중이라');
     expect(result.resetAddition).toBeUndefined();
+  });
+
+  it('웹소켓이 다시 연결되지 않아 저장하지 못하면 다시 저장하라고 안내한다', () => {
+    expect(getTripEditSubmitError(new TripEditCommandError('REALTIME_DISCONNECTED'))).toEqual({
+      message: '연결이 끊겨 저장하지 못했어요. 잠시 후 다시 저장해주세요.',
+    });
   });
 });

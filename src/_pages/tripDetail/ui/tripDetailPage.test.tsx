@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
-import { getInvitedTrips } from '@/features/tripList/api/getInvitedTrips';
+import { getMyTripPermission } from '@/features/tripShare/api/getMyTripPermission';
 import { getTripShares } from '@/features/tripShare/api/getTripShares';
 import { getUnclassifiedFolders } from '@/features/unclassifiedPhotos/api/getUnclassifiedFolders';
 import type { TripPlaceFolderPageResult } from '@/features/tripDetail/api/getTripPlaceFolders';
@@ -39,7 +39,9 @@ vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn(),
 }));
 vi.mock('@/features/tripShare/api/getTripShares', () => ({ getTripShares: vi.fn() }));
-vi.mock('@/features/tripList/api/getInvitedTrips', () => ({ getInvitedTrips: vi.fn() }));
+vi.mock('@/features/tripShare/api/getMyTripPermission', () => ({
+  getMyTripPermission: vi.fn(),
+}));
 
 const trip: TripDetail = {
   id: 7,
@@ -73,19 +75,12 @@ function axiosErrorWithStatus(status: number) {
   });
 }
 
-/** 공유 대상자 목록이 404면 주인이 아니고, 초대받은 여행 목록의 권한을 씁니다. */
 function sharedWith(permission: 'READ' | 'WRITE') {
-  vi.mocked(getTripShares).mockRejectedValue(axiosErrorWithStatus(404));
-  vi.mocked(getInvitedTrips).mockResolvedValue({
-    trips: [{ ...trip, favorite: false, processingStatus: 'ready', permission }],
-    totalCount: 1,
-    hasNext: false,
-    nextCursor: null,
-  });
+  vi.mocked(getMyTripPermission).mockResolvedValue(permission);
 }
 
 async function openMoreMenu(user: ReturnType<typeof userEvent.setup>) {
-  await waitFor(() => expect(getInvitedTrips).toHaveBeenCalled());
+  await waitFor(() => expect(getMyTripPermission).toHaveBeenCalledWith(7));
   await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
 }
 
@@ -113,6 +108,7 @@ describe('TripDetailPage', () => {
     vi.mocked(deleteTrip).mockResolvedValue(undefined);
     vi.mocked(getUnclassifiedFolders).mockResolvedValue([]);
     vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
+    vi.mocked(getMyTripPermission).mockResolvedValue('OWNER');
   });
 
   it('여행 정보와 장소 폴더 API 결과를 표시한다', async () => {
@@ -273,9 +269,9 @@ describe('TripDetailPage', () => {
     const user = userEvent.setup();
     renderTripDetailPage();
 
-    await waitFor(() => expect(getTripShares).toHaveBeenCalledWith(7, null));
-    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
-    await user.click(await screen.findByRole('menuitem', { name: '공유하기' }));
+    await openMoreMenu(user);
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: '공유하기' })).toBeEnabled());
+    await user.click(screen.getByRole('menuitem', { name: '공유하기' }));
 
     expect(
       screen.getByRole('dialog', { name: '공유할 이메일을 입력해주세요' }),
@@ -283,13 +279,12 @@ describe('TripDetailPage', () => {
     expect(screen.getByRole('textbox', { name: '공유할 이메일' })).toBeInTheDocument();
   });
 
-  it('여행 주인이 아니면(공유 목록 404) 공유하기를 비활성화한다', async () => {
-    vi.mocked(getTripShares).mockRejectedValue(axiosErrorWithStatus(404));
+  it('편집 권한으로 공유받았어도 여행 주인이 아니면 공유하기를 비활성화한다', async () => {
+    sharedWith('WRITE');
     const user = userEvent.setup();
     renderTripDetailPage();
 
-    await waitFor(() => expect(getTripShares).toHaveBeenCalled());
-    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
+    await openMoreMenu(user);
 
     const shareItem = screen.getByRole('menuitem', { name: '공유하기' });
     expect(shareItem).toBeDisabled();
@@ -299,8 +294,8 @@ describe('TripDetailPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('주인인지 확인하는 동안에는 공유하기를 비활성화한다', async () => {
-    vi.mocked(getTripShares).mockReturnValue(new Promise(() => {}));
+  it('권한을 확인하는 동안에는 공유하기를 비활성화한다', async () => {
+    vi.mocked(getMyTripPermission).mockReturnValue(new Promise(() => {}));
     const user = userEvent.setup();
     renderTripDetailPage();
 
@@ -309,13 +304,12 @@ describe('TripDetailPage', () => {
     expect(screen.getByRole('menuitem', { name: '공유하기' })).toBeDisabled();
   });
 
-  it('공유 목록이 404가 아닌 오류로 실패하면 공유하기를 막지 않는다', async () => {
-    vi.mocked(getTripShares).mockRejectedValue(axiosErrorWithStatus(500));
+  it('권한을 확인하지 못하면 공유하기를 막지 않고 실제 거절은 백엔드에 맡긴다', async () => {
+    vi.mocked(getMyTripPermission).mockRejectedValue(axiosErrorWithStatus(500));
     const user = userEvent.setup();
     renderTripDetailPage();
 
-    await waitFor(() => expect(getTripShares).toHaveBeenCalled());
-    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
+    await openMoreMenu(user);
 
     await waitFor(() => expect(screen.getByRole('menuitem', { name: '공유하기' })).toBeEnabled());
   });
@@ -379,7 +373,7 @@ describe('TripDetailPage', () => {
     sharedWith('READ');
     const user = userEvent.setup();
     renderTripDetailPage({ hasStory: false });
-    await waitFor(() => expect(getInvitedTrips).toHaveBeenCalled());
+    await waitFor(() => expect(getMyTripPermission).toHaveBeenCalledWith(7));
 
     await user.click(screen.getByRole('button', { name: /스토리 보기/ }));
 
@@ -453,7 +447,7 @@ describe('TripDetailPage', () => {
   it('hasStory가 false면 생성 유도 모달을 띄우고 나중에 할게요로 닫는다', async () => {
     const user = userEvent.setup();
     renderTripDetailPage({ hasStory: false });
-    await waitFor(() => expect(getTripShares).toHaveBeenCalled());
+    await waitFor(() => expect(getMyTripPermission).toHaveBeenCalledWith(7));
 
     await user.click(screen.getByRole('button', { name: /스토리 보기/ }));
 

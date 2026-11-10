@@ -48,12 +48,12 @@ describe('isNewerSnapshot', () => {
 
 describe('getTripPresenceLabel', () => {
   it('두 명까지는 이름을 모두 쓰고, 세 명부터는 줄인다', () => {
-    expect(getTripPresenceLabel([member(2, '지민')])).toBe('지민님과 함께 편집 중');
+    expect(getTripPresenceLabel([member(2, '지민')])).toBe('지민님과 함께 보는 중');
     expect(getTripPresenceLabel([member(2, '지민'), member(3, '서연')])).toBe(
-      '지민, 서연님과 함께 편집 중',
+      '지민, 서연님과 함께 보는 중',
     );
     expect(getTripPresenceLabel([member(2, '지민'), member(3, '서연'), member(4, '도현')])).toBe(
-      '지민 외 2명과 함께 편집 중',
+      '지민 외 2명과 함께 보는 중',
     );
   });
 });

@@ -11,6 +11,7 @@ import {
   usePlacePhotos,
 } from '@/features/photoList';
 import { useTripAccess } from '@/features/tripShare';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
@@ -230,6 +231,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
         selectionDisabled={isSelectingAll || isDownloading || isDeleting}
         cancelDisabled={isDownloading || isDeleting}
       />
+      <TripPresenceStatus />
 
       <p className="text-muted mt-1 truncate text-[11px]">
         {tripName}

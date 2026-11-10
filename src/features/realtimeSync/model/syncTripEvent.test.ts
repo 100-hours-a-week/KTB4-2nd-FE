@@ -5,7 +5,10 @@ import { invalidateTripData } from '@/queryFactory';
 
 import { createTripEventFilter, syncTripEvent, tripEventsDestination } from './syncTripEvent';
 
-vi.mock('@/queryFactory', () => ({ invalidateTripData: vi.fn(() => Promise.resolve()) }));
+vi.mock('@/queryFactory', () => ({
+  invalidateTripData: vi.fn(() => Promise.resolve()),
+  createTripQueries: { editKeys: (tripId: number) => ['createTrip', 'edit', tripId] },
+}));
 
 function tripEvent(eventId: string, sequence: number, message = 'TRIP_UPDATED') {
   return { message, data: { eventId, tripId: 7, sequence, requestId: 'req' } };

@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 
 import { PhotoViewer } from '@/features/photoList';
 import { useTripAccess } from '@/features/tripShare';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { Button } from '@/shared/ui/button';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
@@ -145,6 +146,7 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
         onEnterSelection={selection.enterSelectionMode}
         onToggleAll={() => void selection.toggleAll()}
       />
+      <TripPresenceStatus />
 
       <p className="text-muted mt-1 truncate text-[11px]">
         {tripName}

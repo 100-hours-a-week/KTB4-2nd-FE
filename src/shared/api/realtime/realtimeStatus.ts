@@ -26,6 +26,22 @@ export function subscribeRealtimeStatus(listener: () => void) {
   };
 }
 
+export function waitForRealtimeConnection(timeoutMs: number) {
+  if (isRealtimeConnected()) return Promise.resolve(true);
+
+  return new Promise<boolean>((resolve) => {
+    const finish = (connected: boolean) => {
+      window.clearTimeout(timeout);
+      unsubscribe();
+      resolve(connected);
+    };
+    const timeout = window.setTimeout(() => finish(false), timeoutMs);
+    const unsubscribe = subscribeRealtimeStatus(() => {
+      if (isRealtimeConnected()) finish(true);
+    });
+  });
+}
+
 export function realtimePollingInterval(disconnectedMs: number) {
   return isRealtimeConnected() ? Math.max(disconnectedMs, CONNECTED_POLLING_MS) : disconnectedMs;
 }
