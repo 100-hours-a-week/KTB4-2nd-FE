@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deleteTrip } from '@/features/tripDetail/api/deleteTrip';
 import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import { getTripPlaceFolders } from '@/features/tripDetail/api/getTripPlaceFolders';
+import { getTripShares } from '@/features/tripShare/api/getTripShares';
 import { getUnclassifiedFolders } from '@/features/unclassifiedPhotos/api/getUnclassifiedFolders';
 import type { TripPlaceFolderPageResult } from '@/features/tripDetail/api/getTripPlaceFolders';
 import type { TripDetail } from '@/features/tripDetail/model/types';
@@ -36,6 +37,7 @@ vi.mock('@/features/unclassifiedPhotos/api/getUnclassifiedFolders', () => ({
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({
   getTripPlaceFolders: vi.fn(),
 }));
+vi.mock('@/features/tripShare/api/getTripShares', () => ({ getTripShares: vi.fn() }));
 
 const trip: TripDetail = {
   id: 7,
@@ -92,6 +94,7 @@ describe('TripDetailPage', () => {
     vi.mocked(getTripPlaceFolders).mockResolvedValue(folders);
     vi.mocked(deleteTrip).mockResolvedValue(undefined);
     vi.mocked(getUnclassifiedFolders).mockResolvedValue([]);
+    vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
   });
 
   it('여행 정보와 장소 폴더 API 결과를 표시한다', async () => {
@@ -252,13 +255,51 @@ describe('TripDetailPage', () => {
     const user = userEvent.setup();
     renderTripDetailPage();
 
+    await waitFor(() => expect(getTripShares).toHaveBeenCalledWith(7, null));
     await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
-    await user.click(screen.getByRole('menuitem', { name: '공유하기' }));
+    await user.click(await screen.findByRole('menuitem', { name: '공유하기' }));
 
     expect(
       screen.getByRole('dialog', { name: '공유할 이메일을 입력해주세요' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '공유할 이메일' })).toBeInTheDocument();
+  });
+
+  it('여행 주인이 아니면(공유 목록 404) 공유하기를 비활성화한다', async () => {
+    vi.mocked(getTripShares).mockRejectedValue(axiosErrorWithStatus(404));
+    const user = userEvent.setup();
+    renderTripDetailPage();
+
+    await waitFor(() => expect(getTripShares).toHaveBeenCalled());
+    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
+
+    const shareItem = screen.getByRole('menuitem', { name: '공유하기' });
+    expect(shareItem).toBeDisabled();
+    await user.click(shareItem);
+    expect(
+      screen.queryByRole('dialog', { name: '공유할 이메일을 입력해주세요' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('주인인지 확인하는 동안에는 공유하기를 비활성화한다', async () => {
+    vi.mocked(getTripShares).mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    renderTripDetailPage();
+
+    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
+
+    expect(screen.getByRole('menuitem', { name: '공유하기' })).toBeDisabled();
+  });
+
+  it('공유 목록이 404가 아닌 오류로 실패하면 공유하기를 막지 않는다', async () => {
+    vi.mocked(getTripShares).mockRejectedValue(axiosErrorWithStatus(500));
+    const user = userEvent.setup();
+    renderTripDetailPage();
+
+    await waitFor(() => expect(getTripShares).toHaveBeenCalled());
+    await user.click(screen.getByRole('button', { name: '여행 더보기 메뉴' }));
+
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: '공유하기' })).toBeEnabled());
   });
 
   it('더보기 메뉴에서 여행 삭제를 누르면 확인 창을 표시한다', async () => {
