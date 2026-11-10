@@ -38,13 +38,13 @@ export function PhotoViewer({
   onDelete,
 }: {
   photo: PhotoListItem;
-  current: number;
-  total: number;
+  current?: number;
+  total?: number;
   tripName: string;
   placeName: string;
   onClose: () => void;
-  onPrevious: () => void;
-  onNext: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
   onDownload?: () => void;
   onRestore?: () => void;
   actionsDisabled?: boolean;
@@ -55,13 +55,14 @@ export function PhotoViewer({
 }) {
   const original = usePhotoOriginalQuery(photo.id);
   const viewerRef = useRef<HTMLElement>(null);
+  const canNavigate = onPrevious !== undefined && onNext !== undefined;
   const previous = () => {
     markPhotoViewer('navigation');
-    onPrevious();
+    onPrevious?.();
   };
   const next = () => {
     markPhotoViewer('navigation');
-    onNext();
+    onNext?.();
   };
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export function PhotoViewer({
         event.preventDefault();
         onClose();
       } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-        if (active?.closest('[role="menu"]')) return;
+        if (!onPrevious || !onNext || active?.closest('[role="menu"]')) return;
         event.preventDefault();
         markPhotoViewer('navigation');
         if (navigationPending) return;
@@ -172,13 +173,17 @@ export function PhotoViewer({
         >
           <CloseIcon aria-hidden="true" strokeWidth="2" size="22" />
         </IconButton>
-        <p aria-label="사진 순서" className="text-center text-sm font-bold">
-          {current}{' '}
-          <span className="text-white/50">
-            / {total}
-            {hasMorePhotos ? '+' : ''}
-          </span>
-        </p>
+        {canNavigate ? (
+          <p aria-label="사진 순서" className="text-center text-sm font-bold">
+            {current}{' '}
+            <span className="text-white/50">
+              / {total}
+              {hasMorePhotos ? '+' : ''}
+            </span>
+          </p>
+        ) : (
+          <span aria-hidden="true" />
+        )}
         <DropdownMenu
           items={menuItems}
           label="사진 더보기 메뉴"
@@ -187,15 +192,17 @@ export function PhotoViewer({
       </header>
 
       <div className="relative flex min-h-0 flex-1 items-center">
-        <IconButton
-          tone="inverse"
-          aria-label="이전 사진"
-          onClick={previous}
-          disabled={previousDisabled || navigationPending}
-          className="absolute left-3 z-10 bg-white/15 hover:bg-white/20"
-        >
-          <ChevronLeftIcon aria-hidden="true" strokeWidth="2" size="20" />
-        </IconButton>
+        {canNavigate && (
+          <IconButton
+            tone="inverse"
+            aria-label="이전 사진"
+            onClick={previous}
+            disabled={previousDisabled || navigationPending}
+            className="absolute left-3 z-10 bg-white/15 hover:bg-white/20"
+          >
+            <ChevronLeftIcon aria-hidden="true" strokeWidth="2" size="20" />
+          </IconButton>
+        )}
         <div className="aspect-square w-full overflow-hidden">
           <PhotoViewerArtwork
             photoId={photo.id}
@@ -207,15 +214,17 @@ export function PhotoViewer({
             }
           />
         </div>
-        <IconButton
-          tone="inverse"
-          aria-label="다음 사진"
-          onClick={next}
-          disabled={navigationPending}
-          className="absolute right-3 z-10 bg-white/15 hover:bg-white/20"
-        >
-          <ChevronRightIcon aria-hidden="true" strokeWidth="2" size="20" />
-        </IconButton>
+        {canNavigate && (
+          <IconButton
+            tone="inverse"
+            aria-label="다음 사진"
+            onClick={next}
+            disabled={navigationPending}
+            className="absolute right-3 z-10 bg-white/15 hover:bg-white/20"
+          >
+            <ChevronRightIcon aria-hidden="true" strokeWidth="2" size="20" />
+          </IconButton>
+        )}
       </div>
 
       {navigationPending && (
