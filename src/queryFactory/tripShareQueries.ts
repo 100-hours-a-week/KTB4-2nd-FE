@@ -1,5 +1,6 @@
-import { infiniteQueryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
+import { getMyTripPermission } from '@/features/tripShare/api/getMyTripPermission';
 import { getTripShares } from '@/features/tripShare/api/getTripShares';
 
 export const tripShareQueries = {
@@ -12,5 +13,13 @@ export const tripShareQueries = {
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
       staleTime: 0,
+    }),
+  myPermissionKeys: (tripId: number) =>
+    [...tripShareQueries.allKeys(), 'myPermission', tripId] as const,
+  myPermission: (tripId: number) =>
+    queryOptions({
+      queryKey: tripShareQueries.myPermissionKeys(tripId),
+      queryFn: () => getMyTripPermission(tripId),
+      staleTime: 60_000,
     }),
 };
