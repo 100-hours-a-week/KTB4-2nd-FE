@@ -6,7 +6,7 @@ import { useLogout, useWithdraw } from '@/features/manageAccount';
 import { useUserStats } from '@/features/userStats';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 import { Button } from '@/shared/ui/button';
-import { DocumentIcon, ShieldIcon, StarIcon } from '@/shared/ui/icons';
+import { DocumentIcon, LinkIcon, ShieldIcon, StarIcon } from '@/shared/ui/icons';
 import { toast } from '@/shared/ui/toast';
 
 import { MenuGroup, MenuRow } from './components/menuGroup';
@@ -75,6 +75,7 @@ export function MyPage({ user }: MyPageProps) {
             label="즐겨찾기한 여행"
             value={favoriteTripCount === null ? undefined : `${favoriteTripCount}개`}
           />
+          <MenuRow href="/mypage/invited" icon={<LinkIcon size="20" />} label="초대받은 폴더" />
         </MenuGroup>
 
         <MenuGroup title="정보">

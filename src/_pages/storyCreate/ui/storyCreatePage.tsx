@@ -12,7 +12,9 @@ import {
   type StoryMood,
 } from '@/features/createStory';
 import type { TripDetail } from '@/features/tripDetail';
+import { useTripAccess } from '@/features/tripShare';
 import { PageHeader } from '@/shared/ui/pageHeader';
+import { toast } from '@/shared/ui/toast';
 import { StoryCancelDialog } from './components/storyCancelDialog';
 import { StoryCreateActions } from './components/storyCreateActions';
 import { StoryCreateIntro } from './components/storyCreateIntro';
@@ -51,6 +53,15 @@ function StoryCreateContent({
   const [cancelOpen, setCancelOpen] = useState(false);
   const aiGuard = useAiReadyGuard();
   const processing = generation.status !== 'idle';
+  const access = useTripAccess(trip.id);
+  const forbidden = !access.isChecking && !access.isOwner;
+
+  useEffect(() => {
+    if (!forbidden) return;
+
+    toast.info('스토리는 여행을 만든 사람만 만들 수 있어요.');
+    router.replace(`/trips/${trip.id}`);
+  }, [forbidden, router, trip.id]);
 
   useEffect(() => {
     if (step === 'folder' && !getValues('mood')) replaceStep('mood');
@@ -100,6 +111,8 @@ function StoryCreateContent({
       },
     });
   }
+
+  if (forbidden) return null;
 
   return (
     <main className="text-brand bg-surface mx-auto flex h-[min(100dvh,var(--app-max-height))] w-full max-w-[430px] flex-col overflow-hidden px-6 pt-[max(8px,env(safe-area-inset-top))]">

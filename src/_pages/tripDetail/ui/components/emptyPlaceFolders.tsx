@@ -7,10 +7,13 @@ export function EmptyPlaceFolders({
   trip,
   hasPhotos,
   isCounting,
+  canAddPhotos,
 }: {
   trip: TripDetail;
   hasPhotos: boolean;
   isCounting: boolean;
+  /** 읽기 권한으로 공유받았으면 사진을 추가할 수 없습니다. */
+  canAddPhotos: boolean;
 }) {
   if (isCounting) return <div className="min-h-[280px]" aria-busy="true" />;
 
@@ -29,20 +32,24 @@ export function EmptyPlaceFolders({
             <br />
             미분류에서 원하는 장소로 옮길 수 있어요.
           </>
-        ) : (
+        ) : canAddPhotos ? (
           '여행 수정에서 사진을 추가해 보세요.'
+        ) : (
+          '편집할 수 있는 사람이 사진을 추가하면 여기에 보여요.'
         )}
       </p>
-      <Link
-        href={
-          hasPhotos
-            ? `/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`
-            : `/trips/${trip.id}/edit?step=images`
-        }
-        className="bg-brand hover:bg-brand-hover focus-visible:outline-brand mt-5 inline-flex min-h-10 items-center rounded-full px-4 text-xs font-bold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {hasPhotos ? '미분류 사진 보기' : '사진 추가하기'}
-      </Link>
+      {(hasPhotos || canAddPhotos) && (
+        <Link
+          href={
+            hasPhotos
+              ? `/trips/${trip.id}/unclassified?trip=${encodeURIComponent(trip.name)}`
+              : `/trips/${trip.id}/edit?step=images`
+          }
+          className="bg-brand hover:bg-brand-hover focus-visible:outline-brand mt-5 inline-flex min-h-10 items-center rounded-full px-4 text-xs font-bold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {hasPhotos ? '미분류 사진 보기' : '사진 추가하기'}
+        </Link>
+      )}
     </div>
   );
 }
