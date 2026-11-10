@@ -98,9 +98,9 @@ describe('StoryCreatePage', () => {
     expect(
       screen.getAllByRole('radio').every((radio) => !(radio as HTMLInputElement).checked),
     ).toBe(true);
-    await user.click(screen.getByRole('radio', { name: /감성적으로/ }));
-    await user.click(screen.getByRole('radio', { name: /차분하게/ }));
-    expect(screen.getByRole('radio', { name: /감성적으로/ })).not.toBeChecked();
+    await user.click(screen.getByRole('radio', { name: /유쾌하게/ }));
+    await user.click(screen.getByRole('radio', { name: /문학적으로/ }));
+    expect(screen.getByRole('radio', { name: /유쾌하게/ })).not.toBeChecked();
     await user.click(screen.getByRole('button', { name: '다음' }));
     expect(await screen.findAllByRole('checkbox')).toHaveLength(6);
     expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
@@ -292,10 +292,35 @@ describe('StoryCreatePage', () => {
     expect(createStoryGeneration).not.toHaveBeenCalled();
   });
 
-  it('새로고침해도 저장된 생성 작업의 진행 상태를 이어서 보여준다', async () => {
+  it('분위기는 담백하게, 유쾌하게, 문학적으로 세 가지만 고를 수 있다', () => {
+    setup();
+
+    expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual([
+      'PLAIN',
+      'HUMOROUS',
+      'LITERARY',
+    ]);
+  });
+
+  it('예전 분위기로 저장된 초안은 분위기만 비우고 진행 중인 생성 작업은 이어서 보여준다', async () => {
     window.localStorage.setItem(
       DRAFT_KEY,
       JSON.stringify({ mood: 'CALM', tripPlaceIds: [1], generationId: 31, startedAt: Date.now() }),
+    );
+    setup();
+
+    await waitFor(() => expect(getStoryGenerationStatus).toHaveBeenCalledWith(31));
+    expect(screen.getByRole('status', { name: '스토리 생성 중' })).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      tripPlaceIds: [1],
+      generationId: 31,
+    });
+  });
+
+  it('새로고침해도 저장된 생성 작업의 진행 상태를 이어서 보여준다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ mood: 'PLAIN', tripPlaceIds: [1], generationId: 31, startedAt: Date.now() }),
     );
     setup();
 

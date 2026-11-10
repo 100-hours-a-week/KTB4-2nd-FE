@@ -12,7 +12,7 @@ vi.mock('@/shared/api/browser', () => ({ fetchCsrfToken: vi.fn().mockResolvedVal
 vi.mock('../api/createStoryGeneration', () => ({ createStoryGeneration: vi.fn() }));
 vi.mock('../api/cancelStoryGeneration', () => ({ cancelStoryGeneration: vi.fn() }));
 vi.mock('../api/getStoryGenerationStatus', () => ({ getStoryGenerationStatus: vi.fn() }));
-const input = { mood: 'EMOTIONAL' as const, tripPlaceIds: [3, 1] };
+const input = { mood: 'LITERARY' as const, tripPlaceIds: [3, 1] };
 const progress = {
   generationId: 31,
   status: 'PROCESSING' as const,
@@ -63,7 +63,7 @@ describe('useStoryGeneration API', () => {
     await advance();
     expect(createStoryGeneration).toHaveBeenCalledExactlyOnceWith(
       7,
-      { mood: 'EMOTIONAL', tripPlaceIds: [3, 1] },
+      { mood: 'LITERARY', tripPlaceIds: [3, 1] },
       'csrf',
     );
     expect(result.current.status).toBe('processing');
