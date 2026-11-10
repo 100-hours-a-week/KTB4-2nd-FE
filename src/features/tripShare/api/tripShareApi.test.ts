@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '@/shared/api/browser';
 
 import { createTripShare } from './createTripShare';
+import { getMyTripPermission } from './getMyTripPermission';
 import { getTripShares } from './getTripShares';
 import { searchShareUser } from './searchShareUser';
 
@@ -68,5 +69,17 @@ describe('tripShare api', () => {
     expect(apiClient.get).toHaveBeenLastCalledWith('/trips/7/shares', {
       params: { cursor: 'cursor-1' },
     });
+  });
+
+  it('여행 수정용 조회 응답에서 내 권한을 꺼내고, 알 수 없는 값이면 null을 돌려준다', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { data: { permission: 'WRITE' } } });
+    await expect(getMyTripPermission(7)).resolves.toBe('WRITE');
+    expect(apiClient.get).toHaveBeenCalledWith('/trips/7/edit');
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { data: { permission: 'ADMIN' } } });
+    await expect(getMyTripPermission(7)).resolves.toBeNull();
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { data: {} } });
+    await expect(getMyTripPermission(7)).resolves.toBeNull();
   });
 });

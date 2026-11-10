@@ -1,5 +1,7 @@
 export type TripSharePermission = 'READ' | 'WRITE';
 
+export type TripAccessPermission = 'OWNER' | TripSharePermission;
+
 export type ShareUser = {
   userId: number;
   nickname: string;

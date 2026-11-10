@@ -9,8 +9,7 @@ import { createStoryGeneration } from '@/features/createStory/api/createStoryGen
 import { getStoryGenerationStatus } from '@/features/createStory/api/getStoryGenerationStatus';
 import { getStorySourceFolders } from '@/features/createStory/api/getStorySourceFolders';
 import type { TripDetail } from '@/features/tripDetail';
-import { getInvitedTrips } from '@/features/tripList/api/getInvitedTrips';
-import { getTripShares } from '@/features/tripShare/api/getTripShares';
+import { getMyTripPermission } from '@/features/tripShare/api/getMyTripPermission';
 import { StoryCreatePage } from './storyCreatePage';
 
 const { push, replace } = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -19,8 +18,9 @@ vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 vi.mock('@/features/aiStatus/api/getAiStatus', () => ({ getAiStatus: vi.fn() }));
-vi.mock('@/features/tripShare/api/getTripShares', () => ({ getTripShares: vi.fn() }));
-vi.mock('@/features/tripList/api/getInvitedTrips', () => ({ getInvitedTrips: vi.fn() }));
+vi.mock('@/features/tripShare/api/getMyTripPermission', () => ({
+  getMyTripPermission: vi.fn(),
+}));
 vi.mock('@/features/createStory/api/getStorySourceFolders', () => ({
   getStorySourceFolders: vi.fn(),
 }));
@@ -47,40 +47,9 @@ const trip: TripDetail = {
 };
 const DRAFT_KEY = 'story-create-draft-v1:7';
 
-function notFoundError() {
-  const config = { headers: new AxiosHeaders() };
-  return new AxiosError('not found', undefined, config, null, {
-    status: 404,
-    statusText: '',
-    data: { message: 'TRIP_NOT_FOUND', data: null },
-    headers: {},
-    config,
-  });
-}
-
 /** 공유 대상자 목록이 404면 주인이 아니고, 초대받은 여행 목록의 권한을 씁니다. */
-function sharedWith(permission: 'READ' | 'WRITE', tripId = 7) {
-  vi.mocked(getTripShares).mockRejectedValue(notFoundError());
-  vi.mocked(getInvitedTrips).mockResolvedValue({
-    trips: [
-      {
-        id: tripId,
-        name: '제주도 가을 여행',
-        locations: [],
-        startDate: '2025-10-12',
-        endDate: '2025-10-14',
-        nights: 2,
-        photoCount: 3,
-        favorite: false,
-        processingStatus: 'ready',
-        thumbnailUrl: null,
-        permission,
-      },
-    ],
-    totalCount: 1,
-    hasNext: false,
-    nextCursor: null,
-  });
+function sharedWith(permission: 'READ' | 'WRITE') {
+  vi.mocked(getMyTripPermission).mockResolvedValue(permission);
 }
 
 function setup() {
@@ -129,7 +98,7 @@ beforeEach(() => {
   });
   vi.mocked(cancelStoryGeneration).mockResolvedValue(undefined);
   vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
-  vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
+  vi.mocked(getMyTripPermission).mockResolvedValue('OWNER');
 });
 
 describe('StoryCreatePage', () => {
