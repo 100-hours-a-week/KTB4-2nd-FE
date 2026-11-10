@@ -227,4 +227,13 @@ describe('MyPage', () => {
     expect(link).toHaveAttribute('href', '/mypage/favorites');
     expect(await within(link).findByText('3개')).toBeInTheDocument();
   });
+
+  it('초대받은 폴더는 초대받은 여행 페이지로 이동한다', () => {
+    renderMyPage();
+
+    expect(screen.getByRole('link', { name: '초대받은 폴더' })).toHaveAttribute(
+      'href',
+      '/mypage/invited',
+    );
+  });
 });

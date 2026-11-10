@@ -1,3 +1,5 @@
+import type { TripSharePermission } from '@/features/tripShare';
+
 export type TripProcessingStatus = 'ready' | 'processing' | 'updating';
 
 export type TripListItem = {
@@ -11,6 +13,10 @@ export type TripListItem = {
   favorite: boolean;
   processingStatus: TripProcessingStatus;
   thumbnailUrl?: string | null;
+};
+
+export type InvitedTripListItem = TripListItem & {
+  permission: TripSharePermission;
 };
 
 export type TripListViewState = 'ready' | 'loading' | 'error';
