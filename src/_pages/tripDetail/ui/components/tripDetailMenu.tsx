@@ -5,20 +5,30 @@ type TripDetailMenuProps = {
   onEdit: () => void;
   onShare: () => void;
   onDelete: () => void;
+  canEdit: boolean;
+  isOwner: boolean;
 };
 
-export function TripDetailMenu({ onEdit, onShare, onDelete }: TripDetailMenuProps) {
+export function TripDetailMenu({
+  onEdit,
+  onShare,
+  onDelete,
+  canEdit,
+  isOwner,
+}: TripDetailMenuProps) {
   const menuItems: DropdownMenuItem[] = [
     {
       id: 'edit',
       label: '여행 수정',
       icon: <EditIcon size="20" />,
+      disabled: !canEdit,
       onSelect: onEdit,
     },
     {
       id: 'share',
       label: '공유하기',
       icon: <LinkIcon size="20" />,
+      disabled: !isOwner,
       onSelect: onShare,
     },
     {
@@ -27,6 +37,7 @@ export function TripDetailMenu({ onEdit, onShare, onDelete }: TripDetailMenuProp
       icon: <TrashIcon size="20" />,
       destructive: true,
       dividerBefore: true,
+      disabled: !isOwner,
       onSelect: onDelete,
     },
   ];

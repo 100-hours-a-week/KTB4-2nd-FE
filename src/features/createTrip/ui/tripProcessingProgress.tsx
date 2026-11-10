@@ -1,13 +1,15 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { createTripQueries, invalidateTripData, tripListQueries } from '@/queryFactory';
+import { fetchCsrfToken } from '@/shared/api/browser';
 import { toast } from '@/shared/ui/toast';
 
+import { cancelTripProcessing } from '../api/cancelTripProcessing';
 import { isTripProcessingRunning } from '../api/getTripProcessingStatus';
 import {
   getPendingTripProcessingSnapshot,
@@ -50,6 +52,23 @@ export function TripProcessingProgress({ tripId }: TripProcessingProgressProps) 
   const mode = useProcessingMode(tripId);
   const { data, error } = useQuery(createTripQueries.processingStatus(tripId));
 
+  const cancel = useMutation({
+    mutationFn: async () => {
+      const csrfToken = await fetchCsrfToken();
+      await cancelTripProcessing(tripId, csrfToken);
+    },
+    onSuccess: () => {
+      handled.current = true;
+      removePendingTripProcessing(tripId);
+      toast.success('여행 생성을 취소했어요.');
+      void queryClient.invalidateQueries({ queryKey: tripListQueries.allKeys() });
+      router.replace('/trips');
+    },
+    onError: () => {
+      toast.error('여행 생성을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
+    },
+  });
+
   useEffect(() => {
     if (handled.current) return;
 
@@ -79,6 +98,9 @@ export function TripProcessingProgress({ tripId }: TripProcessingProgressProps) 
         uploadRatio={1}
         processingStatus={data}
         onContinueElsewhere={() => router.replace('/trips')}
+        onCancel={mode === 'create' ? () => cancel.mutate() : undefined}
+        isCanceling={cancel.isPending}
+        cancelDescription="여행 생성을 취소하면 올린 사진은 저장되지 않고 여행 목록으로 돌아가요."
       />
     </TripFormModeContext.Provider>
   );

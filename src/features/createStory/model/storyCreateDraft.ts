@@ -25,6 +25,13 @@ function isPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
+function dropRetiredMood(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+
+  const { mood } = value as Record<string, unknown>;
+  return typeof mood === 'string' && !isStoryMood(mood) ? { ...value, mood: null } : value;
+}
+
 function isStoryCreateDraft(value: unknown): value is StoryCreateDraft {
   if (typeof value !== 'object' || value === null) return false;
 
@@ -47,7 +54,7 @@ export function readStoryCreateDraft(tripId: number): StoryCreateDraft {
     const storedDraft = window.localStorage.getItem(draftKey(tripId));
     if (!storedDraft) return createEmptyDraft();
 
-    const parsedDraft: unknown = JSON.parse(storedDraft);
+    const parsedDraft = dropRetiredMood(JSON.parse(storedDraft));
     return isStoryCreateDraft(parsedDraft) ? parsedDraft : createEmptyDraft();
   } catch {
     return createEmptyDraft();

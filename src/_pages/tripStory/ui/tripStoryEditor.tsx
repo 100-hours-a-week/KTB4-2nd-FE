@@ -39,8 +39,15 @@ const TONE_OPTIONS = STORY_MOODS.filter((mood) =>
   (STORY_TONE_PREVIEW_MOODS as readonly string[]).includes(mood.value),
 );
 
+const RETIRED_MOOD_LABELS: Partial<Record<TripStoryMood, string>> = {
+  EMOTIONAL: '감성적으로',
+  CALM: '차분하게',
+};
+
 function moodLabel(mood: TripStoryMood) {
-  return STORY_MOODS.find((option) => option.value === mood)?.label ?? mood;
+  return (
+    STORY_MOODS.find((option) => option.value === mood)?.label ?? RETIRED_MOOD_LABELS[mood] ?? mood
+  );
 }
 
 export function TripStoryEditor({

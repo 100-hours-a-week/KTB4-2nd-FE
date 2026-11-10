@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { PhotoViewer } from '@/features/photoList';
+import { useTripAccess } from '@/features/tripShare';
 import { Button } from '@/shared/ui/button';
 import {
   UNCLASSIFIED_ISSUE_LABEL,
@@ -69,6 +70,8 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
   const isProcessing = isRestoring || isDeleting;
   const selection = useUnclassifiedPhotoSelection({ photos, hasNextPage, loadAllPhotos });
   const viewer = useUnclassifiedPhotoViewer({ photos, hasNextPage, loadNextPage });
+  // 읽기 권한이면 사진을 해제·삭제할 수 없어서 선택과 작업 메뉴를 숨깁니다.
+  const { canEdit } = useTripAccess(tripId);
   const { mainRef, capture } = usePhotoListPosition(photos, isProcessing || isRefreshing);
   const sentinelRef = usePhotoAutoLoad({
     enabled:
@@ -134,7 +137,7 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
         selectionMode={selection.selectionMode}
         selectedCount={selection.selectedCount}
         allSelected={selection.allSelected}
-        canSelect={photos.length > 0}
+        canSelect={canEdit && photos.length > 0}
         isProcessing={isProcessing}
         isSelectingAll={selection.isSelectingAll}
         onBack={handleBack}
@@ -198,7 +201,8 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
       {selection.isSelectingAll && (
         <PhotoSelectionProgress loadedCount={photos.length} onCancel={selection.cancelSelectAll} />
       )}
-      {selection.selectionMode &&
+      {canEdit &&
+        selection.selectionMode &&
         !selection.isSelectingAll &&
         viewState === 'ready' &&
         photos.length > 0 &&
@@ -231,8 +235,14 @@ function UnclassifiedPhotoListContent({ tripId, tripName, issue }: UnclassifiedP
           onPrevious={viewer.previousPhoto}
           onNext={() => void viewer.nextPhoto()}
           actionsDisabled={isProcessing}
-          onRestore={() => viewer.activePhoto && restorePhotos([viewer.activePhoto])}
-          onDelete={() => viewer.activePhoto && setPendingDeleteIds([viewer.activePhoto.id])}
+          onRestore={
+            canEdit ? () => viewer.activePhoto && restorePhotos([viewer.activePhoto]) : undefined
+          }
+          onDelete={
+            canEdit
+              ? () => viewer.activePhoto && setPendingDeleteIds([viewer.activePhoto.id])
+              : undefined
+          }
         />
       )}
 

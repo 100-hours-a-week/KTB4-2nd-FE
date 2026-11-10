@@ -51,7 +51,7 @@ export function PhotoViewer({
   hasMorePhotos?: boolean;
   previousDisabled?: boolean;
   navigationPending?: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const original = usePhotoOriginalQuery(photo.id);
   const viewerRef = useRef<HTMLElement>(null);
@@ -138,15 +138,19 @@ export function PhotoViewer({
               },
             ]
           : []),
-      {
-        id: 'delete',
-        disabled: actionsDisabled,
-        label: '삭제',
-        icon: <TrashIcon size="17" />,
-        destructive: true,
-        dividerBefore: true,
-        onSelect: onDelete,
-      },
+      ...(onDelete
+        ? [
+            {
+              id: 'delete',
+              disabled: actionsDisabled,
+              label: '삭제',
+              icon: <TrashIcon size="17" />,
+              destructive: true,
+              dividerBefore: true,
+              onSelect: onDelete,
+            },
+          ]
+        : []),
     ],
     [onDelete, onDownload, onRestore, actionsDisabled],
   );

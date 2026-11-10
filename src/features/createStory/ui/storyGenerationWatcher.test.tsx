@@ -41,7 +41,7 @@ describe('StoryGenerationWatcher', () => {
   });
 
   it('생성 화면을 나가도 완료되면 토스트로 알리고 임시 저장을 지운다', async () => {
-    updateStoryCreateDraft(7, { mood: 'CALM', tripPlaceIds: [1], generationId: 31 });
+    updateStoryCreateDraft(7, { mood: 'HUMOROUS', tripPlaceIds: [1], generationId: 31 });
     vi.mocked(getStoryGenerationStatus).mockResolvedValue(status(31, 'COMPLETED'));
     renderWatcher();
 
@@ -53,13 +53,13 @@ describe('StoryGenerationWatcher', () => {
   });
 
   it('실패하면 알리고 고른 값은 남긴 채 진행 기록만 지운다', async () => {
-    updateStoryCreateDraft(7, { mood: 'CALM', tripPlaceIds: [1], generationId: 31 });
+    updateStoryCreateDraft(7, { mood: 'HUMOROUS', tripPlaceIds: [1], generationId: 31 });
     vi.mocked(getStoryGenerationStatus).mockResolvedValue(status(31, 'FAILED'));
     renderWatcher();
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
     expect(readStoryCreateDraft(7)).toMatchObject({
-      mood: 'CALM',
+      mood: 'HUMOROUS',
       tripPlaceIds: [1],
       generationId: null,
     });
@@ -67,7 +67,7 @@ describe('StoryGenerationWatcher', () => {
 
   it('해당 여행의 생성 화면에 있으면 화면이 직접 보여주므로 알리지 않는다', async () => {
     pathname.current = '/trips/7/story/create';
-    updateStoryCreateDraft(7, { mood: 'CALM', tripPlaceIds: [1], generationId: 31 });
+    updateStoryCreateDraft(7, { mood: 'HUMOROUS', tripPlaceIds: [1], generationId: 31 });
     vi.mocked(getStoryGenerationStatus).mockResolvedValue(status(31, 'COMPLETED'));
     renderWatcher();
 

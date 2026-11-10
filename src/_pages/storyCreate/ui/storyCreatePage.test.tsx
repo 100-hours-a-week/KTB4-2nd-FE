@@ -9,6 +9,8 @@ import { createStoryGeneration } from '@/features/createStory/api/createStoryGen
 import { getStoryGenerationStatus } from '@/features/createStory/api/getStoryGenerationStatus';
 import { getStorySourceFolders } from '@/features/createStory/api/getStorySourceFolders';
 import type { TripDetail } from '@/features/tripDetail';
+import { getInvitedTrips } from '@/features/tripList/api/getInvitedTrips';
+import { getTripShares } from '@/features/tripShare/api/getTripShares';
 import { StoryCreatePage } from './storyCreatePage';
 
 const { push, replace } = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -17,6 +19,8 @@ vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 vi.mock('@/features/aiStatus/api/getAiStatus', () => ({ getAiStatus: vi.fn() }));
+vi.mock('@/features/tripShare/api/getTripShares', () => ({ getTripShares: vi.fn() }));
+vi.mock('@/features/tripList/api/getInvitedTrips', () => ({ getInvitedTrips: vi.fn() }));
 vi.mock('@/features/createStory/api/getStorySourceFolders', () => ({
   getStorySourceFolders: vi.fn(),
 }));
@@ -42,6 +46,42 @@ const trip: TripDetail = {
   hasStory: false,
 };
 const DRAFT_KEY = 'story-create-draft-v1:7';
+
+function notFoundError() {
+  const config = { headers: new AxiosHeaders() };
+  return new AxiosError('not found', undefined, config, null, {
+    status: 404,
+    statusText: '',
+    data: { message: 'TRIP_NOT_FOUND', data: null },
+    headers: {},
+    config,
+  });
+}
+
+/** 공유 대상자 목록이 404면 주인이 아니고, 초대받은 여행 목록의 권한을 씁니다. */
+function sharedWith(permission: 'READ' | 'WRITE', tripId = 7) {
+  vi.mocked(getTripShares).mockRejectedValue(notFoundError());
+  vi.mocked(getInvitedTrips).mockResolvedValue({
+    trips: [
+      {
+        id: tripId,
+        name: '제주도 가을 여행',
+        locations: [],
+        startDate: '2025-10-12',
+        endDate: '2025-10-14',
+        nights: 2,
+        photoCount: 3,
+        favorite: false,
+        processingStatus: 'ready',
+        thumbnailUrl: null,
+        permission,
+      },
+    ],
+    totalCount: 1,
+    hasNext: false,
+    nextCursor: null,
+  });
+}
 
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -89,18 +129,30 @@ beforeEach(() => {
   });
   vi.mocked(cancelStoryGeneration).mockResolvedValue(undefined);
   vi.mocked(getAiStatus).mockResolvedValue({ running: true, ready: true });
+  vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
 });
 
 describe('StoryCreatePage', () => {
+  it.each(['READ', 'WRITE'] as const)(
+    '%s 권한으로 공유받았으면 스토리를 만들 수 없어 여행 상세로 돌려보낸다',
+    async (permission) => {
+      sharedWith(permission);
+      setup();
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips/7'));
+      expect(screen.queryByRole('radio', { name: /담백하게/ })).not.toBeInTheDocument();
+    },
+  );
+
   it('기본 선택 없이 시작하고 분위기를 하나만 선택한다', async () => {
     const { user } = setup();
     expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
     expect(
       screen.getAllByRole('radio').every((radio) => !(radio as HTMLInputElement).checked),
     ).toBe(true);
-    await user.click(screen.getByRole('radio', { name: /감성적으로/ }));
-    await user.click(screen.getByRole('radio', { name: /차분하게/ }));
-    expect(screen.getByRole('radio', { name: /감성적으로/ })).not.toBeChecked();
+    await user.click(screen.getByRole('radio', { name: /유쾌하게/ }));
+    await user.click(screen.getByRole('radio', { name: /문학적으로/ }));
+    expect(screen.getByRole('radio', { name: /유쾌하게/ })).not.toBeChecked();
     await user.click(screen.getByRole('button', { name: '다음' }));
     expect(await screen.findAllByRole('checkbox')).toHaveLength(6);
     expect(screen.getByRole('button', { name: '생성' })).toBeDisabled();
@@ -292,10 +344,35 @@ describe('StoryCreatePage', () => {
     expect(createStoryGeneration).not.toHaveBeenCalled();
   });
 
-  it('새로고침해도 저장된 생성 작업의 진행 상태를 이어서 보여준다', async () => {
+  it('분위기는 담백하게, 유쾌하게, 문학적으로 세 가지만 고를 수 있다', () => {
+    setup();
+
+    expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual([
+      'PLAIN',
+      'HUMOROUS',
+      'LITERARY',
+    ]);
+  });
+
+  it('예전 분위기로 저장된 초안은 분위기만 비우고 진행 중인 생성 작업은 이어서 보여준다', async () => {
     window.localStorage.setItem(
       DRAFT_KEY,
       JSON.stringify({ mood: 'CALM', tripPlaceIds: [1], generationId: 31, startedAt: Date.now() }),
+    );
+    setup();
+
+    await waitFor(() => expect(getStoryGenerationStatus).toHaveBeenCalledWith(31));
+    expect(screen.getByRole('status', { name: '스토리 생성 중' })).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(DRAFT_KEY) ?? '{}')).toMatchObject({
+      tripPlaceIds: [1],
+      generationId: 31,
+    });
+  });
+
+  it('새로고침해도 저장된 생성 작업의 진행 상태를 이어서 보여준다', async () => {
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ mood: 'PLAIN', tripPlaceIds: [1], generationId: 31, startedAt: Date.now() }),
     );
     setup();
 

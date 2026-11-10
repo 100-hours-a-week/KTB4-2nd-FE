@@ -15,11 +15,13 @@ export function TripCard({
   colorIndex,
   onFavoriteChange,
   onTripSelect,
+  badge,
 }: {
   trip: TripListItem;
   colorIndex: number;
-  onFavoriteChange: (tripId: number) => void;
+  onFavoriteChange?: (tripId: number) => void;
   onTripSelect?: (tripId: number) => void;
+  badge?: string;
 }) {
   const updating = trip.processingStatus === 'updating';
 
@@ -52,7 +54,9 @@ export function TripCard({
         />
       )}
       <TripThumbnail trip={trip} colorIndex={colorIndex} />
-      <div className="pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 pr-11">
+      <div
+        className={`pointer-events-none z-10 min-w-0 flex-1 py-0.5 pl-3 ${onFavoriteChange ? 'pr-11' : 'pr-2'}`}
+      >
         <h3 className="truncate text-sm font-extrabold tracking-[-0.01em]">{trip.name}</h3>
         {trip.locations.length > 0 && (
           <p className="text-muted mt-1 truncate text-[11px]">
@@ -78,23 +82,30 @@ export function TripCard({
           </p>
         )}
       </div>
-      <IconButton
-        aria-label={`${trip.name} ${trip.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}`}
-        aria-pressed={trip.favorite}
-        onClick={() => onFavoriteChange(trip.id)}
-        className="absolute top-1 right-1 z-20"
-        style={{ backgroundColor: 'transparent' }}
-      >
-        <StarIcon
-          aria-hidden="true"
-          fill={trip.favorite ? '#f7b51d' : 'none'}
-          stroke={trip.favorite ? '#f7b51d' : '#a5b0be'}
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          size="20"
-        />
-      </IconButton>
+      {badge && (
+        <span className="bg-surface-subtle text-brand pointer-events-none z-10 shrink-0 self-center rounded-[10px] px-2.5 py-1.5 text-xs font-semibold">
+          {badge}
+        </span>
+      )}
+      {onFavoriteChange && (
+        <IconButton
+          aria-label={`${trip.name} ${trip.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}`}
+          aria-pressed={trip.favorite}
+          onClick={() => onFavoriteChange(trip.id)}
+          className="absolute top-1 right-1 z-20"
+          style={{ backgroundColor: 'transparent' }}
+        >
+          <StarIcon
+            aria-hidden="true"
+            fill={trip.favorite ? '#f7b51d' : 'none'}
+            stroke={trip.favorite ? '#f7b51d' : '#a5b0be'}
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            size="20"
+          />
+        </IconButton>
+      )}
     </article>
   );
 }

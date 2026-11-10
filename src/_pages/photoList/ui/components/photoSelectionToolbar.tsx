@@ -10,7 +10,7 @@ export type PhotoSelectionToolbarProps = {
   isDownloading: boolean;
   isDeleting: boolean;
   onDownload: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 };
 
 export function PhotoSelectionToolbar({
@@ -28,7 +28,7 @@ export function PhotoSelectionToolbar({
     <div
       role="toolbar"
       aria-label="선택한 사진 작업"
-      className="bg-surface border-border-subtle grid grid-cols-2 gap-2 border-t px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]"
+      className={`bg-surface border-border-subtle grid ${onDelete ? 'grid-cols-2' : 'grid-cols-1'} gap-2 border-t px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]`}
     >
       <Button
         variant="secondary"
@@ -40,17 +40,23 @@ export function PhotoSelectionToolbar({
       >
         <DownloadIcon aria-hidden="true" size="17" /> 다운로드
       </Button>
-      <Button
-        variant="destructive"
-        disabled={actionsDisabled}
-        isLoading={isDeleting}
-        loadingText="삭제 중…"
-        onClick={onDelete}
-      >
-        <TrashIcon aria-hidden="true" size="17" /> 삭제
-      </Button>
+      {onDelete && (
+        <Button
+          variant="destructive"
+          disabled={actionsDisabled}
+          isLoading={isDeleting}
+          loadingText="삭제 중…"
+          onClick={onDelete}
+        >
+          <TrashIcon aria-hidden="true" size="17" /> 삭제
+        </Button>
+      )}
       {downloadLimitExceeded && (
-        <p id={downloadLimitId} className="text-muted col-span-2 text-center text-xs" role="status">
+        <p
+          id={downloadLimitId}
+          className="text-muted col-span-full text-center text-xs"
+          role="status"
+        >
           한 번에 {BULK_DOWNLOAD_LIMIT}장까지 받을 수 있어요. 선택한 사진 수를 줄여주세요.
         </p>
       )}

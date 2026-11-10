@@ -10,7 +10,7 @@ import {
   useTripSummary,
   type TripDetail,
 } from '@/features/tripDetail';
-import { TripShareDialog } from '@/features/tripShare';
+import { TripShareDialog, useTripAccess } from '@/features/tripShare';
 import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
@@ -45,12 +45,12 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const access = useTripAccess(trip.id);
 
   const handleBack = () => {
     router.replace('/trips');
   };
 
-  // 사진 목록에서 돌아왔을 때 보던 형태를 유지하도록 URL에 남긴다.
   function changeViewMode(mode: TripDetailViewMode) {
     if (mode === viewMode) return;
     router.replace(mode === 'map' ? `${pathname}?view=map` : pathname, { scroll: false });
@@ -77,6 +77,8 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
             onEdit={() => router.push(`/trips/${trip.id}/edit?step=name`)}
             onShare={() => setShareOpen(true)}
             onDelete={() => setDeleteOpen(true)}
+            canEdit={access.canEdit}
+            isOwner={access.isOwner}
           />
         }
       />
@@ -97,6 +99,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
             trip={trip}
             hasPhotos={totalPhotoCount > 0}
             isCounting={unclassified.viewState === 'loading'}
+            canAddPhotos={access.canEdit}
           />
         ) : (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
@@ -111,6 +114,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
 
       <StoryEmptyDialog
         open={storyEmptyOpen}
+        canCreate={access.isOwner}
         onClose={() => setStoryEmptyOpen(false)}
         onCreate={() => {
           setStoryEmptyOpen(false);

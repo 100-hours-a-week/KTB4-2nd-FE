@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { deletePhoto, deletePhotos } from '@/features/photoList/api/photoDelete';
@@ -12,6 +13,8 @@ import {
 } from '@/features/unclassifiedPhotos/api/restoreUnclassifiedPhotos';
 import type { UnclassifiedPhoto } from '@/features/unclassifiedPhotos/model/types';
 
+import { getInvitedTrips } from '@/features/tripList/api/getInvitedTrips';
+import { getTripShares } from '@/features/tripShare/api/getTripShares';
 import { UnclassifiedPhotoListPage } from './unclassifiedPhotoListPage';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ back: vi.fn(), replace: vi.fn() }) }));
@@ -27,6 +30,8 @@ vi.mock('@/features/photoList/api/photoDelete', () => ({
   deletePhotos: vi.fn(),
 }));
 vi.mock('@/features/tripDetail/api/getTripPlaceFolders', () => ({ getTripPlaceFolders: vi.fn() }));
+vi.mock('@/features/tripShare/api/getTripShares', () => ({ getTripShares: vi.fn() }));
+vi.mock('@/features/tripList/api/getInvitedTrips', () => ({ getInvitedTrips: vi.fn() }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
@@ -45,6 +50,42 @@ function page(items: UnclassifiedPhoto[], nextCursor: string | null = null) {
   return { photos: items, totalCount: 3, hasNext: nextCursor !== null, nextCursor };
 }
 
+function notFoundError() {
+  const config = { headers: new AxiosHeaders() };
+  return new AxiosError('not found', undefined, config, null, {
+    status: 404,
+    statusText: '',
+    data: { message: 'TRIP_NOT_FOUND', data: null },
+    headers: {},
+    config,
+  });
+}
+
+/** 공유 대상자 목록이 404면 주인이 아니고, 초대받은 여행 목록의 권한을 씁니다. */
+function sharedWith(permission: 'READ' | 'WRITE', tripId = 7) {
+  vi.mocked(getTripShares).mockRejectedValue(notFoundError());
+  vi.mocked(getInvitedTrips).mockResolvedValue({
+    trips: [
+      {
+        id: tripId,
+        name: '제주도 가을 여행',
+        locations: [],
+        startDate: '2025-10-12',
+        endDate: '2025-10-14',
+        nights: 2,
+        photoCount: 3,
+        favorite: false,
+        processingStatus: 'ready',
+        thumbnailUrl: null,
+        permission,
+      },
+    ],
+    totalCount: 1,
+    hasNext: false,
+    nextCursor: null,
+  });
+}
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -59,6 +100,29 @@ function renderPage() {
 }
 
 describe('UnclassifiedPhotoListPage', () => {
+  it('편집 권한으로 공유받은 여행이면 주인처럼 선택해 해제·삭제할 수 있다', async () => {
+    sharedWith('WRITE');
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(getInvitedTrips).toHaveBeenCalled());
+    await user.click(await screen.findByRole('button', { name: '선택' }));
+    const toolbar = screen.getByRole('toolbar', { name: '선택한 사진 작업' });
+    expect(within(toolbar).getByRole('button', { name: '해제' })).toBeInTheDocument();
+    expect(within(toolbar).getByRole('button', { name: '삭제' })).toBeInTheDocument();
+  });
+
+  it('읽기 권한으로 공유받은 여행이면 선택 모드와 해제·삭제를 숨긴다', async () => {
+    sharedWith('READ');
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: /1번째 사진/ })).toBeInTheDocument();
+    await waitFor(() => expect(getInvitedTrips).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: '선택' })).not.toBeInTheDocument(),
+    );
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -66,6 +130,7 @@ describe('UnclassifiedPhotoListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getUnclassifiedPhotos).mockResolvedValue(page(photos));
+    vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
     vi.mocked(restoreAttachment).mockResolvedValue(undefined);
     vi.mocked(restoreAttachments).mockResolvedValue(undefined);
     vi.mocked(deletePhoto).mockResolvedValue(undefined);

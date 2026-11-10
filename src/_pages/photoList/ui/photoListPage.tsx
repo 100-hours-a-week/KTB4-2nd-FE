@@ -10,6 +10,7 @@ import {
   usePhotoDownload,
   usePlacePhotos,
 } from '@/features/photoList';
+import { useTripAccess } from '@/features/tripShare';
 import { Button } from '@/shared/ui/button';
 import { toast } from '@/shared/ui/toast';
 
@@ -48,6 +49,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
   } = usePlacePhotos(tripId, tripPlaceId);
   const { mutate: requestDownload, isPending: isDownloading } = usePhotoDownload();
   const { mutate: requestDelete, isPending: isDeleting } = usePhotoDelete();
+  const { canEdit } = useTripAccess(tripId);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
@@ -238,7 +240,9 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
       {viewState !== 'ready' ? (
         <PhotoGridSkeleton showError={viewState === 'error'} onRetry={() => void refetch()} />
       ) : photos.length === 0 && !hasNextPage ? (
-        <EmptyPhotoList onAdd={() => toast.warning('아직 지원하지 않는 기능이에요.')} />
+        <EmptyPhotoList
+          onAdd={canEdit ? () => toast.warning('아직 지원하지 않는 기능이에요.') : undefined}
+        />
       ) : (
         <ul
           aria-label="사진 목록"
@@ -302,7 +306,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
             isSelectingAll ? { loadedCount: photos.length, onCancel: cancelSelectAll } : undefined
           }
           onDownload={() => requestDownload([...selectedIds])}
-          onDelete={() => setPendingDeleteIds([...selectedIds])}
+          onDelete={canEdit ? () => setPendingDeleteIds([...selectedIds]) : undefined}
         />
       )}
 
@@ -321,7 +325,7 @@ function PhotoListContent({ tripId, tripPlaceId, tripName, placeName }: PhotoLis
           onPrevious={() => openPhoto(photos[(activeIndex - 1 + photos.length) % photos.length].id)}
           onNext={() => void nextPhoto()}
           onDownload={() => requestDownload([activePhoto.id])}
-          onDelete={() => setPendingDeleteIds([activePhoto.id])}
+          onDelete={canEdit ? () => setPendingDeleteIds([activePhoto.id]) : undefined}
         />
       )}
 
