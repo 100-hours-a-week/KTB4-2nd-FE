@@ -10,7 +10,7 @@ import {
   useTripSummary,
   type TripDetail,
 } from '@/features/tripDetail';
-import { TripShareDialog, useCanShareTrip } from '@/features/tripShare';
+import { TripShareDialog, useTripAccess } from '@/features/tripShare';
 import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
@@ -45,7 +45,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const canShare = useCanShareTrip(trip.id);
+  const access = useTripAccess(trip.id);
 
   const handleBack = () => {
     router.replace('/trips');
@@ -77,7 +77,8 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
             onEdit={() => router.push(`/trips/${trip.id}/edit?step=name`)}
             onShare={() => setShareOpen(true)}
             onDelete={() => setDeleteOpen(true)}
-            canShare={canShare}
+            canEdit={access.canEdit}
+            isOwner={access.isOwner}
           />
         }
       />
@@ -98,6 +99,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
             trip={trip}
             hasPhotos={totalPhotoCount > 0}
             isCounting={unclassified.viewState === 'loading'}
+            canAddPhotos={access.canEdit}
           />
         ) : (
           <ul className="grid grid-cols-2 gap-x-2.5 gap-y-4">
@@ -112,6 +114,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
 
       <StoryEmptyDialog
         open={storyEmptyOpen}
+        canCreate={access.isOwner}
         onClose={() => setStoryEmptyOpen(false)}
         onCreate={() => {
           setStoryEmptyOpen(false);
