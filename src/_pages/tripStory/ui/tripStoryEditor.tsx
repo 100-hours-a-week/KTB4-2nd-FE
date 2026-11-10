@@ -30,6 +30,7 @@ import {
 } from '@/shared/ui/icons';
 import { useLongPress } from '@/shared/lib/longPress';
 import { PageHeader } from '@/shared/ui/pageHeader';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { toast } from '@/shared/ui/toast';
 
 import { StoryPhotoAddSheet } from './storyPhotoAddSheet';
@@ -115,6 +116,7 @@ export function TripStoryEditor({
             </button>
           }
         />
+        <TripPresenceStatus className="mb-2" />
       </div>
 
       <section aria-label="여행 정보" className="px-5 pt-6">

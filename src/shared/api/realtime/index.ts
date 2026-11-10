@@ -5,5 +5,6 @@ export {
   isRealtimeConnected,
   realtimePollingInterval,
   subscribeRealtimeStatus,
+  waitForRealtimeConnection,
 } from './realtimeStatus';
 export type { RealtimeStatus } from './realtimeStatus';

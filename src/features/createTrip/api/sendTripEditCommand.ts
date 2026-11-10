@@ -1,3 +1,4 @@
+import { rememberOwnTripEditRequest } from '@/features/realtimeSync';
 import { publishRealtime, subscribeRealtime } from '@/shared/api/realtime';
 
 import type { UpdateTripRequest } from './updateTrip';
@@ -15,28 +16,13 @@ export class TripEditCommandError extends Error {
 
 const COMMAND_RESULTS_DESTINATION = '/user/queue/command-results';
 const RESULT_TIMEOUT_MS = 15_000;
-const OWN_REQUEST_LIMIT = 50;
-
-const ownRequestIds = new Set<string>();
-
-export function isOwnTripEditRequest(requestId: unknown) {
-  return typeof requestId === 'string' && ownRequestIds.has(requestId);
-}
-
-function rememberRequest(requestId: string) {
-  ownRequestIds.add(requestId);
-  if (ownRequestIds.size > OWN_REQUEST_LIMIT) {
-    ownRequestIds.delete(ownRequestIds.values().next().value!);
-  }
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
 export function sendTripEditCommand(tripId: number, requestId: string, command: TripEditCommand) {
   const { type, ...payload } = command;
-  rememberRequest(requestId);
+  rememberOwnTripEditRequest(requestId);
 
   return new Promise<void>((resolve, reject) => {
     let finished = false;

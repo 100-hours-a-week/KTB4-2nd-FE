@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import { TripEditPage } from '@/_pages/tripEdit';
-import { getCurrentUser } from '@/entities/user';
 import { isTripCreateStep } from '@/features/createTrip';
 import { getTripDetail } from '@/features/tripDetail/api/getTripDetail';
 import { parseRouteId } from '@/shared/lib/route';
@@ -28,9 +27,5 @@ export default async function Page({ params, searchParams }: PageProps<'/trips/[
   if (result.status === 'notReady') redirect('/trips');
   if (result.status !== 'ok') notFound();
 
-  const currentUserId = await getCurrentUser()
-    .then((current) => (current.status === 'authenticated' ? current.user.userId : null))
-    .catch(() => null);
-
-  return <TripEditPage tripId={tripId} initialStep={initialStep} currentUserId={currentUserId} />;
+  return <TripEditPage tripId={tripId} initialStep={initialStep} />;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getTripEditNotice } from './useTripEditNotifications';
+import { getTripEditNotice } from './tripEditNotice';
 
 describe('getTripEditNotice', () => {
   it('바뀐 항목에 맞춰 알림 문구를 만든다', () => {

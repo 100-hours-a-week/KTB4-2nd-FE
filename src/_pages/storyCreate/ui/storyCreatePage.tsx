@@ -13,6 +13,7 @@ import {
 } from '@/features/createStory';
 import type { TripDetail } from '@/features/tripDetail';
 import { useTripAccess } from '@/features/tripShare';
+import { TripPresenceStatus } from '@/features/tripPresence';
 import { PageHeader } from '@/shared/ui/pageHeader';
 import { toast } from '@/shared/ui/toast';
 import { StoryCancelDialog } from './components/storyCancelDialog';
@@ -136,6 +137,7 @@ function StoryCreateContent({
             backLabel={step === 'mood' ? '여행 상세로 돌아가기' : '분위기 선택으로 돌아가기'}
             className="shrink-0"
           />
+          <TripPresenceStatus />
           <StoryCreateIntro trip={trip} step={step} selectedCount={form.selectedIds.length} />
           {step === 'mood' ? (
             <StoryMoodSelector mood={form.mood} onChange={form.setMood} />
