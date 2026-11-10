@@ -5,6 +5,8 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { deletePhoto } from '@/features/photoList/api/photoDelete';
+import { TripRealtimeSync } from '@/features/realtimeSync';
+import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 import type { RealtimeSubscription } from '@/shared/api/realtime';
 import { toast } from '@/shared/ui/toast';
 
@@ -59,6 +61,7 @@ vi.mock('../api/getTripProcessingStatus', async (importOriginal) => ({
   getTripProcessingStatus: vi.fn(),
 }));
 vi.mock('../api/searchPlaces', () => ({ searchPlaces: vi.fn() }));
+vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({ fetchTripSummary: vi.fn() }));
 vi.mock('@/features/photoList/api/photoDelete', () => ({
   deletePhoto: vi.fn(),
   deletePhotos: vi.fn(),
@@ -82,10 +85,20 @@ function renderForm(initialStep: TripCreateStep) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  // 실제 화면처럼 여행 레이아웃의 실시간 동기화 안에 그립니다.
   return render(
     <QueryClientProvider client={client}>
+      <TripRealtimeSync tripId={7} />
       <TripEditForm tripId={7} initialStep={initialStep} currentUserId={1} />
     </QueryClientProvider>,
+  );
+}
+
+async function waitForTripEvents() {
+  await waitFor(() =>
+    expect(
+      realtime.subscriptions.some(({ destination }) => destination === '/topic/trips/7/events'),
+    ).toBe(true),
   );
 }
 
@@ -128,6 +141,7 @@ describe('TripEditForm', () => {
     realtime.connected = false;
     realtime.subscriptions = [];
     vi.mocked(getTripForEdit).mockResolvedValue(trip);
+    vi.mocked(fetchTripSummary).mockResolvedValue({} as never);
     vi.mocked(updateTrip).mockResolvedValue(undefined);
     vi.mocked(deletePhoto).mockResolvedValue(undefined);
     vi.mocked(uploadAdditionalAttachmentBatch).mockResolvedValue(undefined);
@@ -361,6 +375,7 @@ describe('TripEditForm', () => {
     it('연결되어 있으면 웹소켓 명령으로 저장하고 결과를 받으면 상세로 돌아간다', async () => {
       const user = userEvent.setup();
       renderForm('name');
+      await waitForTripEvents();
 
       const nameInput = await screen.findByDisplayValue('제주 여행');
       await user.clear(nameInput);
@@ -431,6 +446,7 @@ describe('TripEditForm', () => {
     it('다른 곳에서 이름이 바뀌면 알리고, 내가 고치지 않은 이름 칸을 새 값으로 바꾼다', async () => {
       renderForm('name');
       await screen.findByDisplayValue('제주 여행');
+      await waitForTripEvents();
 
       vi.mocked(getTripForEdit).mockResolvedValue({ ...trip, tripName: '제주 가을 여행' });
       emit('/topic/trips/7/events', {
@@ -454,6 +470,7 @@ describe('TripEditForm', () => {
       const nameInput = await screen.findByDisplayValue('제주 여행');
       await user.clear(nameInput);
       await user.type(nameInput, '부산 여행');
+      await waitForTripEvents();
 
       vi.mocked(getTripForEdit).mockResolvedValue({ ...trip, tripName: '제주 가을 여행' });
       emit('/topic/trips/7/events', {

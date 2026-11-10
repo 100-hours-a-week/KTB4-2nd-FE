@@ -19,7 +19,6 @@ import { getTripEditSubmitError } from '../model/editSubmitError';
 import { TRIP_IMAGE_MAX_COUNT } from '../model/imageValidation';
 import type { TripCreateFormValues, TripCreateStep } from '../model/types';
 import { useTripCreateFunnel } from '../model/useTripCreateFunnel';
-import { useTripEditNotifications } from '../model/useTripEditNotifications';
 import { hasTripEditChanges, useTripEditSubmit } from '../model/useTripEditSubmit';
 import { TripDateStep } from './components/tripDateStep';
 import { TripEditImageStep } from './components/tripEditImageStep';
@@ -112,7 +111,6 @@ function TripEditFormContent({
   });
   const { step, goToStep, goBack } = useTripCreateFunnel(initialStep);
   const members = useTripPresence(data.tripId);
-  useTripEditNotifications(data.tripId);
 
   const previousData = useRef(data);
   useEffect(() => {
