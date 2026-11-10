@@ -10,7 +10,7 @@ import {
   useTripSummary,
   type TripDetail,
 } from '@/features/tripDetail';
-import { TripShareDialog } from '@/features/tripShare';
+import { TripShareDialog, useCanShareTrip } from '@/features/tripShare';
 import { useUnclassifiedFolders } from '@/features/unclassifiedPhotos';
 import { PageHeader } from '@/shared/ui/pageHeader';
 
@@ -45,12 +45,12 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [storyEmptyOpen, setStoryEmptyOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const canShare = useCanShareTrip(trip.id);
 
   const handleBack = () => {
     router.replace('/trips');
   };
 
-  // 사진 목록에서 돌아왔을 때 보던 형태를 유지하도록 URL에 남긴다.
   function changeViewMode(mode: TripDetailViewMode) {
     if (mode === viewMode) return;
     router.replace(mode === 'map' ? `${pathname}?view=map` : pathname, { scroll: false });
@@ -77,6 +77,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
             onEdit={() => router.push(`/trips/${trip.id}/edit?step=name`)}
             onShare={() => setShareOpen(true)}
             onDelete={() => setDeleteOpen(true)}
+            canShare={canShare}
           />
         }
       />
