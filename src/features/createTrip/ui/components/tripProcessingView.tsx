@@ -15,6 +15,7 @@ type TripProcessingViewProps = {
   processingStatus?: TripProcessingStatusResponse;
   onCancel?: () => void;
   isCanceling?: boolean;
+  cancelDescription?: string;
   onContinueElsewhere?: () => void;
 };
 
@@ -69,7 +70,12 @@ export function TripProcessingView(props: TripProcessingViewProps) {
   const stage = getStage(props);
   const { Icon, title } = STAGE_COPY[stage];
   const detail = getDetail(stage, props.processingStatus);
-  const { onCancel, isCanceling = false, onContinueElsewhere } = props;
+  const {
+    onCancel,
+    isCanceling = false,
+    cancelDescription = '여행 생성을 취소하면 사진 업로드 페이지로 돌아가요.',
+    onContinueElsewhere,
+  } = props;
   const mode = useContext(TripFormModeContext);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const canLeave = stage !== 'upload';
@@ -129,7 +135,6 @@ export function TripProcessingView(props: TripProcessingViewProps) {
             다른 작업 이어하기
           </Button>
         )}
-        {/* 만들기 화면에서만 생성을 취소할 수 있습니다. 뒤로가기는 취소하지 않고 화면만 나갑니다. */}
         {onCancel && (
           <Button
             variant="ghost"
@@ -147,7 +152,7 @@ export function TripProcessingView(props: TripProcessingViewProps) {
         open={cancelDialogOpen}
         onClose={() => setCancelDialogOpen(false)}
         title="아직 폴더를 생성 중입니다."
-        description="여행 생성을 취소하면 사진 업로드 페이지로 돌아가요."
+        description={cancelDescription}
         size="wide"
       >
         <div className="space-y-2">
