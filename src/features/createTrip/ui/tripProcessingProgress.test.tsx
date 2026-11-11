@@ -1,7 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { fetchTripSummary } from '@/features/tripDetail/api/fetchTripSummary';
 
 import { toast } from '@/shared/ui/toast';
 
@@ -23,6 +26,18 @@ vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 vi.mock('../api/cancelTripProcessing', () => ({ cancelTripProcessing: vi.fn() }));
+vi.mock('@/features/tripDetail/api/fetchTripSummary', () => ({ fetchTripSummary: vi.fn() }));
+
+function apiError(status: number) {
+  const config = { headers: new AxiosHeaders() };
+  return new AxiosError('failed', undefined, config, null, {
+    status,
+    statusText: '',
+    data: null,
+    headers: {},
+    config,
+  });
+}
 vi.mock('../api/getTripProcessingStatus', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/getTripProcessingStatus')>()),
   getTripProcessingStatus: vi.fn(),
@@ -144,5 +159,45 @@ describe('TripProcessingProgress', () => {
     renderProgress();
 
     expect(await screen.findByRole('heading', { name: '여행 만들기' })).toBeInTheDocument();
+  });
+
+  describe('공유받은 여행을 아직 정리 중일 때', () => {
+    it('진행 상태가 404여도 목록으로 보내지 않고 기다리는 화면을 보여주며, 취소 버튼은 없다', async () => {
+      vi.mocked(getTripProcessingStatus).mockRejectedValue(apiError(404));
+      vi.mocked(fetchTripSummary).mockRejectedValue(apiError(409));
+      renderProgress();
+
+      expect(
+        await screen.findByRole('heading', { name: '공유받은 여행을 정리하고 있어요' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '여행 생성 취소하기' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: '초대받은 폴더로 가기' })).toHaveAttribute(
+        'href',
+        '/mypage/invited',
+      );
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('정리가 끝나 여행이 열리면 바로 여행 상세로 들어간다', async () => {
+      const user = userEvent.setup();
+      vi.mocked(getTripProcessingStatus).mockRejectedValue(apiError(404));
+      vi.mocked(fetchTripSummary).mockRejectedValueOnce(apiError(409));
+      renderProgress();
+      await screen.findByRole('heading', { name: '공유받은 여행을 정리하고 있어요' });
+
+      vi.mocked(fetchTripSummary).mockResolvedValue({} as never);
+      await user.click(screen.getByRole('button', { name: '지금 다시 확인하기' }));
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips/7'));
+    });
+
+    it('이 브라우저에서 시작한 작업이 404면 지금처럼 목록으로 돌아간다', async () => {
+      addPendingTripProcessing({ tripId: 7, kind: 'create' });
+      vi.mocked(getTripProcessingStatus).mockRejectedValue(apiError(404));
+      renderProgress();
+
+      await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips'));
+      expect(screen.queryByText('공유받은 여행을 정리하고 있어요')).not.toBeInTheDocument();
+    });
   });
 });
