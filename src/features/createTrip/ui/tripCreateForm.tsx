@@ -2,17 +2,14 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { invalidateTripData } from '@/queryFactory';
 import { Funnel } from '@/shared/lib/funnel';
-import { Button } from '@/shared/ui/button';
-import { Dialog } from '@/shared/ui/dialog';
 import { toast } from '@/shared/ui/toast';
 
 import { getTripCreateSubmitError } from '../model/submitError';
-import { hasAnyPhotoLocation } from '../model/hasAnyPhotoLocation';
 import { getTripCreateSubmitOutcome } from '../model/submitOutcome';
 import {
   clearTripCreateDraft,
@@ -51,11 +48,6 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
   const submit = useTripCreateSubmit();
   const { resetCreatedTrip } = submit;
   const handledResult = useRef<typeof submit.processingResult>(null);
-  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
-  const [locationWarningOpen, setLocationWarningOpen] = useState(false);
-  const locationCheck = useRef<AbortController | null>(null);
-
-  useEffect(() => () => locationCheck.current?.abort(), []);
 
   useEffect(() => {
     const result = submit.processingResult;
@@ -65,7 +57,7 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
     const outcome = getTripCreateSubmitOutcome(result);
     if (outcome.kind === 'completed' || outcome.kind === 'canceled') {
       clearTripCreateDraft();
-      // 이 화면에서 끝까지 기다린 경우에도 백그라운드 완료와 똑같이 홈 지도·목록을 새로 받습니다.
+
       void invalidateTripData(queryClient);
       if (outcome.kind === 'completed') toast.success(outcome.message);
       else toast.warning(outcome.message);
@@ -80,8 +72,6 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
     draftRestored.current = true;
   }, [methods]);
 
-  // 새로고침에는 입력을 유지하고, 다른 화면으로 나가면(언마운트) 임시 저장을 지웁니다.
-  // 개발 모드의 StrictMode는 바로 다시 마운트하므로, 다시 마운트되면 지우기를 취소합니다.
   useEffect(() => {
     window.clearTimeout(pendingDraftClear);
     return () => {
@@ -132,29 +122,8 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
     goBack();
   };
 
-  const completeForm = async (values: TripCreateFormValues) => {
-    if (locationCheck.current || submit.isPending) return;
-    const controller = new AbortController();
-    locationCheck.current = controller;
-    setIsCheckingLocation(true);
-
-    try {
-      const hasLocation = await hasAnyPhotoLocation(values.attachments);
-      if (controller.signal.aborted) return;
-      if (!hasLocation) {
-        setLocationWarningOpen(true);
-        return;
-      }
-    } catch {
-      if (!controller.signal.aborted) {
-        toast.error('사진의 위치 정보를 확인하지 못했어요. 다시 시도해주세요.');
-      }
-      return;
-    } finally {
-      locationCheck.current = null;
-      if (!controller.signal.aborted) setIsCheckingLocation(false);
-    }
-
+  const completeForm = (values: TripCreateFormValues) => {
+    if (submit.isPending) return;
     submit.mutate(values, {
       onError: (error) => {
         const { message, step: stepToFix, resetTrip } = getTripCreateSubmitError(error);
@@ -189,39 +158,24 @@ export function TripCreateForm({ initialStep }: TripCreateFormProps) {
   return (
     <FormProvider {...methods}>
       <form className="h-full overflow-hidden" onSubmit={handleFormSubmit} noValidate>
-        <fieldset disabled={isCheckingLocation} className="h-full min-w-0 border-0 p-0">
-          <Funnel step={step}>
-            <Funnel.Step name="name">
-              <TripNameStep onBack={() => handleBack('name')} onNext={() => goToStep('location')} />
-            </Funnel.Step>
-            <Funnel.Step name="location">
-              <TripLocationStep
-                onBack={() => handleBack('location')}
-                onNext={() => goToStep('date')}
-              />
-            </Funnel.Step>
-            <Funnel.Step name="date">
-              <TripDateStep onBack={() => handleBack('date')} onNext={() => goToStep('images')} />
-            </Funnel.Step>
-            <Funnel.Step name="images">
-              <TripImageStep
-                onBack={() => handleBack('images')}
-                isCheckingLocation={isCheckingLocation}
-              />
-            </Funnel.Step>
-          </Funnel>
-        </fieldset>
+        <Funnel step={step}>
+          <Funnel.Step name="name">
+            <TripNameStep onBack={() => handleBack('name')} onNext={() => goToStep('location')} />
+          </Funnel.Step>
+          <Funnel.Step name="location">
+            <TripLocationStep
+              onBack={() => handleBack('location')}
+              onNext={() => goToStep('date')}
+            />
+          </Funnel.Step>
+          <Funnel.Step name="date">
+            <TripDateStep onBack={() => handleBack('date')} onNext={() => goToStep('images')} />
+          </Funnel.Step>
+          <Funnel.Step name="images">
+            <TripImageStep onBack={() => handleBack('images')} />
+          </Funnel.Step>
+        </Funnel>
       </form>
-      <Dialog
-        open={locationWarningOpen}
-        onClose={() => setLocationWarningOpen(false)}
-        title="모든 사진에 위치 정보가 없어요"
-        description="장소별로 여행 폴더를 나누려면 사진의 위치 정보가 필요해요. 위치 정보가 포함된 사진을 한 장 이상 선택해주세요."
-      >
-        <Button type="button" className="w-full" onClick={() => setLocationWarningOpen(false)}>
-          확인
-        </Button>
-      </Dialog>
     </FormProvider>
   );
 }

@@ -13,10 +13,9 @@ import { TripCreateStepLayout } from './tripCreateStepLayout';
 
 type TripImageStepProps = {
   onBack: () => void;
-  isCheckingLocation?: boolean;
 };
 
-export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageStepProps) {
+export function TripImageStep({ onBack }: TripImageStepProps) {
   const { control } = useFormContext<TripCreateFormValues>();
   const { field, fieldState } = useController({
     control,
@@ -73,8 +72,6 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
           type="submit"
           className="w-full"
           disabled={field.value.length === 0 || brokenCount > 0}
-          isLoading={isCheckingLocation}
-          loadingText="위치 정보 확인 중…"
         >
           여행 만들기
         </Button>
@@ -82,7 +79,6 @@ export function TripImageStep({ onBack, isCheckingLocation = false }: TripImageS
     >
       <ImageUploadField
         files={field.value}
-        disabled={isCheckingLocation}
         error={
           fieldState.error?.message ??
           (brokenCount > 0
