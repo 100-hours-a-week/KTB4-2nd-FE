@@ -4,12 +4,13 @@ import { useState, type FormEvent } from 'react';
 
 import { Button } from '@/shared/ui/button';
 import { Dialog } from '@/shared/ui/dialog';
-import { MailIcon } from '@/shared/ui/icons';
+import { CheckIcon, LinkIcon, MailIcon } from '@/shared/ui/icons';
 import { SelectDropdown } from '@/shared/ui/selectDropdown';
 import { toast } from '@/shared/ui/toast';
 
 import { getShareCreateErrorMessage, getShareSearchErrorMessage } from '../model/shareError';
 import type { TripSharePermission } from '../model/types';
+import { useCopyTripLink } from '../model/useCopyTripLink';
 import { useTripShare } from '../model/useTripShare';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +57,7 @@ export function TripShareDialog({ open, tripId, tripName, onClose }: TripShareDi
 
 function TripShareForm({ tripId, onClose }: { tripId: number; onClose: () => void }) {
   const { shares, list, search, create } = useTripShare(tripId);
+  const link = useCopyTripLink(tripId);
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<TripSharePermission>('READ');
   const [formatError, setFormatError] = useState(false);
@@ -227,13 +229,31 @@ function TripShareForm({ tripId, onClose }: { tripId: number; onClose: () => voi
       >
         추가하기
       </Button>
-      <button
-        type="button"
-        onClick={onClose}
-        className="text-muted hover:text-brand focus-visible:outline-brand mx-auto mt-4 block cursor-pointer rounded text-sm font-semibold focus-visible:outline-2"
-      >
-        {shares.length > 0 ? '닫기' : '나중에 할게요'}
-      </button>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => void link.copy()}
+          aria-describedby="trip-share-link-hint"
+          className="text-brand hover:bg-brand/5 focus-visible:outline-brand -ml-2 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-sm font-bold focus-visible:outline-2"
+        >
+          {link.copied ? (
+            <CheckIcon size="16" strokeWidth="2.2" aria-hidden="true" />
+          ) : (
+            <LinkIcon size="16" aria-hidden="true" />
+          )}
+          {link.copied ? '복사했어요' : '링크 복사'}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted hover:text-brand focus-visible:outline-brand min-h-11 cursor-pointer rounded px-2 text-sm font-semibold focus-visible:outline-2"
+        >
+          {shares.length > 0 ? '닫기' : '나중에 할게요'}
+        </button>
+      </div>
+      <p id="trip-share-link-hint" className="text-muted mt-1 text-[11px]">
+        링크는 위에서 초대한 사람만 열 수 있어요.
+      </p>
     </div>
   );
 }

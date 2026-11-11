@@ -8,6 +8,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { completeSignupQueries } from '@/queryFactory';
 import type { ApiErrorResponse } from '@/shared/api';
 import { EVENTS, identify, track } from '@/shared/lib/analytics';
+import { takeLoginReturnPath } from '@/shared/lib/url';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { toast } from '@/shared/ui/toast';
@@ -37,7 +38,7 @@ export function NicknameForm() {
       identify(result.userId, { signup_method: 'kakao' });
       track(EVENTS.SIGN_UP, { method: 'kakao' });
       toast.success('닉네임이 저장되었어요.');
-      router.replace('/');
+      router.replace(takeLoginReturnPath());
     },
     onError: (error) => {
       const code = axios.isAxiosError<ApiErrorResponse>(error)

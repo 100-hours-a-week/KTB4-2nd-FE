@@ -17,7 +17,7 @@ vi.mock('../api/getTripShares', () => ({ getTripShares: vi.fn() }));
 vi.mock('@/shared/api/browser', () => ({
   fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
-vi.mock('@/shared/ui/toast', () => ({ toast: { success: vi.fn() } }));
+vi.mock('@/shared/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const hazel = { userId: 12, nickname: '헤이즐', email: 'hazel@gmail.com' };
 const hazelShare = {
@@ -164,5 +164,31 @@ describe('TripShareDialog', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('이미 공유한 사람이에요.');
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('링크 복사를 누르면 여행 주소를 복사하고 복사했다고 알려준다', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
+    renderDialog();
+
+    await user.click(screen.getByRole('button', { name: '링크 복사' }));
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/trips/7`);
+    expect(toast.success).toHaveBeenCalledWith('링크를 복사했어요. 초대한 사람에게 보내주세요.');
+    expect(screen.getByRole('button', { name: '복사했어요' })).toBeInTheDocument();
+    expect(screen.getByText('링크는 위에서 초대한 사람만 열 수 있어요.')).toBeInTheDocument();
+  });
+
+  it('복사하지 못하면 실패를 알려준다', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
+    vi.mocked(getTripShares).mockResolvedValue({ shares: [], nextCursor: null });
+    renderDialog();
+
+    await user.click(screen.getByRole('button', { name: '링크 복사' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('링크를 복사하지 못했어요.'));
+    expect(screen.getByRole('button', { name: '링크 복사' })).toBeInTheDocument();
   });
 });

@@ -1,10 +1,12 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { AiUnavailableDialog, useAiReadyGuard } from '@/features/aiStatus';
 import { isSearchableQuery, useSearch } from '@/features/search';
+import { searchQueries } from '@/queryFactory';
 import { BottomNavigation, type BottomNavigationItem } from '@/shared/ui/bottomNavigation';
 
 import { SearchForm } from './components/searchForm';
@@ -33,17 +35,21 @@ export function SearchPage({ query }: SearchPageProps) {
   const router = useRouter();
   const aiGuard = useAiReadyGuard();
   const { runWhenAiReady } = aiGuard;
-  const [allowedQuery, setAllowedQuery] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  // 상세 화면에서 뒤로가기로 돌아왔을 때 이미 받은 결과가 있으면 AI 확인 없이 바로 보여줍니다.
+  const [allowedQuery, setAllowedQuery] = useState<string | null>(() =>
+    queryClient.getQueryData(searchQueries.resultKeys(query)) ? query : null,
+  );
   const [blockedQuery, setBlockedQuery] = useState<string | null>(null);
   const { result, viewState, errorMessage, refetch } = useSearch(query, allowedQuery === query);
 
   useEffect(() => {
-    if (!isSearchableQuery(query)) return;
+    if (!isSearchableQuery(query) || allowedQuery === query) return;
 
     void runWhenAiReady(() => setAllowedQuery(query)).then((outcome) => {
       if (outcome === 'blocked') setBlockedQuery(query);
     });
-  }, [query, runWhenAiReady]);
+  }, [query, allowedQuery, runWhenAiReady]);
 
   function searchAgain() {
     void runWhenAiReady(() => {

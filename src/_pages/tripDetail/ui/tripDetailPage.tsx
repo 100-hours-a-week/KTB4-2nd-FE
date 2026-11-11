@@ -48,13 +48,24 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const access = useTripAccess(trip.id);
 
+  const fromSearch = searchParams.get('from') === 'search';
+
   const handleBack = () => {
+    // 검색 결과에서 들어왔으면 검색 화면으로 돌아갑니다. 그 밖에는 생성 화면으로 되돌아가지 않도록 여행 목록으로 갑니다.
+    if (fromSearch && window.history.length > 1) {
+      router.back();
+      return;
+    }
     router.replace('/trips');
   };
 
   function changeViewMode(mode: TripDetailViewMode) {
     if (mode === viewMode) return;
-    router.replace(mode === 'map' ? `${pathname}?view=map` : pathname, { scroll: false });
+    const params = new URLSearchParams(searchParams.toString());
+    if (mode === 'map') params.set('view', 'map');
+    else params.delete('view');
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
   function openStory() {
@@ -72,7 +83,7 @@ export function TripDetailPage({ trip: initialTrip }: TripDetailPageProps) {
         className="-mx-5 min-h-[calc(48px+max(20px,env(safe-area-inset-top)))] px-5 pt-[max(20px,env(safe-area-inset-top))]"
         title={trip.name}
         onBack={handleBack}
-        backLabel="여행 목록으로 돌아가기"
+        backLabel={fromSearch ? '검색 결과로 돌아가기' : '여행 목록으로 돌아가기'}
         action={
           <TripDetailMenu
             onEdit={() => router.push(`/trips/${trip.id}/edit?step=name`)}

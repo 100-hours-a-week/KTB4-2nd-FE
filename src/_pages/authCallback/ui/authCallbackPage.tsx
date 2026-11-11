@@ -8,6 +8,7 @@ import { exchangeLoginTicket } from '@/features/kakaoLogin';
 import { syncLocalDataOwner } from '@/features/manageAccount';
 import type { ApiErrorResponse } from '@/shared/api';
 import { EVENTS, identify, track } from '@/shared/lib/analytics';
+import { takeLoginReturnPath } from '@/shared/lib/url';
 
 type FailureReason = 'canceled' | 'expired' | 'unavailable';
 
@@ -61,7 +62,7 @@ export function AuthCallbackPage({
         syncLocalDataOwner(result.user.userId);
         identify(result.user.userId, { signup_method: 'kakao' });
         track(EVENTS.LOGIN, { method: 'kakao' });
-        window.location.replace('/');
+        window.location.replace(takeLoginReturnPath());
       })
       .catch((error: unknown) => setExchangeFailure(getFailureReason(error)));
   }, [errorCode, loginTicket]);

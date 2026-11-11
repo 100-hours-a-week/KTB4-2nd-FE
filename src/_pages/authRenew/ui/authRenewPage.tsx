@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { refreshSession } from '@/shared/api/browser';
+import { saveLoginReturnPath } from '@/shared/lib/url';
 import { Button } from '@/shared/ui/button';
 
 function getRenewedDestination(returnTo: string) {
@@ -30,6 +31,7 @@ export function AuthRenewPage({ returnTo = '/' }: { returnTo?: string }) {
       return;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        saveLoginReturnPath(returnTo);
         window.location.replace('/login');
         return;
       }

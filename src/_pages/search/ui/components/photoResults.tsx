@@ -12,6 +12,7 @@ import {
 } from '@/features/search';
 import { ChevronRightIcon } from '@/shared/ui/icons';
 
+import { FROM_SEARCH_PARAM } from '../../lib/fromSearch';
 import { useSearchPhotoDetail } from '../../model/useSearchPhotoDetail';
 import { EmptyTabResult } from './emptyTabResult';
 import { PhotoArtwork } from './photoArtwork';
@@ -74,7 +75,7 @@ function PhotoGroup({
           </span>
         </h2>
         <Link
-          href={`/trips/${group.tripId}`}
+          href={`/trips/${group.tripId}?${FROM_SEARCH_PARAM}`}
           aria-label={`${group.tripName} 여행 폴더 열기`}
           className="text-muted hover:text-brand focus-visible:outline-brand flex shrink-0 items-center gap-0.5 rounded text-[11px] font-semibold transition-colors focus-visible:outline-2"
         >

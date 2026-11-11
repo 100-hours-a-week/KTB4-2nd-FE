@@ -172,7 +172,7 @@ describe('SearchPage', () => {
     expect(screen.getByRole('region', { name: '부산 여름 여행 1장' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '부산 여름 여행 여행 폴더 열기' })).toHaveAttribute(
       'href',
-      '/trips/2',
+      '/trips/2?from=search',
     );
   });
 
@@ -269,6 +269,27 @@ describe('SearchPage', () => {
       expect(push).toHaveBeenCalledWith(`/search?q=${encodeURIComponent('제주 바다')}`),
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('다른 화면에 갔다가 돌아오면 고른 탭과 결과를 바로 보여주고 다시 검색하지 않는다', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const page = (
+      <QueryClientProvider client={queryClient}>
+        <SearchPage query="제주 바다" />
+      </QueryClientProvider>
+    );
+    const { unmount } = render(page);
+    await user.click(await screen.findByRole('tab', { name: '폴더 1건' }));
+    expect(new URLSearchParams(window.location.search).get('tab')).toBe('folder');
+    unmount();
+
+    render(page);
+
+    expect(screen.getByRole('tab', { name: '폴더 1건' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('2026년 8월 25일 화요일이에요.')).toBeInTheDocument();
+    expect(getAiStatus).toHaveBeenCalledTimes(1);
+    expect(searchTrips).toHaveBeenCalledTimes(1);
   });
 
   describe('사진 상세보기', () => {

@@ -1,7 +1,9 @@
 import { render, waitFor } from '@testing-library/react';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { refreshSession } from '@/shared/api/browser';
+import { takeLoginReturnPath } from '@/shared/lib/url';
 
 import { AuthRenewPage } from './authRenewPage';
 
@@ -27,5 +29,22 @@ describe('AuthRenewPage', () => {
     render(<AuthRenewPage returnTo="//evil.com/path" />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/?renewed=1'));
+  });
+
+  it('로그인이 끝난 상태면 로그인으로 보내면서, 로그인 뒤 돌아올 경로를 기억한다', async () => {
+    const config = { headers: new AxiosHeaders() };
+    vi.mocked(refreshSession).mockRejectedValue(
+      new AxiosError('unauthorized', undefined, config, null, {
+        status: 401,
+        statusText: '',
+        data: null,
+        headers: {},
+        config,
+      }),
+    );
+    render(<AuthRenewPage returnTo="/trips/7" />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));
+    expect(takeLoginReturnPath()).toBe('/trips/7');
   });
 });
