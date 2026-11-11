@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { exchangeLoginTicket } from '@/features/kakaoLogin';
 import { identify, track } from '@/shared/lib/analytics';
+import { saveLoginReturnPath } from '@/shared/lib/url';
 
 import { AuthCallbackPage } from './authCallbackPage';
 
@@ -81,5 +82,21 @@ describe('AuthCallbackPage', () => {
 
     await waitFor(() => expect(identify).toHaveBeenCalledWith(7, { signup_method: 'kakao' }));
     expect(track).toHaveBeenCalledWith('login', { method: 'kakao' });
+  });
+
+  it('공유받은 링크로 들어왔다가 로그인하면 그 화면으로 돌아간다', async () => {
+    const replace = vi.fn();
+    vi.stubGlobal('location', { ...window.location, replace });
+    saveLoginReturnPath('/trips/7');
+    vi.mocked(exchangeLoginTicket).mockResolvedValue({
+      requiresNickname: false,
+      expiresIn: 1800,
+      user: { userId: 7, email: 'user@example.com', nickname: '여담' },
+    });
+
+    render(<AuthCallbackPage loginTicket="valid-login-ticket" />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/trips/7'));
+    vi.unstubAllGlobals();
   });
 });
