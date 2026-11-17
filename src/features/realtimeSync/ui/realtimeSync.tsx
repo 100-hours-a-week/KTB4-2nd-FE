@@ -16,7 +16,7 @@ import {
   syncAiTaskMessage,
 } from '../model/syncAiTaskMessage';
 
-export function RealtimeSync() {
+export function RealtimeSync({ userId }: { userId?: number | null }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -28,20 +28,23 @@ export function RealtimeSync() {
       void refetchAiTaskQueries(queryClient);
     });
     const shouldHandle = createAiTaskEventFilter();
-    const disconnect = connectRealtime([
-      {
-        destination: AI_TASK_DESTINATION,
-        onMessage: (body) => {
-          if (shouldHandle(body)) syncAiTaskMessage(queryClient, body);
+    const disconnect = connectRealtime(
+      [
+        {
+          destination: AI_TASK_DESTINATION,
+          onMessage: (body) => {
+            if (shouldHandle(body)) syncAiTaskMessage(queryClient, body);
+          },
         },
-      },
-    ]);
+      ],
+      userId,
+    );
 
     return () => {
       unsubscribe();
       disconnect();
     };
-  }, [queryClient]);
+  }, [queryClient, userId]);
 
   return null;
 }

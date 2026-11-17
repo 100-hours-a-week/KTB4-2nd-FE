@@ -1,5 +1,10 @@
+import { createHash } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
 import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from 'next/constants';
 
 const nextConfig: NextConfig = {
   devIndicators: false,
@@ -26,7 +31,39 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+async function configureNext(phase: string): Promise<NextConfig> {
+  if (
+    process.env.NEXT_PUBLIC_REALTIME_EXPERIMENT !== 'true' ||
+    (phase !== PHASE_PRODUCTION_BUILD && phase !== PHASE_DEVELOPMENT_SERVER)
+  ) {
+    return nextConfig;
+  }
+
+  // Turbopack emits a SharedWorker URL as a raw asset instead of bundling its imports.
+  const { build } = await import('esbuild');
+  const { outputFiles } = await build({
+    entryPoints: [path.join(__dirname, 'src/shared/api/realtime/realtimeShared.worker.ts')],
+    platform: 'browser',
+    format: 'esm',
+    target: 'es2020',
+    bundle: true,
+    minify: phase === PHASE_PRODUCTION_BUILD,
+    write: false,
+  });
+  const worker = outputFiles[0].contents;
+  const hash = createHash('sha256').update(worker).digest('hex').slice(0, 16);
+  const asset = `realtime-${hash}.js`;
+  const directory = path.join(__dirname, 'public', '_realtime-experiment');
+  await mkdir(directory, { recursive: true });
+  await writeFile(path.join(directory, asset), worker);
+
+  return {
+    ...nextConfig,
+    env: { NEXT_PUBLIC_REALTIME_WORKER_URL: `/_realtime-experiment/${asset}` },
+  };
+}
+
+export default withSentryConfig(configureNext, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 

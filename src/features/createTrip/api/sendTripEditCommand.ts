@@ -42,6 +42,7 @@ export function sendTripEditCommand(tripId: number, requestId: string, command: 
 
     unsubscribe = subscribeRealtime({
       destination: COMMAND_RESULTS_DESTINATION,
+      requestId,
       onMessage: (body) => {
         if (!isRecord(body) || !isRecord(body.data) || body.data.requestId !== requestId) return;
         if (body.data.status === 'SUCCEEDED') finish();

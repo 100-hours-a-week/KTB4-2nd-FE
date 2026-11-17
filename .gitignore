@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Storybook
 /storybook-static/
+
+# Generated when the WebSocket experiment is enabled
+/public/_realtime-experiment/

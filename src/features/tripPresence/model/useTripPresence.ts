@@ -41,7 +41,14 @@ export function useTripPresence(tripId: number) {
         latest = next;
         setSnapshot(next);
       },
-      onSubscribed: () => {
+      presence: {
+        join: tripPresenceCommand(tripId, 'join'),
+        heartbeat: tripPresenceCommand(tripId, 'heartbeat'),
+        leave: tripPresenceCommand(tripId, 'leave'),
+        intervalMs: TRIP_PRESENCE_HEARTBEAT_MS,
+      },
+      onSubscribed: (presenceManaged) => {
+        if (presenceManaged) return;
         subscribed = true;
         publishRealtime(tripPresenceCommand(tripId, 'join'));
       },

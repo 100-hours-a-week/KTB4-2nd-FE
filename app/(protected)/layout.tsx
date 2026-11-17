@@ -8,10 +8,10 @@ import { AnalyticsIdentity } from '@/shared/lib/analytics';
 export default async function Layout({ children }: { children: React.ReactNode }) {
   let userId: number | null = null;
 
-  if (
-    process.env.NODE_ENV === 'production' &&
-    process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true'
-  ) {
+  const analyticsEnabled =
+    process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true';
+
+  if (analyticsEnabled || process.env.NEXT_PUBLIC_REALTIME_EXPERIMENT === 'true') {
     try {
       const currentUser = await getCurrentUser();
       if (currentUser.status === 'authenticated') userId = currentUser.user.userId;
@@ -20,8 +20,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   return (
     <ProtectedLayout>
-      {userId !== null && <AnalyticsIdentity userId={userId} />}
-      <RealtimeSync />
+      {analyticsEnabled && userId !== null && <AnalyticsIdentity userId={userId} />}
+      <RealtimeSync userId={userId} />
       <StoryGenerationWatcher />
       <TripProcessingWatcher />
       {children}

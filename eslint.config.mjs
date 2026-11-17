@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     '.next/**',
     'out/**',
+    'public/_realtime-experiment/**',
     'build/**',
     'storybook-static/**',
     'coverage/**',

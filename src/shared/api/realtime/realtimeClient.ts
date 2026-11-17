@@ -1,173 +1,156 @@
 'use client';
 
-import { Client, ReconnectionTimeMode, type StompSubscription } from '@stomp/stompjs';
-import { isAxiosError } from 'axios';
+import * as direct from './realtimeDirect';
+import type { RealtimeSubscription } from './realtimeDirect';
+import { recordRealtime } from './realtimeMeasurement';
+import { startSharedRealtime } from './realtimeShared';
 
-import { fetchCsrfToken, refreshSession } from '../browser';
-import { getRealtimeUrl } from './config';
-import { setRealtimeStatus } from './realtimeStatus';
+export type { RealtimeSubscription } from './realtimeDirect';
 
-export type RealtimeSubscription = {
-  destination: string;
-  onMessage: (body: unknown) => void;
-  /** 처음 구독할 때와 재연결 뒤 다시 구독할 때마다 불립니다. */
-  onSubscribed?: () => void;
-  onRejected?: () => void;
+type Mode = 'baseline' | 'focus' | 'visible' | 'shared';
+
+type Entry = { subscription: RealtimeSubscription; remove?: () => void };
+type Transport = {
+  subscribe: typeof direct.subscribeRealtime;
+  publish: typeof direct.publishRealtime;
+  stop: () => void | Promise<void>;
 };
 
-type SubscriptionEntry = RealtimeSubscription & {
-  stomp?: StompSubscription;
-  subscribedAt?: number;
-  quickCloses: number;
-};
+const entries = new Set<Entry>();
+let transport: Transport | undefined;
 
-const RECONNECT_DELAY_MS = 1_000;
-const MAX_RECONNECT_DELAY_MS = 30_000;
-const HEARTBEAT_MS = 10_000;
-const CONNECTION_TIMEOUT_MS = 10_000;
-const REJECTION_WINDOW_MS = 3_000;
-const REJECTION_LIMIT = 2;
-
-const entries = new Set<SubscriptionEntry>();
-let activeClient: Client | null = null;
-
-function parseBody(body: string): unknown {
+function getMode(): Mode | undefined {
+  if (process.env.NEXT_PUBLIC_REALTIME_EXPERIMENT !== 'true') return;
   try {
-    return JSON.parse(body);
+    const fromUrl = new URLSearchParams(window.location.search).get('realtimeExperiment');
+    const mode = fromUrl ?? sessionStorage.getItem('realtimeExperiment');
+    if (mode === 'baseline' || mode === 'focus' || mode === 'visible' || mode === 'shared') {
+      if (fromUrl) sessionStorage.setItem('realtimeExperiment', mode);
+      return mode;
+    }
   } catch {
-    return undefined;
+    // Storage can be disabled by browser policy.
   }
-}
-
-function subscribeEntry(client: Client, entry: SubscriptionEntry) {
-  entry.stomp = client.subscribe(entry.destination, (message) =>
-    entry.onMessage(parseBody(message.body)),
-  );
-  entry.subscribedAt = Date.now();
-  entry.onSubscribed?.();
-}
-
-function releaseEntriesOnClose() {
-  const now = Date.now();
-  entries.forEach((entry) => {
-    const subscribedAt = entry.subscribedAt;
-    entry.stomp = undefined;
-    entry.subscribedAt = undefined;
-    if (!entry.onRejected || subscribedAt === undefined) return;
-
-    entry.quickCloses = now - subscribedAt < REJECTION_WINDOW_MS ? entry.quickCloses + 1 : 0;
-    if (entry.quickCloses < REJECTION_LIMIT) return;
-    entries.delete(entry);
-    entry.onRejected();
-  });
-}
-
-function addEntry(subscription: RealtimeSubscription) {
-  const entry: SubscriptionEntry = { ...subscription, quickCloses: 0 };
-  entries.add(entry);
-  if (activeClient?.connected) subscribeEntry(activeClient, entry);
-
-  return () => {
-    entries.delete(entry);
-    if (activeClient?.connected && entry.stomp) entry.stomp.unsubscribe();
-    entry.stomp = undefined;
-  };
+  return 'baseline';
 }
 
 export function subscribeRealtime(subscription: RealtimeSubscription) {
-  return addEntry(subscription);
+  const entry: Entry = {
+    subscription: {
+      ...subscription,
+      onRejected:
+        subscription.onRejected &&
+        (() => {
+          entries.delete(entry);
+          subscription.onRejected?.();
+        }),
+    },
+  };
+  entries.add(entry);
+  entry.remove = transport?.subscribe(entry.subscription);
+  return () => {
+    entries.delete(entry);
+    entry.remove?.();
+  };
 }
 
-/** 연결되어 있을 때만 보내고, 보냈는지 돌려줍니다. 본문이 없으면 빈 프레임을 보냅니다. */
 export function publishRealtime(destination: string, body?: unknown) {
-  if (!activeClient?.connected) return false;
-  activeClient.publish(
-    body === undefined
-      ? { destination }
-      : {
-          destination,
-          body: JSON.stringify(body),
-          headers: { 'content-type': 'application/json' },
-        },
-  );
-  return true;
+  return transport?.publish(destination, body) ?? false;
 }
 
-export function connectRealtime(subscriptions: RealtimeSubscription[]) {
-  let stopped = false;
-  let connectedThisAttempt = false;
-  let shouldRefreshSession = false;
-  let refreshedSinceConnected = false;
-  const removeSubscriptions = subscriptions.map(addEntry);
+export function connectRealtime(subscriptions: RealtimeSubscription[], userId?: number | null) {
+  const mode = getMode();
+  const unsubscribe = subscriptions.map(subscribeRealtime);
+  let disposed = false;
+  let closing: Promise<void> | undefined;
 
-  const client = new Client({
-    brokerURL: getRealtimeUrl(),
-    reconnectDelay: RECONNECT_DELAY_MS,
-    reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
-    maxReconnectDelay: MAX_RECONNECT_DELAY_MS,
-    heartbeatIncoming: HEARTBEAT_MS,
-    heartbeatOutgoing: HEARTBEAT_MS,
-    connectionTimeout: CONNECTION_TIMEOUT_MS,
-    beforeConnect: async (stomp) => {
-      if (stopped) return;
-      connectedThisAttempt = false;
-      setRealtimeStatus('connecting');
-      try {
-        if (shouldRefreshSession) {
-          shouldRefreshSession = false;
-          refreshedSinceConnected = true;
-          await refreshSession();
-        }
-        stomp.connectHeaders = { 'X-CSRF-TOKEN': await fetchCsrfToken() };
-      } catch (error) {
-        if (isAxiosError(error) && error.response?.status === 401) {
-          stop();
-        }
-      }
-    },
-    onConnect: () => {
-      if (stopped) return;
-      connectedThisAttempt = true;
-      refreshedSinceConnected = false;
-      entries.forEach((entry) => subscribeEntry(client, entry));
-      setRealtimeStatus('connected');
-    },
-    onWebSocketClose: () => {
-      if (stopped) return;
-      if (connectedThisAttempt) connectedThisAttempt = false;
-      else if (!refreshedSinceConnected) shouldRefreshSession = true;
-      releaseEntriesOnClose();
-      setRealtimeStatus('disconnected');
-    },
-  });
-
-  function reconnectNow() {
-    if (stopped || client.connected || client.webSocket || document.visibilityState === 'hidden')
-      return;
-    void client.deactivate().then(() => {
-      if (!stopped) client.activate();
-    });
-  }
-
-  function stop() {
-    if (stopped) return;
-    stopped = true;
-    window.removeEventListener('online', reconnectNow);
-    document.removeEventListener('visibilitychange', reconnectNow);
-    removeSubscriptions.forEach((remove) => remove());
-    if (activeClient === client) activeClient = null;
+  function attach(next: Transport) {
+    transport = next;
     entries.forEach((entry) => {
-      entry.stomp = undefined;
-      entry.subscribedAt = undefined;
+      if (!entry.remove) entry.remove = next.subscribe(entry.subscription);
     });
-    void client.deactivate();
-    setRealtimeStatus('disconnected');
   }
 
-  activeClient = client;
-  window.addEventListener('online', reconnectNow);
-  document.addEventListener('visibilitychange', reconnectNow);
-  client.activate();
+  function disconnect() {
+    const previous = transport;
+    transport = undefined;
+    entries.forEach((entry) => {
+      entry.remove?.();
+      entry.remove = undefined;
+    });
+    if (previous) closing = Promise.resolve(previous.stop());
+  }
 
-  return stop;
+  function startDirect(measurement = mode) {
+    const stop = direct.connectRealtime([], { measurement });
+    attach({ subscribe: direct.subscribeRealtime, publish: direct.publishRealtime, stop });
+  }
+
+  function fallback() {
+    if (disposed) return;
+    disconnect();
+    startDirect('shared');
+  }
+
+  function startShared() {
+    if (disposed) return;
+    if (typeof SharedWorker !== 'undefined' && userId != null) {
+      try {
+        attach(
+          startSharedRealtime(userId, fallback, () => {
+            disconnect();
+            startShared();
+          }),
+        );
+        return;
+      } catch {
+        recordRealtime('shared', 'fallback', { reason: 'initialization' });
+      }
+    } else {
+      recordRealtime('shared', 'fallback', { reason: 'unsupported-or-no-session' });
+    }
+    startDirect();
+  }
+
+  function shouldConnect() {
+    if (mode === 'focus') return document.visibilityState === 'visible' && document.hasFocus();
+    return document.visibilityState === 'visible';
+  }
+
+  function syncWindow() {
+    if (disposed) return;
+    if (!shouldConnect()) {
+      disconnect();
+      return;
+    }
+    if (transport) return;
+    if (!closing) startDirect();
+    else {
+      void closing.then(() => {
+        if (!disposed && !transport && shouldConnect()) startDirect();
+      });
+    }
+  }
+
+  if (mode === 'focus' || mode === 'visible') {
+    document.addEventListener('visibilitychange', syncWindow);
+    if (mode === 'focus') {
+      window.addEventListener('focus', syncWindow);
+      window.addEventListener('blur', syncWindow);
+    }
+    syncWindow();
+  } else if (mode === 'shared') {
+    startShared();
+  } else {
+    startDirect();
+  }
+
+  return () => {
+    disposed = true;
+    document.removeEventListener('visibilitychange', syncWindow);
+    window.removeEventListener('focus', syncWindow);
+    window.removeEventListener('blur', syncWindow);
+    unsubscribe.forEach((remove) => remove());
+    disconnect();
+  };
 }

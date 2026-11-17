@@ -326,3 +326,74 @@ describe('connectRealtime', () => {
     });
   });
 });
+
+describe('웹소켓 연결 실험', () => {
+  beforeEach(() => {
+    clients.length = 0;
+    fetchCsrfToken.mockResolvedValue('csrf-token');
+    vi.stubEnv('NEXT_PUBLIC_REALTIME_EXPERIMENT', 'true');
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    sessionStorage.removeItem('realtimeExperiment');
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('포커스 실험은 보이지만 선택하지 않은 창을 끊고 다시 선택하면 구독을 등록한다', async () => {
+    sessionStorage.setItem('realtimeExperiment', 'focus');
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const focus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    const onMessage = vi.fn();
+    const stop = connectRealtime([{ destination: '/events', onMessage }]);
+
+    const first = latestClient();
+    await connect(first);
+    focus.mockReturnValue(false);
+    window.dispatchEvent(new Event('blur'));
+    expect(first.deactivate).toHaveBeenCalledOnce();
+    expect(getRealtimeStatus()).toBe('disconnected');
+
+    focus.mockReturnValue(true);
+    window.dispatchEvent(new Event('focus'));
+    await vi.waitFor(() => expect(clients).toHaveLength(2));
+    await connect(latestClient());
+    expect(latestClient().subscribe).toHaveBeenCalledWith('/events', expect.any(Function));
+    stop();
+  });
+
+  it('가시성 실험은 포커스를 잃어도 보이는 창의 연결을 유지한다', async () => {
+    sessionStorage.setItem('realtimeExperiment', 'visible');
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const stop = connectRealtime([]);
+    const client = latestClient();
+    await connect(client);
+
+    window.dispatchEvent(new Event('blur'));
+    expect(client.deactivate).not.toHaveBeenCalled();
+
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(client.deactivate).toHaveBeenCalledOnce();
+    stop();
+  });
+
+  it('SharedWorker를 시작할 수 없으면 기존 방식으로 연결한다', async () => {
+    sessionStorage.setItem('realtimeExperiment', 'shared');
+    vi.stubEnv('NEXT_PUBLIC_REALTIME_WORKER_URL', '/worker.js');
+    vi.stubGlobal(
+      'SharedWorker',
+      class {
+        constructor() {
+          throw new Error('unsupported');
+        }
+      },
+    );
+    const stop = connectRealtime([{ destination: '/events', onMessage: vi.fn() }], 7);
+    await connect(latestClient());
+    expect(latestClient().subscribe).toHaveBeenCalledWith('/events', expect.any(Function));
+    stop();
+  });
+});
